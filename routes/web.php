@@ -156,10 +156,11 @@ $router->post('/register', function (Request $request) use ($app, $renderAuth): 
     }
 
     try {
-        $account = $app->make(AccountStore::class)->accept($token, $request->body['password'] ?? '');
-        if (!hash_equals((string) $account['email'], strtolower(trim($request->body['email'] ?? '')))) {
-            throw new \RuntimeException('Invitation email does not match.');
-        }
+        $account = $app->make(AccountStore::class)->accept(
+            $token,
+            $request->body['email'] ?? '',
+            $request->body['password'] ?? '',
+        );
         $session->login($account);
         return Response::redirect('/editor');
     } catch (\Throwable $error) {
