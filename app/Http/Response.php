@@ -36,6 +36,11 @@ final class Response
         );
     }
 
+    public static function redirect(string $location, int $status = 303): self
+    {
+        return new self('', $status, ['Location' => $location]);
+    }
+
     public static function notFound(string $body = 'Not Found'): self
     {
         return self::html($body, 404);
