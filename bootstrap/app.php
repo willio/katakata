@@ -36,7 +36,7 @@ $app->singleton(
     static fn (Application $container): Repository => Repository::forApplication($container),
 );
 
-$app->singleton(AtomicFile::class);
+$app->singleton(AtomicFile::class, static fn (): AtomicFile => new AtomicFile());
 $app->singleton(
     RevisionStore::class,
     static fn (Application $container): RevisionStore => new RevisionStore(
@@ -60,8 +60,14 @@ $app->singleton(
         $container->make(RevisionStore::class),
     ),
 );
-$app->singleton(Editor::class);
-$app->singleton(Scheduler::class);
+$app->singleton(
+    Editor::class,
+    static fn (Application $container): Editor => new Editor(
+        $container->make(AtomicFile::class),
+        $container->make(RevisionStore::class),
+    ),
+);
+$app->singleton(Scheduler::class, static fn (): Scheduler => new Scheduler());
 
 $app->singleton(
     View::class,
