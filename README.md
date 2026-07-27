@@ -42,7 +42,7 @@ php bin/katakata serve
 php -S 127.0.0.1:8000 -t public
 ```
 
-Visit `http://127.0.0.1:8000/` for the placeholder homepage, or
+Visit `http://127.0.0.1:8000/` for the homepage, or
 `http://127.0.0.1:8000/healthz` for a JSON health check.
 
 ## CLI
@@ -91,7 +91,7 @@ the webserver's document root in a real deployment.
 
 ## Design Principles
 
-Three ADRs explain the foundational decisions behind what's here:
+The accepted ADRs explain the foundational decisions behind what's here:
 
 - [ADR 0001 — Plain Markdown Storage](docs/adr/0001-plain-markdown-storage.md)
 - [ADR 0002 — PHP Runtime](docs/adr/0002-php-runtime.md)
