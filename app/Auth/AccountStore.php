@@ -42,8 +42,14 @@ final class AccountStore
         }
 
         $now ??= new DateTimeImmutable();
-        $token = bin2hex(random_bytes(32));
         $data = $this->read();
+        foreach ($data['accounts'] as $account) {
+            if (is_array($account) && hash_equals((string) ($account['email'] ?? ''), $email)) {
+                throw new RuntimeException('An account already exists for this email.');
+            }
+        }
+
+        $token = bin2hex(random_bytes(32));
         $data['invitations'][hash('sha256', $token)] = [
             'email' => $email,
             'role' => $role,
