@@ -7,32 +7,35 @@ it's needed.
 ## Phase 0 — Foundation ✅
 
 - [x] Repository structure
-- [x] Bootstrap (`bootstrap/app.php`, shared by HTTP/CLI/tests)
-- [x] Configuration (immutable `Config`, loaded from `config/*.php`)
-- [x] Routing (minimal `Router`, `routes/web.php`)
-- [x] Documentation (this roadmap, ADRs, README)
+- [x] Bootstrap
+- [x] Configuration
+- [x] Routing
+- [x] Documentation
 
 ## Phase 1 — Content Engine ✅
 
-- [x] Repository (reads `content/` into structured objects)
-- [x] Indexing (discovery of posts/drafts/authors/assets)
+- [x] Repository
+- [x] Indexing
 - [x] Drafts
 - [x] Metadata / front matter parsing
 - [x] Assets
 
-See [`docs/subsystems/content-engine.md`](./subsystems/content-engine.md)
-for details.
+See [`docs/subsystems/content-engine.md`](./subsystems/content-engine.md).
 
 ## Phase 2 — Rendering *current*
 
-- [ ] Website *(plain PHP view foundation implemented; article views pending)*
+- [x] Plain PHP view foundation
+- [x] Markdown renderer
+- [x] Canonical article routes and view
 - [ ] Archives
 - [ ] Feeds (RSS, JSON Feed)
 - [ ] Typography system
 
+See [`docs/subsystems/rendering.md`](./subsystems/rendering.md).
+
 ## Phase 3 — Editorial
 
-- [ ] Editor (distraction-free, keyboard-first, Markdown-native)
+- [ ] Editor
 - [ ] Revisions
 - [ ] Scheduling
 - [ ] Publishing pipeline
@@ -49,7 +52,7 @@ for details.
 - [ ] Plugins
 - [ ] Themes
 - [ ] Public APIs
-- [ ] Additional publisher adapters (Mastodon, Bluesky, LinkedIn, etc.)
+- [ ] Additional publisher adapters
 
 ---
 
