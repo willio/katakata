@@ -12,13 +12,15 @@ See [`docs/MASTER_SPECIFICATION.md`](docs/MASTER_SPECIFICATION.md) for
 the full vision, philosophy, and architecture. This README covers only
 what's needed to run what exists today.
 
-## Status: Phase 1 — Content Engine
+## Status: Phase 2 — Rendering
 
 Phase 0 (Foundation) and Phase 1 (Content Engine) are done: the
 application bootstrap, routing, and a Repository that reads
 `content/` — posts, drafts, authors, assets — into structured objects.
-There is no rendering yet — that's Phase 2, and until then the
-homepage stays a placeholder. See
+Phase 2 has begun with dependency-free plain PHP views and an
+output-escaping helper. The homepage now renders through the View
+service; article rendering, archives, feeds, and the typography system
+remain. See
 [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full phase plan and
 [`docs/subsystems/content-engine.md`](docs/subsystems/content-engine.md)
 for how the Content Engine works.
@@ -96,6 +98,7 @@ Three ADRs explain the foundational decisions behind what's here:
 - [ADR 0003 — Static-first Architecture](docs/adr/0003-static-first-architecture.md)
 - [ADR 0004 — Threads Discussion Layer](docs/adr/0004-threads-discussion-layer.md) *(architecture only — no Threads adapter exists yet; that's Phase 4)*
 - [ADR 0005 — Minimal Front Matter Parser](docs/adr/0005-minimal-front-matter-parser.md)
+- [ADR 0006 — Plain PHP Views](docs/adr/0006-plain-php-views.md)
 
 ## Non-Negotiable Rules
 
