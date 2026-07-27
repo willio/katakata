@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Katakata\Auth\AccountStore;
 use Katakata\Auth\Session;
+use Katakata\Auth\WebAuthn;
 use Katakata\Content\Repository;
 use Katakata\Editorial\DraftEditor;
 use Katakata\Editorial\Publisher;
@@ -242,6 +243,107 @@ $router->post('/editor/invitations', function (Request $request) use ($app): Res
     );
     $url = rtrim((string) $app->config()->get('app.url', 'http://localhost:8000'), '/');
     return Response::html('Invitation: ' . e($url . '/register?token=' . $invite['token']));
+});
+
+
+$decodeCredential = static function (mixed $value): array {
+    if (!is_string($value)) {
+        throw new RuntimeException('Passkey response is missing.');
+    }
+    $decoded = json_decode($value, true);
+    if (!is_array($decoded)) {
+        throw new RuntimeException('Passkey response is invalid.');
+    }
+    foreach ($decoded as $key => $item) {
+        if (!is_string($key) || !is_string($item)) {
+            throw new RuntimeException('Passkey response is invalid.');
+        }
+    }
+    return $decoded;
+};
+
+$router->post('/passkeys/register/options', function (Request $request) use ($app): Response {
+    $session = $app->make(Session::class);
+    $account = $session->user();
+    if ($account === null) {
+        return Response::json(['error' => 'Authentication required.'], 401);
+    }
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::json(['error' => 'Invalid CSRF token.'], 419);
+    }
+
+    $challenge = $session->beginPasskey('register', ['account_id' => (string) $account['id']]);
+    return Response::json($app->make(WebAuthn::class)->registrationOptions($account, $challenge));
+});
+
+$router->post('/passkeys/register', function (Request $request) use ($app, $decodeCredential): Response {
+    $session = $app->make(Session::class);
+    $account = $session->user();
+    if ($account === null) {
+        return Response::json(['error' => 'Authentication required.'], 401);
+    }
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::json(['error' => 'Invalid CSRF token.'], 419);
+    }
+
+    try {
+        $ceremony = $session->consumePasskey('register');
+        if ($ceremony === null || !hash_equals((string) $account['id'], (string) ($ceremony['account_id'] ?? ''))) {
+            throw new RuntimeException('Passkey registration expired.');
+        }
+        $app->make(WebAuthn::class)->register(
+            (string) $account['id'],
+            (string) $ceremony['challenge'],
+            $decodeCredential($request->body['credential'] ?? null),
+        );
+        return Response::json(['ok' => true]);
+    } catch (Throwable $error) {
+        return Response::json(['error' => $error->getMessage()], 422);
+    }
+});
+
+$router->post('/passkeys/login/options', function (Request $request) use ($app): Response {
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::json(['error' => 'Invalid CSRF token.'], 419);
+    }
+
+    try {
+        $account = $app->make(AccountStore::class)->findByEmail($request->body['email'] ?? '');
+        if ($account === null) {
+            throw new RuntimeException('No passkey is registered for this account.');
+        }
+        $challenge = $session->beginPasskey('login', ['account_id' => (string) $account['id']]);
+        return Response::json($app->make(WebAuthn::class)->authenticationOptions($account, $challenge));
+    } catch (Throwable $error) {
+        return Response::json(['error' => $error->getMessage()], 422);
+    }
+});
+
+$router->post('/passkeys/login', function (Request $request) use ($app, $decodeCredential): Response {
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::json(['error' => 'Invalid CSRF token.'], 419);
+    }
+
+    try {
+        $ceremony = $session->consumePasskey('login');
+        $account = is_array($ceremony)
+            ? $app->make(AccountStore::class)->find((string) ($ceremony['account_id'] ?? ''))
+            : null;
+        if ($account === null) {
+            throw new RuntimeException('Passkey authentication expired.');
+        }
+        $app->make(WebAuthn::class)->authenticate(
+            (string) $account['id'],
+            (string) $ceremony['challenge'],
+            $decodeCredential($request->body['credential'] ?? null),
+        );
+        $session->login($account);
+        return Response::json(['ok' => true, 'redirect' => '/editor']);
+    } catch (Throwable $error) {
+        return Response::json(['error' => $error->getMessage()], 422);
+    }
 });
 
 $router->get('/healthz', function (Request $request): Response {
