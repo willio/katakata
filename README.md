@@ -16,8 +16,8 @@ what's needed to run what exists today.
 
 Phase 0 (Foundation) and Phase 1 (Content Engine) are done. Phase 2 now
 includes dependency-free plain PHP views, safe Markdown-to-HTML
-conversion, and canonical article routes. Archives, feeds, and the
-typography system remain. See [`docs/ROADMAP.md`](docs/ROADMAP.md) and
+conversion, canonical article routes, and a chronological archive. Feeds
+and the typography system remain. See [`docs/ROADMAP.md`](docs/ROADMAP.md) and
 [`docs/subsystems/rendering.md`](docs/subsystems/rendering.md).
 
 ## Requirements
@@ -35,7 +35,8 @@ php bin/katakata serve
 
 Visit `http://127.0.0.1:8000/` for the homepage,
 `http://127.0.0.1:8000/healthz` for the health check, or a post's
-canonical `/{year}/{month}/{slug}` URL.
+canonical `/{year}/{month}/{slug}` URL. The complete published archive is
+available at `/archive`.
 
 ## CLI
 
