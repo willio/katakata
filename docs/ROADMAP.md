@@ -25,7 +25,7 @@ for details.
 
 ## Phase 2 — Rendering *current*
 
-- [~] Website (plain PHP view foundation implemented; article views pending)
+- [ ] Website *(plain PHP view foundation implemented; article views pending)*
 - [ ] Archives
 - [ ] Feeds (RSS, JSON Feed)
 - [ ] Typography system
