@@ -58,11 +58,14 @@ $app->singleton(
 $app->singleton(
     WebAuthn::class,
     static function (Application $container): WebAuthn {
-        $origin = rtrim((string) $container->config()->get('app.url', 'http://localhost:8000'), '/');
-        $rpId = parse_url($origin, PHP_URL_HOST);
-        if (!is_string($rpId) || $rpId === '') {
-            throw new RuntimeException('APP_URL must contain a valid host for passkeys.');
+        $configuredUrl = (string) $container->config()->get('app.url', 'http://localhost:8000');
+        $scheme = parse_url($configuredUrl, PHP_URL_SCHEME);
+        $rpId = parse_url($configuredUrl, PHP_URL_HOST);
+        $port = parse_url($configuredUrl, PHP_URL_PORT);
+        if (!is_string($scheme) || !is_string($rpId) || $rpId === '') {
+            throw new RuntimeException('APP_URL must contain a valid origin for passkeys.');
         }
+        $origin = $scheme . '://' . $rpId . (is_int($port) ? ':' . $port : '');
         return new WebAuthn(
             $container->make(PasskeyStore::class),
             $origin,
