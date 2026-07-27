@@ -4,7 +4,7 @@ Phase 3 provides a filesystem-native editorial workflow.
 
 ## Boundaries
 
-`DraftEditor` creates, updates, and schedules drafts. `RevisionStore` captures immutable pre-change Markdown. `Scheduler` selects due drafts without side effects. `Publisher` moves a validated draft into the dated post convention through an atomic destination write.
+`DraftEditor` creates, updates, and schedules drafts. `RevisionStore` captures immutable pre-change Markdown under `content/revisions/`. `Scheduler` selects due drafts without side effects. `Publisher` moves a validated draft into the dated post convention through an atomic destination write.
 
 The Repository remains the read boundary. Editorial services are the only write boundary.
 
