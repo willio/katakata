@@ -6,6 +6,7 @@ use Katakata\Application;
 use Katakata\Content\Repository;
 use Katakata\Http\Router;
 use Katakata\Support\DotEnv;
+use Katakata\View;
 
 require_once __DIR__ . '/autoload.php';
 require_once __DIR__ . '/helpers.php';
@@ -27,6 +28,11 @@ $app->instance(Router::class, $router);
 $app->singleton(
     Repository::class,
     static fn (Application $container): Repository => Repository::forApplication($container),
+);
+
+$app->singleton(
+    View::class,
+    static fn (Application $container): View => View::forApplication($container),
 );
 
 (static function () use ($router, $app): void {
