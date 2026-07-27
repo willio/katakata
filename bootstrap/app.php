@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 use Katakata\Application;
 use Katakata\Content\Repository;
+use Katakata\Editorial\AtomicFile;
+use Katakata\Editorial\DraftEditor;
+use Katakata\Editorial\Editor;
+use Katakata\Editorial\Publisher;
+use Katakata\Editorial\RevisionStore;
+use Katakata\Editorial\Scheduler;
 use Katakata\Http\Router;
 use Katakata\Support\DotEnv;
 use Katakata\View;
@@ -29,6 +35,33 @@ $app->singleton(
     Repository::class,
     static fn (Application $container): Repository => Repository::forApplication($container),
 );
+
+$app->singleton(AtomicFile::class);
+$app->singleton(
+    RevisionStore::class,
+    static fn (Application $container): RevisionStore => new RevisionStore(
+        $container->basePath('storage/revisions'),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    DraftEditor::class,
+    static fn (Application $container): DraftEditor => new DraftEditor(
+        $container->basePath((string) $container->config()->get('content.drafts_path', 'content/drafts')),
+        $container->make(AtomicFile::class),
+        $container->make(RevisionStore::class),
+    ),
+);
+$app->singleton(
+    Publisher::class,
+    static fn (Application $container): Publisher => new Publisher(
+        $container->basePath((string) $container->config()->get('content.posts_path', 'content/posts')),
+        $container->make(AtomicFile::class),
+        $container->make(RevisionStore::class),
+    ),
+);
+$app->singleton(Editor::class);
+$app->singleton(Scheduler::class);
 
 $app->singleton(
     View::class,
