@@ -12,13 +12,12 @@ See [`docs/MASTER_SPECIFICATION.md`](docs/MASTER_SPECIFICATION.md) for
 the full vision, philosophy, and architecture. This README covers only
 what's needed to run what exists today.
 
-## Status: Phase 2 — Rendering complete
+## Status: Phase 3 — Editorial complete
 
-Phases 0–2 are complete. Katakata now includes dependency-free plain
-PHP views, safe Markdown-to-HTML conversion, canonical article routes,
-chronological and author archives, RSS and JSON Feed output, and a
-responsive typography-first reading system. See [`docs/ROADMAP.md`](docs/ROADMAP.md) and
-[`docs/subsystems/rendering.md`](docs/subsystems/rendering.md).
+Phases 0–3 are complete. In addition to rendering, Katakata now has a
+local filesystem editor, canonical revision history, scheduled drafts,
+and an atomic publishing pipeline. See [`docs/ROADMAP.md`](docs/ROADMAP.md)
+and [`docs/subsystems/editorial.md`](docs/subsystems/editorial.md).
 
 ## Requirements
 
@@ -47,6 +46,12 @@ php bin/katakata routes:list
 php bin/katakata serve [host]
 php bin/katakata content:list
 php bin/katakata content:validate
+php bin/katakata draft:create <slug> <title>
+php bin/katakata draft:edit <slug>
+php bin/katakata draft:schedule <slug> <ISO-8601>
+php bin/katakata draft:publish <slug> [ISO-8601]
+php bin/katakata publish:due
+php bin/katakata revisions:list <slug>
 ```
 
 ## Tests
@@ -86,6 +91,7 @@ web-accessible.
 - [ADR 0004 — Threads Discussion Layer](docs/adr/0004-threads-discussion-layer.md)
 - [ADR 0005 — Minimal Front Matter Parser](docs/adr/0005-minimal-front-matter-parser.md)
 - [ADR 0006 — Plain PHP Views](docs/adr/0006-plain-php-views.md)
+- [ADR 0007 — Filesystem Editorial Transactions](docs/adr/0007-filesystem-editorial-transactions.md)
 
 ## Non-Negotiable Rules
 
