@@ -55,7 +55,7 @@ final class AccountStore
     }
 
     /** @return array<string, mixed> */
-    public function accept(string $token, string $password, ?DateTimeImmutable $now = null): array
+    public function accept(string $token, string $email, string $password, ?DateTimeImmutable $now = null): array
     {
         $now ??= new DateTimeImmutable();
         $data = $this->read();
@@ -64,6 +64,10 @@ final class AccountStore
 
         if (!is_array($invite) || new DateTimeImmutable((string) $invite['expires_at']) < $now) {
             throw new RuntimeException('Invitation is invalid or expired.');
+        }
+
+        if (!hash_equals((string) $invite['email'], $this->email($email))) {
+            throw new RuntimeException('Invitation email does not match.');
         }
 
         unset($data['invitations'][$key]);
