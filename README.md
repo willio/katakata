@@ -12,16 +12,16 @@ See [`docs/MASTER_SPECIFICATION.md`](docs/MASTER_SPECIFICATION.md) for
 the full vision, philosophy, and architecture. This README covers only
 what's needed to run what exists today.
 
-## Status: Phase 3 — Editorial in progress
+## Status: Phase 3 — Editorial complete
 
-Phases 0–2 are complete. Phase 3 is in progress: In addition to rendering, Katakata now has a
-local filesystem editor, canonical revision history, scheduled drafts,
-and an atomic publishing pipeline. See [`docs/ROADMAP.md`](docs/ROADMAP.md)
+Phases 0–3 are complete. Katakata now has a protected browser editor,
+invite-only email/password accounts, WebAuthn passkeys, a local filesystem
+editor, canonical revision history, scheduled drafts, and an atomic publishing pipeline. See [`docs/ROADMAP.md`](docs/ROADMAP.md)
 and [`docs/subsystems/editorial.md`](docs/subsystems/editorial.md).
 
 ## Requirements
 
-- PHP 8.2 or later
+- PHP 8.2 or later with OpenSSL
 - Composer (optional — only needed to run the test suite via PHPUnit)
 
 ## Quickstart
@@ -52,6 +52,8 @@ php bin/katakata draft:schedule <slug> <ISO-8601>
 php bin/katakata draft:publish <slug> [ISO-8601]
 php bin/katakata publish:due
 php bin/katakata revisions:list <slug>
+php bin/katakata auth:owner <email> <password>
+php bin/katakata auth:invite <email> [admin|editor]
 ```
 
 ## Tests
@@ -92,6 +94,7 @@ web-accessible.
 - [ADR 0005 — Minimal Front Matter Parser](docs/adr/0005-minimal-front-matter-parser.md)
 - [ADR 0006 — Plain PHP Views](docs/adr/0006-plain-php-views.md)
 - [ADR 0007 — Filesystem Editorial Transactions](docs/adr/0007-filesystem-editorial-transactions.md)
+- [ADR 0008 — Invite-only Authentication](docs/adr/0008-invite-only-authentication.md)
 
 ## Non-Negotiable Rules
 
