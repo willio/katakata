@@ -79,6 +79,29 @@ final class Session
         return is_string($token) && hash_equals($this->csrf(), $token);
     }
 
+    /** @param array<string, mixed> $data */
+    public function beginPasskey(string $ceremony, array $data): string
+    {
+        $this->start();
+        $challenge = WebAuthn::encode(random_bytes(32));
+        $_SESSION['passkey_' . $ceremony] = $data + [
+            'challenge' => $challenge,
+            'expires_at' => time() + 300,
+        ];
+        return $challenge;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function consumePasskey(string $ceremony): ?array
+    {
+        $this->start();
+        $key = 'passkey_' . $ceremony;
+        $data = $_SESSION[$key] ?? null;
+        unset($_SESSION[$key]);
+
+        return is_array($data) && (int) ($data['expires_at'] ?? 0) >= time() ? $data : null;
+    }
+
     public function canInvite(): bool
     {
         return in_array($this->user()['role'] ?? null, ['owner', 'admin'], true);
