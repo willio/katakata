@@ -22,3 +22,13 @@ if (!function_exists('env')) {
         };
     }
 }
+
+if (!function_exists('e')) {
+    /**
+     * Escape a value for safe interpolation into an HTML view.
+     */
+    function e(mixed $value): string
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    }
+}
