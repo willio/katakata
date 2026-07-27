@@ -108,6 +108,20 @@ final class AccountStore
     }
 
     /** @return array<string, mixed>|null */
+    public function findByEmail(string $email): ?array
+    {
+        $email = strtolower(trim($email));
+        foreach ($this->read()['accounts'] as $account) {
+            if (is_array($account) && hash_equals((string) ($account['email'] ?? ''), $email)) {
+                unset($account['password_hash']);
+                return $account;
+            }
+        }
+
+        return null;
+    }
+
+    /** @return array<string, mixed>|null */
     public function find(string $id): ?array
     {
         $account = $this->read()['accounts'][$id] ?? null;
