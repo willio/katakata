@@ -1,0 +1,12 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Katakata\Console\Application as ConsoleApplication;
+
+/** @var \Katakata\Application $app */
+$app = require dirname(__DIR__) . '/bootstrap/app.php';
+
+$console = new ConsoleApplication($app);
+exit($console->run(array_slice($argv, 1)));
