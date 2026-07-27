@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Katakata\Application;
+use Katakata\Auth\AccountStore;
+use Katakata\Auth\Session;
 use Katakata\Content\Repository;
 use Katakata\Editorial\AtomicFile;
 use Katakata\Editorial\DraftEditor;
@@ -37,6 +39,17 @@ $app->singleton(
 );
 
 $app->singleton(AtomicFile::class, static fn (): AtomicFile => new AtomicFile());
+$app->singleton(
+    AccountStore::class,
+    static fn (Application $container): AccountStore => new AccountStore(
+        $container->storagePath('auth/accounts.json'),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    Session::class,
+    static fn (Application $container): Session => new Session($container->make(AccountStore::class)),
+);
 $app->singleton(
     RevisionStore::class,
     static fn (Application $container): RevisionStore => new RevisionStore(
