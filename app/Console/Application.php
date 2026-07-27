@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Katakata\Console;
 
 use Katakata\Application as Kernel;
+use Katakata\Auth\AccountStore;
 use DateTimeImmutable;
 use Katakata\Content\Repository;
 use Katakata\Editorial\DraftEditor;
@@ -30,6 +31,8 @@ final class Application
     public function __construct(private readonly Kernel $app)
     {
         $this->commands['about'] = fn (): int => $this->about();
+        $this->commands['auth:owner'] = fn (array $args): int => $this->authOwner($args);
+        $this->commands['auth:invite'] = fn (array $args): int => $this->authInvite($args);
         $this->commands['routes:list'] = fn (): int => $this->routesList();
         $this->commands['serve'] = fn (array $args): int => $this->serve($args);
         $this->commands['content:list'] = fn (): int => $this->contentList();
@@ -57,6 +60,43 @@ final class Application
         }
 
         return ($this->commands[$name])($arguments);
+    }
+
+    /** @param array<int, string> $args */
+    private function authOwner(array $args): int
+    {
+        [$email, $password] = [$args[0] ?? '', $args[1] ?? ''];
+        if ($email === '' || $password === '') {
+            return $this->usage('auth:owner <email> <password>');
+        }
+
+        try {
+            $account = $this->app->make(AccountStore::class)->createOwner($email, $password);
+            fwrite(STDOUT, "Owner created for {$account['email']}.\n");
+            return 0;
+        } catch (\Throwable $error) {
+            fwrite(STDERR, $error->getMessage() . "\n");
+            return 1;
+        }
+    }
+
+    /** @param array<int, string> $args */
+    private function authInvite(array $args): int
+    {
+        [$email, $role] = [$args[0] ?? '', $args[1] ?? 'editor'];
+        if ($email === '') {
+            return $this->usage('auth:invite <email> [admin|editor]');
+        }
+
+        try {
+            $invite = $this->app->make(AccountStore::class)->invite($email, $role);
+            $url = rtrim((string) $this->app->config()->get('app.url', 'http://localhost:8000'), '/');
+            fwrite(STDOUT, "{$url}/register?token={$invite['token']}\nExpires {$invite['expires_at']}\n");
+            return 0;
+        } catch (\Throwable $error) {
+            fwrite(STDERR, $error->getMessage() . "\n");
+            return 1;
+        }
     }
 
     private function about(): int
