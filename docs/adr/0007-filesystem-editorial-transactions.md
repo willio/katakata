@@ -13,7 +13,7 @@ Phase 3 adds editing, revisions, scheduling, and publishing while Markdown remai
 Editorial writes are exposed through the local CLI and implemented by framework-independent services under `app/Editorial/`.
 
 - Drafts remain Markdown files under `content/drafts/`.
-- Every replacement or publication captures the previous draft in `storage/revisions/{slug}/`.
+- Every replacement or publication captures the previous draft in `content/revisions/{slug}/`.
 - Writes use a temporary file in the destination directory followed by an atomic rename.
 - Scheduling is front matter (`status: scheduled`, `publish_at` in ISO 8601).
 - Publishing writes the canonical post first and removes the draft only after the post succeeds.
@@ -21,4 +21,4 @@ Editorial writes are exposed through the local CLI and implemented by framework-
 
 ## Consequences
 
-Markdown remains authoritative and revisions stay inspectable and portable. Publication is recoverable from its revision if draft removal succeeds but a later generated output fails. CLI-only editing is intentionally less convenient than the eventual browser experience, but does not create an unauthenticated mutation endpoint.
+Markdown remains authoritative and revisions remain canonical, inspectable, and portable. Publication is recoverable from its revision if draft removal succeeds but a later generated output fails. CLI-only editing is intentionally less convenient than the eventual browser experience, but does not create an unauthenticated mutation endpoint.
