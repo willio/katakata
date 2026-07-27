@@ -26,7 +26,17 @@ $title = $mode === 'login' ? 'Sign in' : 'Accept invitation';
             <label>Password <input name="password" type="password" autocomplete="<?= $mode === 'login' ? 'current-password' : 'new-password' ?>" minlength="12" required></label>
             <button type="submit"><?= e($title) ?></button>
         </form>
+        <?php if ($mode === 'login'): ?>
+            <hr>
+            <form data-passkey-login>
+                <input type="hidden" name="csrf" value="<?= e((string) $csrf) ?>">
+                <label>Email <input name="email" type="email" autocomplete="username webauthn" required></label>
+                <button type="submit">Sign in with a passkey</button>
+                <p data-passkey-status aria-live="polite"></p>
+            </form>
+        <?php endif; ?>
     </article>
 </main>
+<script src="/assets/js/passkeys.js" defer></script>
 </body>
 </html>
