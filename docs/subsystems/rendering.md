@@ -66,6 +66,28 @@ posts before the plain PHP view receives them.
 The archive view links only to each post's canonical `Post::url()` and
 escapes titles, dates, excerpts, URLs, year labels, and site metadata.
 
+## Author Archives
+
+`/authors/{slug}` resolves an Author through the Repository and renders only
+that author's published posts in repository order. Author biographies are
+converted by the same safe Markdown renderer. Article bylines link to the
+author archive when the referenced author exists.
+
+## Feeds
+
+`/feed.xml` emits RSS 2.0 and `/feed.json` emits JSON Feed 1.1. Both are
+derived from the same published Post collection, preserve repository order,
+exclude drafts, and build absolute canonical item URLs from `app.url`.
+RSS values use XML escaping; JSON Feed bodies use renderer-sanitized HTML.
+
+## Typography
+
+`public/assets/css/site.css` provides the shared, responsive reading system
+for the homepage, articles, chronological archive, and author archives. It
+uses system-available serif and sans-serif stacks, requires no JavaScript or
+external font request, respects reduced-motion preferences, and keeps the
+reading measure narrow.
+
 ## Escaping
 
 The global `e()` helper wraps:
@@ -85,7 +107,6 @@ renderer after its own escaping and URL-policy pass.
 - No view compilation or caching
 - No business logic or Repository access in views
 - No raw HTML in Markdown
-- No feeds yet
 
 These limits implement ADR 0006 without growing a bespoke template
 language.
