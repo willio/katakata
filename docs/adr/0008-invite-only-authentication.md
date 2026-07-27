@@ -24,4 +24,4 @@ Accounts and invitations are stored in a permission-restricted JSON document und
 
 ## Consequences
 
-A lost authentication store cannot be reconstructed from Markdown and must be backed up as installation state. Authentication writes need the same atomicity discipline as editorial writes. WebAuthn verification must validate origin, RP ID, challenge, user presence, credential ownership, signature, and a monotonically increasing sign counter before passkey login is considered complete.
+A lost authentication store cannot be reconstructed from Markdown and must be backed up as installation state. Authentication writes need the same atomicity discipline as editorial writes. WebAuthn verification must validate origin, RP ID, challenge, user presence, user verification, credential ownership, and signature before passkey login is complete. Nonzero authenticator signature counters must increase; authenticators that intentionally report zero remain valid under the WebAuthn counter model.
