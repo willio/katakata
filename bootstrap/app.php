@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use Katakata\Application;
 use Katakata\Auth\AccountStore;
+use Katakata\Auth\PasskeyStore;
 use Katakata\Auth\Session;
+use Katakata\Auth\WebAuthn;
 use Katakata\Content\Repository;
 use Katakata\Editorial\AtomicFile;
 use Katakata\Editorial\DraftEditor;
@@ -45,6 +47,29 @@ $app->singleton(
         $container->storagePath('auth/accounts.json'),
         $container->make(AtomicFile::class),
     ),
+);
+$app->singleton(
+    PasskeyStore::class,
+    static fn (Application $container): PasskeyStore => new PasskeyStore(
+        $container->storagePath('auth/passkeys.json'),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    WebAuthn::class,
+    static function (Application $container): WebAuthn {
+        $origin = rtrim((string) $container->config()->get('app.url', 'http://localhost:8000'), '/');
+        $rpId = parse_url($origin, PHP_URL_HOST);
+        if (!is_string($rpId) || $rpId === '') {
+            throw new RuntimeException('APP_URL must contain a valid host for passkeys.');
+        }
+        return new WebAuthn(
+            $container->make(PasskeyStore::class),
+            $origin,
+            $rpId,
+            (string) $container->config()->get('app.name', 'Katakata'),
+        );
+    },
 );
 $app->singleton(
     Session::class,
