@@ -34,9 +34,9 @@ See [`docs/subsystems/content-engine.md`](./subsystems/content-engine.md).
 
 See [`docs/subsystems/rendering.md`](./subsystems/rendering.md).
 
-## Phase 3 — Editorial
+## Phase 3 — Editorial ✅
 
-- [ ] Authenticated browser editor
+- [x] Authenticated browser editor
 - [x] Canonical revisions
 - [x] Scheduling
 - [x] Publishing pipeline
