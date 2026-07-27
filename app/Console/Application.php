@@ -5,7 +5,13 @@ declare(strict_types=1);
 namespace Katakata\Console;
 
 use Katakata\Application as Kernel;
+use DateTimeImmutable;
 use Katakata\Content\Repository;
+use Katakata\Editorial\DraftEditor;
+use Katakata\Editorial\Editor;
+use Katakata\Editorial\Publisher;
+use Katakata\Editorial\RevisionStore;
+use Katakata\Editorial\Scheduler;
 use Katakata\Http\Router;
 
 /**
@@ -28,6 +34,12 @@ final class Application
         $this->commands['serve'] = fn (array $args): int => $this->serve($args);
         $this->commands['content:list'] = fn (): int => $this->contentList();
         $this->commands['content:validate'] = fn (): int => $this->contentValidate();
+        $this->commands['draft:create'] = fn (array $args): int => $this->draftCreate($args);
+        $this->commands['draft:edit'] = fn (array $args): int => $this->draftEdit($args);
+        $this->commands['draft:schedule'] = fn (array $args): int => $this->draftSchedule($args);
+        $this->commands['draft:publish'] = fn (array $args): int => $this->draftPublish($args);
+        $this->commands['publish:due'] = fn (): int => $this->publishDue();
+        $this->commands['revisions:list'] = fn (array $args): int => $this->revisionsList($args);
     }
 
     /**
@@ -126,6 +138,126 @@ final class Application
             fwrite(STDERR, "  {$error}\n");
         }
 
+        return 1;
+    }
+
+
+    /** @param array<int, string> $args */
+    private function draftCreate(array $args): int
+    {
+        [$slug, $title] = [$args[0] ?? '', $args[1] ?? ''];
+        if ($slug === '' || $title === '') {
+            return $this->usage('draft:create <slug> <title>');
+        }
+
+        $path = $this->app->make(DraftEditor::class)->save($slug, $title, '');
+        fwrite(STDOUT, "Created {$path}\n");
+        return 0;
+    }
+
+    /** @param array<int, string> $args */
+    private function draftEdit(array $args): int
+    {
+        $draft = $this->draft($args[0] ?? '');
+        if ($draft === null) {
+            return 1;
+        }
+
+        $editor = getenv('EDITOR') ?: '';
+        if ($editor === '') {
+            fwrite(STDERR, "EDITOR is not configured.\n");
+            return 1;
+        }
+
+        $this->app->make(Editor::class)->edit($draft->slug, $draft->path, $editor);
+        fwrite(STDOUT, "Saved {$draft->path}\n");
+        return 0;
+    }
+
+    /** @param array<int, string> $args */
+    private function draftSchedule(array $args): int
+    {
+        $draft = $this->draft($args[0] ?? '');
+        if ($draft === null || !isset($args[1])) {
+            return $draft === null ? 1 : $this->usage('draft:schedule <slug> <ISO-8601>');
+        }
+
+        try {
+            $at = new DateTimeImmutable($args[1]);
+        } catch (\Exception) {
+            fwrite(STDERR, "Invalid schedule [{$args[1]}].\n");
+            return 1;
+        }
+
+        $this->app->make(DraftEditor::class)->schedule($draft, $at);
+        fwrite(STDOUT, "Scheduled {$draft->slug} for {$at->format(DateTimeImmutable::ATOM)}\n");
+        return 0;
+    }
+
+    /** @param array<int, string> $args */
+    private function draftPublish(array $args): int
+    {
+        $draft = $this->draft($args[0] ?? '');
+        if ($draft === null) {
+            return 1;
+        }
+
+        try {
+            $at = isset($args[1]) ? new DateTimeImmutable($args[1]) : null;
+            $path = $this->app->make(Publisher::class)->publish($draft, $at);
+        } catch (\Exception $e) {
+            fwrite(STDERR, $e->getMessage() . "\n");
+            return 1;
+        }
+
+        $this->app->make(Repository::class)->refresh();
+        fwrite(STDOUT, "Published {$path}\n");
+        return 0;
+    }
+
+    private function publishDue(): int
+    {
+        $repository = $this->app->make(Repository::class);
+        $due = $this->app->make(Scheduler::class)->due($repository->drafts());
+        foreach ($due as $draft) {
+            $at = new DateTimeImmutable((string) $draft->meta['publish_at']);
+            $path = $this->app->make(Publisher::class)->publish($draft, $at);
+            fwrite(STDOUT, "Published {$path}\n");
+        }
+
+        $repository->refresh();
+        fwrite(STDOUT, count($due) . " scheduled draft(s) published.\n");
+        return 0;
+    }
+
+    /** @param array<int, string> $args */
+    private function revisionsList(array $args): int
+    {
+        $slug = $args[0] ?? '';
+        if ($slug === '') {
+            return $this->usage('revisions:list <slug>');
+        }
+
+        foreach ($this->app->make(RevisionStore::class)->all($slug) as $path) {
+            fwrite(STDOUT, $path . "\n");
+        }
+
+        return 0;
+    }
+
+    private function draft(string $slug): ?\Katakata\Content\Draft
+    {
+        $draft = $slug === '' ? null : $this->app->make(Repository::class)->findDraft($slug);
+        if ($draft === null) {
+            fwrite(STDERR, "Draft [{$slug}] not found.\n");
+        }
+
+        return $draft;
+    }
+
+    private function usage(string $usage): int
+    {
+        fwrite(STDERR, "Usage: php bin/katakata {$usage}\n");
         return 1;
     }
 
