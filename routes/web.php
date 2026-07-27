@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Katakata\Content\Repository;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
+use Katakata\Rendering\Archive;
 use Katakata\Rendering\Markdown;
 use Katakata\View;
 
@@ -19,6 +20,15 @@ $router->get('/', function (Request $request) use ($app): Response {
     return Response::html($view->render('home', [
         'name' => (string) $app->config()->get('app.name', 'Katakata'),
         'tagline' => (string) $app->config()->get('app.tagline', ''),
+    ]));
+});
+
+$router->get('/archive', function (Request $request) use ($app): Response {
+    $repository = $app->make(Repository::class);
+
+    return Response::html($app->make(View::class)->render('archive', [
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'years' => $app->make(Archive::class)->years($repository->posts()),
     ]));
 });
 
