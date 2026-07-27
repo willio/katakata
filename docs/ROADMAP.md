@@ -4,7 +4,7 @@ The build proceeds in six phases. Each phase produces a working,
 independently useful increment — nothing is scaffolded ahead of when
 it's needed.
 
-## Phase 0 — Foundation ✅ *current*
+## Phase 0 — Foundation ✅
 
 - [x] Repository structure
 - [x] Bootstrap (`bootstrap/app.php`, shared by HTTP/CLI/tests)
@@ -12,13 +12,16 @@ it's needed.
 - [x] Routing (minimal `Router`, `routes/web.php`)
 - [x] Documentation (this roadmap, ADRs, README)
 
-## Phase 1 — Content Engine
+## Phase 1 — Content Engine ✅ *current*
 
-- [ ] Repository (reads `content/` into structured objects)
-- [ ] Indexing (discovery of posts/drafts/authors/assets)
-- [ ] Drafts
-- [ ] Metadata / front matter parsing
-- [ ] Assets
+- [x] Repository (reads `content/` into structured objects)
+- [x] Indexing (discovery of posts/drafts/authors/assets)
+- [x] Drafts
+- [x] Metadata / front matter parsing
+- [x] Assets
+
+See [`docs/subsystems/content-engine.md`](./subsystems/content-engine.md)
+for details.
 
 ## Phase 2 — Rendering
 

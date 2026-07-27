@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Katakata\Application;
+use Katakata\Content\Repository;
 use Katakata\Http\Router;
 use Katakata\Support\DotEnv;
 
@@ -22,6 +23,11 @@ $app->boot();
 
 $router = new Router();
 $app->instance(Router::class, $router);
+
+$app->singleton(
+    Repository::class,
+    static fn (Application $container): Repository => Repository::forApplication($container),
+);
 
 (static function () use ($router, $app): void {
     require $app->routesPath('web.php');

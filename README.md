@@ -12,12 +12,16 @@ See [`docs/MASTER_SPECIFICATION.md`](docs/MASTER_SPECIFICATION.md) for
 the full vision, philosophy, and architecture. This README covers only
 what's needed to run what exists today.
 
-## Status: Phase 0 — Foundation
+## Status: Phase 1 — Content Engine
 
-This is the foundation increment: repository structure, application
-bootstrap, configuration, routing, and documentation. There is no
-Content Engine yet — that's Phase 1. See
-[`docs/ROADMAP.md`](docs/ROADMAP.md) for the full phase plan.
+Phase 0 (Foundation) and Phase 1 (Content Engine) are done: the
+application bootstrap, routing, and a Repository that reads
+`content/` — posts, drafts, authors, assets — into structured objects.
+There is no rendering yet — that's Phase 2, and until then the
+homepage stays a placeholder. See
+[`docs/ROADMAP.md`](docs/ROADMAP.md) for the full phase plan and
+[`docs/subsystems/content-engine.md`](docs/subsystems/content-engine.md)
+for how the Content Engine works.
 
 ## Requirements
 
@@ -42,9 +46,11 @@ Visit `http://127.0.0.1:8000/` for the placeholder homepage, or
 ## CLI
 
 ```bash
-php bin/katakata about         # Print app name and tagline
-php bin/katakata routes:list   # List registered routes
-php bin/katakata serve [host]  # Serve via PHP's built-in server
+php bin/katakata about             # Print app name and tagline
+php bin/katakata routes:list       # List registered routes
+php bin/katakata serve [host]      # Serve via PHP's built-in server
+php bin/katakata content:list      # List posts, drafts, authors, and assets
+php bin/katakata content:validate  # Validate all content; exit 1 if anything fails
 ```
 
 ## Tests
@@ -61,7 +67,7 @@ only the test suite does, via PHPUnit as a dev dependency.
 ## Repository Structure
 
 ```
-app/         Application code (Kernel, Container, Config, Http, Console)
+app/         Application code (Kernel, Container, Config, Http, Console, Content)
 bin/         CLI entrypoint (bin/katakata)
 bootstrap/   Shared bootstrap for HTTP, CLI, workers, and tests
 config/      Configuration files (loaded once at boot, then frozen)
@@ -71,8 +77,12 @@ public/      The only web-accessible directory (public/index.php)
 resources/   Views and other non-code assets (Phase 2+)
 routes/      Route definitions
 storage/     Logs, cache, framework files
-tests/       PHPUnit test suite
+tests/       PHPUnit test suite (plus tests/Fixtures/ for content fixtures)
 ```
+
+The `content/` folder ships with a couple of example posts, an
+author, and a draft so `content:list` has something to show out of
+the box — replace or delete them as you start writing for real.
 
 Only `public/` is web-accessible; everything else should sit outside
 the webserver's document root in a real deployment.
@@ -85,6 +95,7 @@ Three ADRs explain the foundational decisions behind what's here:
 - [ADR 0002 — PHP Runtime](docs/adr/0002-php-runtime.md)
 - [ADR 0003 — Static-first Architecture](docs/adr/0003-static-first-architecture.md)
 - [ADR 0004 — Threads Discussion Layer](docs/adr/0004-threads-discussion-layer.md) *(architecture only — no Threads adapter exists yet; that's Phase 4)*
+- [ADR 0005 — Minimal Front Matter Parser](docs/adr/0005-minimal-front-matter-parser.md)
 
 ## Non-Negotiable Rules
 
