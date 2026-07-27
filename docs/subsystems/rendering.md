@@ -56,6 +56,16 @@ Repository, rejects drafts and canonical-path mismatches, renders the
 Markdown body, and returns the plain PHP article view. Missing or
 non-canonical posts return 404.
 
+## Archive Route
+
+`/archive` renders every published post in repository order, grouped
+by year. `Katakata\\Rendering\\Archive` prepares that presentation
+shape from the Repository's post collection; it excludes non-published
+posts before the plain PHP view receives them.
+
+The archive view links only to each post's canonical `Post::url()` and
+escapes titles, dates, excerpts, URLs, year labels, and site metadata.
+
 ## Escaping
 
 The global `e()` helper wraps:
@@ -75,7 +85,7 @@ renderer after its own escaping and URL-policy pass.
 - No view compilation or caching
 - No business logic or Repository access in views
 - No raw HTML in Markdown
-- No archives or feeds yet
+- No feeds yet
 
 These limits implement ADR 0006 without growing a bespoke template
 language.
