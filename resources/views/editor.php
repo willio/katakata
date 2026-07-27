@@ -29,6 +29,12 @@
                 <li><a href="/editor/drafts/<?= e($item->slug) ?>"><?= e($item->title) ?></a></li>
             <?php endforeach; ?>
         </ul>
+        <h2>Passkeys</h2>
+        <form data-passkey-register>
+            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+            <button type="submit">Add a passkey</button>
+            <p data-passkey-status aria-live="polite"></p>
+        </form>
         <?php if ($canInvite): ?>
             <h2>Invite</h2>
             <form method="post" action="/editor/invitations">
@@ -56,5 +62,6 @@
         <?php endif; ?>
     </article>
 </main>
+<script src="/assets/js/passkeys.js" defer></script>
 </body>
 </html>
