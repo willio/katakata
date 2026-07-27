@@ -12,12 +12,12 @@ See [`docs/MASTER_SPECIFICATION.md`](docs/MASTER_SPECIFICATION.md) for
 the full vision, philosophy, and architecture. This README covers only
 what's needed to run what exists today.
 
-## Status: Phase 2 — Rendering
+## Status: Phase 2 — Rendering complete
 
-Phase 0 (Foundation) and Phase 1 (Content Engine) are done. Phase 2 now
-includes dependency-free plain PHP views, safe Markdown-to-HTML
-conversion, canonical article routes, and a chronological archive. Feeds
-and the typography system remain. See [`docs/ROADMAP.md`](docs/ROADMAP.md) and
+Phases 0–2 are complete. Katakata now includes dependency-free plain
+PHP views, safe Markdown-to-HTML conversion, canonical article routes,
+chronological and author archives, RSS and JSON Feed output, and a
+responsive typography-first reading system. See [`docs/ROADMAP.md`](docs/ROADMAP.md) and
 [`docs/subsystems/rendering.md`](docs/subsystems/rendering.md).
 
 ## Requirements
@@ -36,7 +36,8 @@ php bin/katakata serve
 Visit `http://127.0.0.1:8000/` for the homepage,
 `http://127.0.0.1:8000/healthz` for the health check, or a post's
 canonical `/{year}/{month}/{slug}` URL. The complete published archive is
-available at `/archive`.
+available at `/archive`; feeds are available at `/feed.xml` and `/feed.json`,
+and author archives at `/authors/{slug}`.
 
 ## CLI
 
