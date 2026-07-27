@@ -27,7 +27,7 @@ See [`docs/subsystems/content-engine.md`](./subsystems/content-engine.md).
 - [x] Plain PHP view foundation
 - [x] Markdown renderer
 - [x] Canonical article routes and view
-- [ ] Archives
+- [x] Chronological archive
 - [ ] Feeds (RSS, JSON Feed)
 - [ ] Typography system
 
