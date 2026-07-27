@@ -34,12 +34,14 @@ See [`docs/subsystems/content-engine.md`](./subsystems/content-engine.md).
 
 See [`docs/subsystems/rendering.md`](./subsystems/rendering.md).
 
-## Phase 3 — Editorial
+## Phase 3 — Editorial ✅
 
-- [ ] Editor
-- [ ] Revisions
-- [ ] Scheduling
-- [ ] Publishing pipeline
+- [x] Local editor
+- [x] Canonical revisions
+- [x] Scheduling
+- [x] Publishing pipeline
+
+See [`docs/subsystems/editorial.md`](./subsystems/editorial.md).
 
 ## Phase 4 — Distribution
 
