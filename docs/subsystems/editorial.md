@@ -44,4 +44,8 @@ php bin/katakata auth:invite editor@example.com [admin|editor]
 
 Account and invitation state lives at `storage/auth/accounts.json`, outside canonical content. The file is written atomically and restricted to the application user. Sessions rotate on login, use HTTP-only SameSite cookies, and require CSRF tokens for every mutation.
 
-Passkey enrollment and login remain required before Phase 3 is complete. They must follow ADR 0008's WebAuthn verification contract; password authentication is not treated as a passkey fallback implementation.
+Authenticated users enroll passkeys from `/editor`; the login page supports passwordless passkey authentication after an email identifies the invited account. Passkey credentials live at `storage/auth/passkeys.json` and are written atomically with mode `0600`.
+
+WebAuthn ceremonies use five-minute, single-use challenges stored in the session. Verification binds the challenge, account, exact `APP_URL` origin, RP ID, credential ownership, user presence, and user verification. Registration accepts only `none` attestation and P-256 or RSA public keys. Authentication verifies the assertion signature and advances any nonzero authenticator counter. Password login remains the recovery path.
+
+Production passkeys require HTTPS. `http://localhost` remains valid for local WebAuthn development. The PHP OpenSSL extension is required for assertion signatures.
