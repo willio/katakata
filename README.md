@@ -12,9 +12,9 @@ See [`docs/MASTER_SPECIFICATION.md`](docs/MASTER_SPECIFICATION.md) for
 the full vision, philosophy, and architecture. This README covers only
 what's needed to run what exists today.
 
-## Status: Phase 3 — Editorial complete
+## Status: Phase 3 — Editorial in progress
 
-Phases 0–3 are complete. In addition to rendering, Katakata now has a
+Phases 0–2 are complete. Phase 3 is in progress: In addition to rendering, Katakata now has a
 local filesystem editor, canonical revision history, scheduled drafts,
 and an atomic publishing pipeline. See [`docs/ROADMAP.md`](docs/ROADMAP.md)
 and [`docs/subsystems/editorial.md`](docs/subsystems/editorial.md).
