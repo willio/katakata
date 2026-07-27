@@ -40,7 +40,7 @@ $app->singleton(AtomicFile::class, static fn (): AtomicFile => new AtomicFile())
 $app->singleton(
     RevisionStore::class,
     static fn (Application $container): RevisionStore => new RevisionStore(
-        $container->basePath('storage/revisions'),
+        $container->contentPath('revisions'),
         $container->make(AtomicFile::class),
     ),
 );
