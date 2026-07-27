@@ -59,7 +59,7 @@ non-canonical posts return 404.
 ## Archive Route
 
 `/archive` renders every published post in repository order, grouped
-by year. `Katakata\\Rendering\\Archive` prepares that presentation
+by year. `Katakata\Rendering\Archive` prepares that presentation
 shape from the Repository's post collection; it excludes non-published
 posts before the plain PHP view receives them.
 
