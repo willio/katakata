@@ -22,14 +22,15 @@ it's needed.
 
 See [`docs/subsystems/content-engine.md`](./subsystems/content-engine.md).
 
-## Phase 2 — Rendering *current*
+## Phase 2 — Rendering ✅
 
 - [x] Plain PHP view foundation
 - [x] Markdown renderer
 - [x] Canonical article routes and view
 - [x] Chronological archive
-- [ ] Feeds (RSS, JSON Feed)
-- [ ] Typography system
+- [x] Author archives
+- [x] Feeds (RSS, JSON Feed)
+- [x] Typography system
 
 See [`docs/subsystems/rendering.md`](./subsystems/rendering.md).
 
