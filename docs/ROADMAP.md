@@ -12,7 +12,7 @@ it's needed.
 - [x] Routing (minimal `Router`, `routes/web.php`)
 - [x] Documentation (this roadmap, ADRs, README)
 
-## Phase 1 — Content Engine ✅ *current*
+## Phase 1 — Content Engine ✅
 
 - [x] Repository (reads `content/` into structured objects)
 - [x] Indexing (discovery of posts/drafts/authors/assets)
@@ -23,9 +23,9 @@ it's needed.
 See [`docs/subsystems/content-engine.md`](./subsystems/content-engine.md)
 for details.
 
-## Phase 2 — Rendering
+## Phase 2 — Rendering *current*
 
-- [ ] Website (typography-first templates)
+- [~] Website (plain PHP view foundation implemented; article views pending)
 - [ ] Archives
 - [ ] Feeds (RSS, JSON Feed)
 - [ ] Typography system
