@@ -96,7 +96,10 @@ final class Feed
 
     private function plainText(Post $post): string
     {
-        return trim(preg_replace('/\s+/', ' ', strip_tags($this->markdown->render($post->body))) ?? '');
+        $text = strip_tags($this->markdown->render($post->body));
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim(preg_replace('/\s+/', ' ', $text) ?? '');
     }
 
     private function xml(string $value): string
