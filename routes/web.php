@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use Katakata\Auth\AccountStore;
+use Katakata\Auth\Session;
 use Katakata\Content\Repository;
+use Katakata\Editorial\DraftEditor;
+use Katakata\Editorial\Publisher;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\Rendering\Archive;
@@ -92,6 +96,151 @@ $router->get('/{year}/{month}/{slug}', function (
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'bodyHtml' => $app->make(Markdown::class)->render($post->body),
     ]));
+});
+
+$renderAuth = static function (string $mode, ?string $error = null, ?string $token = null) use ($app): Response {
+    $session = $app->make(Session::class);
+
+    return Response::html($app->make(View::class)->render('auth', [
+        'mode' => $mode,
+        'error' => $error,
+        'token' => $token,
+        'csrf' => $session->csrf(),
+    ]), $error === null ? 200 : 422);
+};
+
+$requireUser = static function () use ($app): ?array {
+    return $app->make(Session::class)->user();
+};
+
+$router->get('/login', function (Request $request) use ($renderAuth, $requireUser): Response {
+    return $requireUser() === null ? $renderAuth('login') : Response::redirect('/editor');
+});
+
+$router->post('/login', function (Request $request) use ($app, $renderAuth): Response {
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return $renderAuth('login', 'The form expired. Please try again.');
+    }
+
+    $account = $app->make(AccountStore::class)->authenticate(
+        $request->body['email'] ?? '',
+        $request->body['password'] ?? '',
+    );
+    if ($account === null) {
+        return $renderAuth('login', 'Email or password is incorrect.');
+    }
+
+    $session->login($account);
+    return Response::redirect('/editor');
+});
+
+$router->post('/logout', function (Request $request) use ($app): Response {
+    $session = $app->make(Session::class);
+    if ($session->validCsrf($request->body['csrf'] ?? null)) {
+        $session->logout();
+    }
+
+    return Response::redirect('/login');
+});
+
+$router->get('/register', function (Request $request) use ($renderAuth): Response {
+    return $renderAuth('register', null, $request->query['token'] ?? '');
+});
+
+$router->post('/register', function (Request $request) use ($app, $renderAuth): Response {
+    $session = $app->make(Session::class);
+    $token = $request->body['token'] ?? '';
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return $renderAuth('register', 'The form expired. Please try again.', $token);
+    }
+
+    try {
+        $account = $app->make(AccountStore::class)->accept($token, $request->body['password'] ?? '');
+        if (!hash_equals((string) $account['email'], strtolower(trim($request->body['email'] ?? '')))) {
+            throw new \RuntimeException('Invitation email does not match.');
+        }
+        $session->login($account);
+        return Response::redirect('/editor');
+    } catch (\Throwable $error) {
+        return $renderAuth('register', $error->getMessage(), $token);
+    }
+});
+
+$renderEditor = static function (?\Katakata\Content\Draft $draft = null, ?string $notice = null) use ($app, $requireUser): Response {
+    $user = $requireUser();
+    if ($user === null) {
+        return Response::redirect('/login', 302);
+    }
+
+    return Response::html($app->make(View::class)->render('editor', [
+        'user' => $user,
+        'drafts' => $app->make(Repository::class)->drafts(),
+        'draft' => $draft,
+        'csrf' => $app->make(Session::class)->csrf(),
+        'canInvite' => $app->make(Session::class)->canInvite(),
+        'notice' => $notice,
+    ]));
+};
+
+$router->get('/editor', fn (Request $request): Response => $renderEditor());
+$router->get('/editor/new', fn (Request $request): Response => $renderEditor());
+$router->get('/editor/drafts/{slug}', function (Request $request, string $slug) use ($app, $renderEditor): Response {
+    $draft = $app->make(Repository::class)->findDraft($slug);
+    return $draft === null ? Response::notFound() : $renderEditor($draft);
+});
+
+$router->post('/editor/drafts', function (Request $request) use ($app, $requireUser): Response {
+    if ($requireUser() === null) {
+        return Response::redirect('/login', 302);
+    }
+    if (!$app->make(Session::class)->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::html('Invalid CSRF token.', 419);
+    }
+
+    $slug = $request->body['slug'] ?? '';
+    $existing = $app->make(Repository::class)->findDraft($slug);
+    $meta = $existing?->meta ?? [];
+    unset($meta['title'], $meta['updated_at']);
+    $app->make(DraftEditor::class)->save($slug, $request->body['title'] ?? '', $request->body['body'] ?? '', $meta);
+    $app->make(Repository::class)->refresh();
+
+    return Response::redirect('/editor/drafts/' . rawurlencode($slug));
+});
+
+$router->post('/editor/drafts/{slug}/publish', function (Request $request, string $slug) use ($app, $requireUser): Response {
+    if ($requireUser() === null) {
+        return Response::redirect('/login', 302);
+    }
+    if (!$app->make(Session::class)->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::html('Invalid CSRF token.', 419);
+    }
+
+    $draft = $app->make(Repository::class)->findDraft($slug);
+    if ($draft === null) {
+        return Response::notFound();
+    }
+
+    $app->make(Publisher::class)->publish($draft);
+    $app->make(Repository::class)->refresh();
+    return Response::redirect('/archive');
+});
+
+$router->post('/editor/invitations', function (Request $request) use ($app): Response {
+    $session = $app->make(Session::class);
+    if (!$session->canInvite()) {
+        return Response::html('Forbidden', 403);
+    }
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::html('Invalid CSRF token.', 419);
+    }
+
+    $invite = $app->make(AccountStore::class)->invite(
+        $request->body['email'] ?? '',
+        $request->body['role'] ?? 'editor',
+    );
+    $url = rtrim((string) $app->config()->get('app.url', 'http://localhost:8000'), '/');
+    return Response::html('Invitation: ' . e($url . '/register?token=' . $invite['token']));
 });
 
 $router->get('/healthz', function (Request $request): Response {
