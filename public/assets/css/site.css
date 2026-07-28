@@ -89,6 +89,8 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
     font-size: .75rem;
 }
 
+.editor-status:empty { display: none; }
+
 .editor-settings-toggle {
     position: fixed;
     z-index: 4;
@@ -123,10 +125,35 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
 }
 
 .editor-panel[hidden] { display: none; }
+.editor-panel-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.editor-panel-header h1 { margin: 0; }
+.editor-panel-close {
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 auto;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ink-muted);
+}
+.editor-panel-close:hover { color: var(--ink); }
+.editor-panel-close svg { width: 1.1em; height: 1.1em; stroke: currentColor; }
 .editor-panel h2 { margin-top: 2rem; font-size: 1rem; }
 .editor-panel form, .editor-fields { display: grid; gap: .8rem; }
 .editor-panel label { display: grid; gap: .3rem; font-size: .8rem; }
-.editor-panel input, .editor-panel select { width: 100%; padding: .6rem; border: 1px solid var(--border); background: var(--bg); }
+.editor-panel input, .editor-panel select {
+    width: 100%;
+    padding: .55rem 0;
+    border: 0;
+    border-bottom: 1px dotted var(--ink-muted);
+    border-radius: 0;
+    outline: 0;
+    background: transparent;
+}
+.editor-panel input:focus, .editor-panel select:focus { border-bottom-color: var(--accent); }
 .editor-panel ul { padding-left: 1.2rem; }
 .editor-panel-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
 .editor-notice { color: var(--ink-muted); font-size: .82rem; }
