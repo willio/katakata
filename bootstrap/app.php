@@ -88,6 +88,13 @@ $app->singleton(
     ),
 );
 $app->singleton(
+    DashboardBuzz::class,
+    static fn (Application $container): DashboardBuzz => new DashboardBuzz(
+        $container->make(ThreadsStore::class),
+        (bool) $container->config()->get('threads.enabled', false),
+    ),
+);
+$app->singleton(
     SeoChecker::class,
     static fn (Application $container): SeoChecker => new SeoChecker(
         $container->make(Repository::class),
