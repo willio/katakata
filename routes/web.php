@@ -7,6 +7,7 @@ use Katakata\Auth\Session;
 use Katakata\Auth\WebAuthn;
 use Katakata\Content\Repository;
 use Katakata\Editorial\DraftEditor;
+use Katakata\Editorial\DraftVersion;
 use Katakata\Editorial\Publisher;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
@@ -96,6 +97,7 @@ $router->get('/{year}/{month}/{slug}', function (
         'author' => $author,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'bodyHtml' => $app->make(Markdown::class)->render($post->body),
+        'authorBioHtml' => $author?->bio === null ? null : $app->make(Markdown::class)->render($author->bio),
     ]));
 });
 
@@ -182,6 +184,7 @@ $renderEditor = static function (?\Katakata\Content\Draft $draft = null, ?string
         'csrf' => $app->make(Session::class)->csrf(),
         'canInvite' => $app->make(Session::class)->canInvite(),
         'notice' => $notice,
+        'draftVersion' => $draft === null ? '' : DraftVersion::of($draft),
     ]));
 };
 
@@ -208,6 +211,45 @@ $router->post('/editor/drafts', function (Request $request) use ($app, $requireU
     $app->make(Repository::class)->refresh();
 
     return Response::redirect('/editor/drafts/' . rawurlencode($slug));
+});
+
+$router->post('/editor/drafts/{slug}/autosave', function (Request $request, string $slug) use ($app, $requireUser): Response {
+    if ($requireUser() === null) {
+        return Response::json(['error' => 'Authentication required.'], 401);
+    }
+    if (!$app->make(Session::class)->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::json(['error' => 'Invalid CSRF token.'], 419);
+    }
+
+    $existing = $app->make(Repository::class)->findDraft($slug);
+    if ($existing === null || !hash_equals($slug, $request->body['slug'] ?? '')) {
+        return Response::json(['error' => 'Draft was not found.'], 404);
+    }
+
+    try {
+        $meta = $existing->meta;
+        unset($meta['title'], $meta['updated_at']);
+        $app->make(DraftEditor::class)->save(
+            $slug,
+            $request->body['title'] ?? '',
+            $request->body['body'] ?? '',
+            $meta,
+        );
+        $repository = $app->make(Repository::class);
+        $repository->refresh();
+        $saved = $repository->findDraft($slug);
+        if ($saved === null) {
+            throw new RuntimeException('Saved draft could not be reloaded.');
+        }
+
+        return Response::json([
+            'version' => DraftVersion::of($saved),
+            'updated_at' => $saved->updatedAt?->format(DATE_ATOM),
+            'client_version' => $request->body['client_version'] ?? '',
+        ]);
+    } catch (Throwable $error) {
+        return Response::json(['error' => $error->getMessage()], 422);
+    }
 });
 
 $router->post('/editor/drafts/{slug}/publish', function (Request $request, string $slug) use ($app, $requireUser): Response {
