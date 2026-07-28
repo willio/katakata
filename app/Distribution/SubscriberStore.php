@@ -135,6 +135,25 @@ final class SubscriberStore
         return $active;
     }
 
+    /** @return list<array{email: string, unsubscribe_token: string}> */
+    public function deliverable(): array
+    {
+        $subscribers = [];
+        foreach ($this->read()['subscribers'] as $id => $subscriber) {
+            if (!is_array($subscriber) || ($subscriber['status'] ?? null) !== 'active') {
+                continue;
+            }
+            $email = (string) ($subscriber['email'] ?? '');
+            $subscribers[] = [
+                'email' => $email,
+                'unsubscribe_token' => $this->unsubscribeToken((string) $id, $email),
+            ];
+        }
+
+        usort($subscribers, static fn (array $a, array $b): int => strcmp($a['email'], $b['email']));
+        return $subscribers;
+    }
+
     private function email(string $email): string
     {
         $email = strtolower(trim($email));
