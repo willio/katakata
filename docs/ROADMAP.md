@@ -52,9 +52,9 @@ This is the immediate build priority. It gives the owner a useful home view
 and establishes privacy-bounded operational insight before more downstream
 distribution providers increase system activity.
 
-1. [ ] Add the SQLite analytics store, schema boot, and deployment check.
-2. [ ] Record privacy-bounded visits without persisting raw IP addresses.
-3. [ ] Add summary queries and the 400-day prune command.
+1. [x] Add the SQLite analytics store, schema boot, and deployment check.
+2. [x] Record privacy-bounded visits without persisting raw IP addresses.
+3. [x] Add summary queries and the 400-day prune command.
 4. [ ] Add reproducible SEO checks and `seo:check`.
 5. [ ] Build the content-backed dashboard shell: published count, draft count,
    recent drafts, and latest posts.
@@ -63,7 +63,8 @@ distribution providers increase system activity.
    verified.
 8. [ ] Add The Buzz after the Threads read adapter exists.
 
-See [`docs/subsystems/dashboard.md`](./subsystems/dashboard.md) and
+See [`docs/subsystems/dashboard.md`](./subsystems/dashboard.md),
+[`docs/subsystems/analytics.md`](./subsystems/analytics.md), and
 [ADR 0009](./adr/0009-sqlite-analytics-seo.md).
 
 ## Phase 5 — Distribution 🚧
