@@ -16,6 +16,7 @@ use Katakata\Editorial\RevisionStore;
 use Katakata\Editorial\Scheduler;
 use Katakata\Distribution\Distributor;
 use Katakata\Http\Router;
+use Katakata\Seo\SeoChecker;
 
 /**
  * A deliberately small CLI dispatcher.
@@ -48,6 +49,7 @@ final class Application
         $this->commands['distribution:publish'] = fn (array $args): int => $this->distributionPublish($args);
         $this->commands['analytics:check'] = fn (): int => $this->analyticsCheck();
         $this->commands['analytics:prune'] = fn (): int => $this->analyticsPrune();
+        $this->commands['seo:check'] = fn (): int => $this->seoCheck();
     }
 
     /**
@@ -345,6 +347,22 @@ final class Application
             fwrite(STDERR, $error->getMessage() . "\n");
             return 1;
         }
+    }
+
+    private function seoCheck(): int
+    {
+        $summary = $this->app->make(SeoChecker::class)->check();
+        if ($summary->passed()) {
+            fwrite(STDOUT, "SEO checks passed.\n");
+            return 0;
+        }
+
+        fwrite(STDERR, count($summary->issues) . " SEO issue(s):\n");
+        foreach ($summary->issues as $issue) {
+            fwrite(STDERR, "  {$issue->slug} [{$issue->type}] {$issue->message}\n");
+        }
+
+        return 1;
     }
 
     private function revisionsList(array $args): int
