@@ -35,7 +35,7 @@ final class DashboardAnalytics
             return [];
         }
 
-        $titles = ['/'=> 'Home', '/archive' => 'Archive'];
+        $titles = ['/' => 'Home', '/archive' => 'Archive'];
         foreach ($this->repository->posts() as $post) {
             $titles[$post->url()] = $post->title;
         }
