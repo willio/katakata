@@ -14,7 +14,10 @@ use Katakata\Editorial\Editor;
 use Katakata\Editorial\Publisher;
 use Katakata\Editorial\RevisionStore;
 use Katakata\Editorial\Scheduler;
+use Katakata\Distribution\Distributor;
+use Katakata\Distribution\NewsletterAdapter;
 use Katakata\Http\Router;
+use Katakata\Rendering\Markdown;
 use Katakata\Support\DotEnv;
 use Katakata\View;
 
@@ -109,6 +112,21 @@ $app->singleton(
     ),
 );
 $app->singleton(Scheduler::class, static fn (): Scheduler => new Scheduler());
+$app->singleton(
+    NewsletterAdapter::class,
+    static fn (Application $container): NewsletterAdapter => new NewsletterAdapter(
+        $container->storagePath('distribution/newsletter'),
+        (string) $container->config()->get('app.url', 'http://localhost:8000'),
+        $container->make(Markdown::class),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    Distributor::class,
+    static fn (Application $container): Distributor => new Distributor([
+        $container->make(NewsletterAdapter::class),
+    ]),
+);
 
 $app->singleton(
     View::class,
