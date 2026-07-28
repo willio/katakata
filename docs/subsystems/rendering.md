@@ -80,13 +80,15 @@ derived from the same published Post collection, preserve repository order,
 exclude drafts, and build absolute canonical item URLs from `app.url`.
 RSS values use XML escaping; JSON Feed bodies use renderer-sanitized HTML.
 
-## Typography
+## Typography and color
 
-`public/assets/css/site.css` provides the shared, responsive reading system
-for the homepage, articles, chronological archive, and author archives. It
-uses system-available serif and sans-serif stacks, requires no JavaScript or
-external font request, respects reduced-motion preferences, and keeps the
-reading measure narrow.
+`public/assets/css/site.css` implements `docs/design_specification.md`: a 68ch
+reading measure, serif body, sans-serif orientation chrome, the canonical paper
+palette, and the Nord dark palette through `prefers-color-scheme`. It requires
+no external font request. The unresolved manual theme override remains deferred
+rather than choosing cookie or localStorage persistence implicitly.
+
+Article footers contain only author context and archive/feed navigation.
 
 ## Escaping
 
