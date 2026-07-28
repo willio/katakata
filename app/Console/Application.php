@@ -16,6 +16,7 @@ use Katakata\Editorial\RevisionStore;
 use Katakata\Editorial\Scheduler;
 use Katakata\Distribution\Distributor;
 use Katakata\Distribution\MailQueue;
+use Katakata\Distribution\NewsletterDispatcher;
 use Katakata\Http\Router;
 use Katakata\Seo\SeoChecker;
 
@@ -49,6 +50,7 @@ final class Application
         $this->commands['revisions:list'] = fn (array $args): int => $this->revisionsList($args);
         $this->commands['distribution:publish'] = fn (array $args): int => $this->distributionPublish($args);
         $this->commands['mail:work'] = fn (array $args): int => $this->mailWork($args);
+        $this->commands['newsletter:dispatch'] = fn (array $args): int => $this->newsletterDispatch($args);
         $this->commands['analytics:check'] = fn (): int => $this->analyticsCheck();
         $this->commands['analytics:prune'] = fn (): int => $this->analyticsPrune();
         $this->commands['seo:check'] = fn (): int => $this->seoCheck();
@@ -259,7 +261,17 @@ final class Application
             return 1;
         }
 
-        $this->app->make(Repository::class)->refresh();
+        $repository = $this->app->make(Repository::class);
+        $repository->refresh();
+        $post = $repository->findPost($draft->slug);
+        if ($post !== null) {
+            try {
+                $queued = $this->app->make(NewsletterDispatcher::class)->dispatch($post)['queued'];
+                fwrite(STDOUT, "Newsletter: {$queued} message(s) queued.\n");
+            } catch (\Throwable $error) {
+                fwrite(STDERR, "Newsletter queue failed: {$error->getMessage()}\n");
+            }
+        }
         fwrite(STDOUT, "Published {$path}\n");
         return 0;
     }
@@ -275,6 +287,17 @@ final class Application
         }
 
         $repository->refresh();
+        foreach ($due as $draft) {
+            $post = $repository->findPost($draft->slug);
+            if ($post === null) {
+                continue;
+            }
+            try {
+                $this->app->make(NewsletterDispatcher::class)->dispatch($post);
+            } catch (\Throwable $error) {
+                fwrite(STDERR, "Newsletter queue failed for {$draft->slug}: {$error->getMessage()}\n");
+            }
+        }
         fwrite(STDOUT, count($due) . " scheduled draft(s) published.\n");
         return 0;
     }
@@ -313,6 +336,28 @@ final class Application
         }
 
         return $failed ? 1 : 0;
+    }
+
+    /** @param array<int, string> $args */
+    private function newsletterDispatch(array $args): int
+    {
+        $slug = $args[0] ?? '';
+        if ($slug === '') {
+            return $this->usage('newsletter:dispatch <post-slug>');
+        }
+        $post = $this->app->make(Repository::class)->findPost($slug);
+        if ($post === null || !$post->isPublished()) {
+            fwrite(STDERR, "Published post [{$slug}] not found.\n");
+            return 1;
+        }
+        try {
+            $result = $this->app->make(NewsletterDispatcher::class)->dispatch($post);
+            fwrite(STDOUT, "{$result['queued']} newsletter message(s) queued.\n");
+            return 0;
+        } catch (\Throwable $error) {
+            fwrite(STDERR, $error->getMessage() . "\n");
+            return 1;
+        }
     }
 
     /** @param array<int, string> $args */
