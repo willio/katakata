@@ -11,6 +11,7 @@ use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Editorial\DraftEditor;
 use Katakata\Editorial\DraftVersion;
 use Katakata\Editorial\Publisher;
+use Katakata\Distribution\SubscriberStore;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\Rendering\Archive;
@@ -83,6 +84,80 @@ $router->get('/feed.json', function (Request $request) use ($app): Response {
     );
 
     return new Response($feed, 200, ['Content-Type' => 'application/feed+json; charset=utf-8']);
+});
+
+
+$renderNewsletter = static function (
+    string $mode = 'subscribe',
+    ?string $message = null,
+    ?string $error = null,
+    ?string $token = null,
+) use ($app): Response {
+    return Response::html($app->make(View::class)->render('newsletter', [
+        'mode' => $mode,
+        'message' => $message,
+        'error' => $error,
+        'token' => $token,
+        'csrf' => $app->make(Session::class)->csrf(),
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+    ]), $error === null ? 200 : 422);
+};
+
+$router->get('/newsletter', fn (Request $request): Response => $renderNewsletter());
+
+$router->post('/newsletter/subscribe', function (Request $request) use ($app, $renderNewsletter): Response {
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return $renderNewsletter('subscribe', null, 'Email subscription form expired. Please try again.');
+    }
+
+    try {
+        $app->make(SubscriberStore::class)->request($request->body['email'] ?? '');
+    } catch (\InvalidArgumentException) {
+        return $renderNewsletter('subscribe', null, 'Email is invalid. Please enter a valid address.');
+    } catch (\Throwable) {
+        // Deliberately hide whether the address already exists.
+    }
+
+    return $renderNewsletter(
+        'pending',
+        'Check your email for a confirmation link. Your subscription is not active until you confirm it.',
+    );
+});
+
+$router->get('/newsletter/confirm', function (Request $request) use ($app, $renderNewsletter): Response {
+    try {
+        $app->make(SubscriberStore::class)->confirm($request->query['token'] ?? '');
+        return $renderNewsletter('confirmed', 'You are subscribed.');
+    } catch (\Throwable) {
+        return $renderNewsletter('confirmed', null, 'Confirmation link is invalid or expired.');
+    }
+});
+
+$router->get('/newsletter/unsubscribe', function (Request $request) use ($renderNewsletter): Response {
+    $token = $request->query['token'] ?? '';
+    return $token === ''
+        ? $renderNewsletter('unsubscribe', null, 'Unsubscribe link is invalid.')
+        : $renderNewsletter('unsubscribe', null, null, $token);
+});
+
+$router->post('/newsletter/unsubscribe', function (Request $request) use ($app, $renderNewsletter): Response {
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return $renderNewsletter(
+            'unsubscribe',
+            null,
+            'Unsubscribe form expired. Please try again.',
+            $request->body['token'] ?? '',
+        );
+    }
+
+    try {
+        $app->make(SubscriberStore::class)->unsubscribe($request->body['token'] ?? '');
+        return $renderNewsletter('unsubscribed', 'You have been unsubscribed.');
+    } catch (\Throwable) {
+        return $renderNewsletter('unsubscribe', null, 'Unsubscribe link is invalid.');
+    }
 });
 
 $router->get('/{year}/{month}/{slug}', function (
