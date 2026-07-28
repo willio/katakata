@@ -1,7 +1,6 @@
 # Subsystem: Dashboard (Owner's View)
 
-Phase: 4 (Dashboard and Analytics) — with one dependency on a not-yet-designed
-analytics subsystem, flagged below rather than assumed.
+Phase: 4 (Dashboard and Analytics)
 
 ## Purpose
 
@@ -12,33 +11,15 @@ the Editor itself. Per the Master Specification's "Calm software"
 principle, every card on this screen must justify its presence; this
 is not a place to accumulate widgets.
 
-## Before this can be fully built
+## Remaining dependency
 
-Two things need explicit decisions this document does not make:
+ADR 0009 and `docs/subsystems/analytics.md` now define the SQLite store,
+privacy-bounded recording, summary queries, and retention. The dashboard can
+consume `AnalyticsSummary` without knowing how it is stored.
 
-1. **Analytics storage.** Visit logs and a visitor map require
-   capturing and storing request-level data somewhere. Katakata has
-   no database (ADR 0001) and is static-first (ADR 0003). Realistic
-   options — a flat append-only log file parsed on demand, a small
-   embedded store (SQLite) as an explicit exception to "no database
-   of record," or a third-party analytics service (Plausible,
-   Fathom) consumed via API — are an architectural decision, not a
-   dashboard-layout decision. **This needs its own ADR before
-   implementation begins.** The spec below assumes the Dashboard
-   consumes an `AnalyticsSummary` value object from wherever that
-   decision lands; the Dashboard itself does not know or care how
-   it's computed.
-2. **IP geolocation for the visitor map** is a data-handling and
-   privacy decision (what's logged, retained, and for how long) that
-   the Master Specification's "Security" section ("least privilege,
-   secure defaults") requires be made deliberately, with a stated
-   retention policy — not defaulted into because a map widget looks
-   good. Flagging so it isn't decided implicitly by whichever
-   analytics library gets picked first.
-
-Everything else below — layout, data contracts already backed by
-existing subsystems (Repository, Threads sync per ADR 0004) — is
-buildable now.
+IP-to-region derivation remains deliberately unresolved. The visitor map
+must wait until its source, precision, disclosure copy, and retention
+implications are approved. Region fields therefore remain nullable.
 
 ## Layout
 
@@ -68,7 +49,7 @@ commitment to computing and displaying that number forever):
 
 | Card | Content | Source |
 |---|---|---|
-| Visitors (7d) | Total + trend vs. prior 7d | `AnalyticsSummary` (undecided store) |
+| Visitors (7d) | Total + trend vs. prior 7d | `AnalyticsSummary` (SQLite, ADR 0009) |
 | Published posts | Total count | `Repository::posts()` — exists today |
 | Drafts in progress | Total count | `Repository::drafts()` — exists today |
 | Threads replies (7d) | Total across synced discussions | Threads sync metadata (ADR 0004) |
@@ -83,9 +64,8 @@ this small).
 Two columns on desktop, stacked on narrow viewports.
 
 - **Visitor map:** a world/region map, dots or heat regions sized by
-  visit count. Depends entirely on the analytics decision above —
-  this section is a placeholder contract (`AnalyticsSummary.regions:
-  array<{region, count}>`) until that ADR exists.
+  visit count. Consumes `AnalyticsSummary.regions`, but remains hidden until region
+  derivation and disclosure copy are approved.
 - **Recent visits:** a plain log table — timestamp, page (article
   title, not raw path), referrer if available, country/region (not
   precise IP). Last 10–20 entries, "view all" link if a fuller log
@@ -126,8 +106,7 @@ Two columns on desktop, stacked on narrow viewports.
   today. Empty state: a quiet prompt toward the New Post CTA, not an
   empty box.
 - **Top Posts:** defaults to **latest published**, not "most
-  visited" — per your spec, "defaults to latest." Once the analytics
-  decision lands, this can offer a toggle (Latest / Most visited),
+  visited" — per your spec, "defaults to latest." Analytics can later support a toggle (Latest / Most visited),
   but the default view must never require analytics to be configured
   to show something useful. Backed by `Repository::posts()` today for
   the default state.
@@ -155,7 +134,7 @@ doesn't blur during implementation:
 | Author invites (multi-author, per Master Spec) | Post-specific Threads publication toggle |
 | Threads account connection (per-author identity, ADR 0004) | — |
 | Site-wide config (site name, tagline — `config/app.php`-level) | — |
-| Newsletter service connection (Phase 4) | — |
+| Newsletter service connection (Phase 5) | — |
 
 Global Settings never edits post content or per-post metadata.
 Per-post settings never touches account/site-wide configuration. If a
@@ -164,11 +143,11 @@ posts"), it belongs in global Settings as a *default*, with the
 per-post Editor able to override it for that one post — global
 settings set defaults, they don't reach into individual posts.
 
-## Data contracts needed (new)
+## Data contracts
 
-None of these exist in `app/Content/` yet. Listed so Phase 3
-implementation has a concrete starting checklist rather than
-inferring shapes from this prose:
+`AnalyticsSummary` and `RecentVisit` now exist under `app/Analytics/`.
+The remaining shapes stay explicit so later slices do not infer them from
+layout prose:
 
 ```
 AnalyticsSummary {
