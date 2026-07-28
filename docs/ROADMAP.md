@@ -55,8 +55,8 @@ distribution providers increase system activity.
 1. [x] Add the SQLite analytics store, schema boot, and deployment check.
 2. [x] Record privacy-bounded visits without persisting raw IP addresses.
 3. [x] Add summary queries and the 400-day prune command.
-4. [ ] Add reproducible SEO checks and `seo:check`.
-5. [ ] Build the content-backed dashboard shell: published count, draft count,
+4. [x] Add reproducible SEO checks and `seo:check`.
+5. [x] Build the content-backed dashboard shell: published count, draft count,
    recent drafts, and latest posts.
 6. [ ] Add visits, trends, recent visits, and regional aggregates.
 7. [ ] Add the visitor map only after region derivation and disclosure copy are
