@@ -74,8 +74,20 @@ php bin/katakata mail:work [limit]
 ```
 
 The transport contract is provider-independent. The default filesystem transport
-writes local delivery artifacts under `storage/distribution/mail/sent`; a
-production provider implements the same `EmailTransport` interface.
+writes local delivery artifacts under `storage/distribution/mail/sent`.
+
+Production delivery uses Resend without changing queue or subscriber semantics:
+
+```env
+MAIL_TRANSPORT=resend
+MAIL_FROM=Katakata <letters@example.com>
+RESEND_API_KEY=re_...
+```
+
+`MAIL_FROM` must use a sender on a verified Resend domain. The adapter sends
+HTML and plain text to `POST /emails`, forwards the queue idempotency key, and
+turns non-success or malformed provider responses into ordinary retryable queue
+failures. Keep `MAIL_TRANSPORT=filesystem` for local development.
 
 ## Durable delivery
 
@@ -105,8 +117,8 @@ php bin/katakata mail:work
 
 ## Deliberate limits
 
-- The default transport is a local filesystem sink; no production email provider
-  or provider credentials are selected yet.
+- Resend is the production transport; delivery still requires a verified sender,
+  API key, and a continuously scheduled `mail:work` process.
 - Failed queue creation is reported by CLI publication and isolated from
   canonical publication; operators can safely rerun `newsletter:dispatch`.
 - Threads credentials and official API calls are not implemented.
