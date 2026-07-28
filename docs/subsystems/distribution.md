@@ -115,12 +115,37 @@ php bin/katakata newsletter:dispatch <post-slug>
 php bin/katakata mail:work
 ```
 
+## Threads publish and reply sync
+
+Threads remains opt-in and uses the official Threads API behind `ThreadsApi`.
+Publishing creates a text container from the canonical Post and canonical URL,
+publishes it, then records the returned media id in
+`storage/distribution/threads.json`. Reply sync reads only mapped media,
+isolates failures per post, and writes a rebuildable reply cache for the
+Dashboard's read-only Buzz view.
+
+```env
+THREADS_ENABLED=true
+THREADS_USER_ID=...
+THREADS_ACCESS_TOKEN=...
+```
+
+With Threads enabled, publish explicitly using:
+
+```bash
+php bin/katakata distribution:publish <post-slug> threads
+```
+
+The access token is never written to generated state. Missing or invalid
+credentials fail only the Threads delivery; canonical publication and other
+channels remain unaffected.
+
 ## Deliberate limits
 
 - Resend is the production transport; delivery still requires a verified sender,
   API key, and a continuously scheduled `mail:work` process.
 - Failed queue creation is reported by CLI publication and isolated from
   canonical publication; operators can safely rerun `newsletter:dispatch`.
-- Threads credentials and official API calls are not implemented.
+- OAuth connection UI, token refresh, reply-sync scheduling, and the Dashboard Buzz presentation remain subsequent slices.
 - Automatic dispatch after publication waits for a durable retry boundary so a
   downstream failure cannot affect canonical publication.
