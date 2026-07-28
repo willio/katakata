@@ -6,8 +6,10 @@
     --ink-muted: #6b6963;
     --border: #e4e1d8;
     --accent: #3d6e5c;
-    --btn-bg: #b9c6e3;
-    --btn-ink: #22314f;
+    --btn-bg: #4c566a;
+    --btn-ink: #eceff4;
+    --error-light: #b3543f;
+    --error: var(--error-light);
     --font-serif: "Source Serif 4", Charter, Georgia, serif;
     --font-sans: Inter, -apple-system, "Segoe UI", sans-serif;
     --font-mono: "iA Writer Mono", "JetBrains Mono", "SF Mono", Menlo, monospace;
@@ -25,6 +27,8 @@
         --accent: #88c0d0;
         --btn-bg: #ebcb8b;
         --btn-ink: #2e3440;
+        --error-dark: #bf616a;
+        --error: var(--error-dark);
     }
 }
 
@@ -77,14 +81,47 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
 
 .auth-shell { width: min(100% - 2rem, 30rem); margin: clamp(3rem, 10vh, 8rem) auto; font-family: var(--font-sans); }
 .auth-shell form { display: grid; gap: 1rem; }
-.auth-shell label { display: grid; gap: .35rem; }
-.auth-shell input, .auth-shell select { width: 100%; padding: .7rem; border: 1px solid var(--border); background: var(--surface); }
-.auth-shell button, .editor-panel button {
-    padding: .65rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--surface);
+.auth-shell hr { margin: 2rem 0; border: 0; border-top: 1px dotted var(--border); }
+.field { position: relative; }
+.field-control { position: relative; }
+.field label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
+.field input, .field select {
+    width: 100%;
+    padding: .65rem 2rem .65rem 0;
+    border: 0;
+    border-bottom: 1px dotted var(--border);
+    border-radius: 0;
+    outline: 0;
+    background: transparent;
+    font-family: var(--font-sans);
+}
+.field input:focus, .field select:focus { border-bottom-color: var(--accent); }
+.field input:disabled, .field select:disabled { opacity: .5; }
+.field-clear {
+    position: absolute;
+    right: 0;
+    bottom: .55rem;
+    display: grid;
+    width: 1.35rem;
+    height: 1.35rem;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ink-muted);
+}
+.field-clear[hidden] { display: none; }
+.field-clear svg { width: 1em; height: 1em; stroke: currentColor; }
+.field-error { margin: .35rem 0 0; color: var(--error); font: .75rem/1.4 var(--font-sans); }
+.auth-shell .form-actions { margin-block: 1.5rem; }
 
 .editor-page { min-height: 100svh; background: var(--bg); font-family: var(--font-mono); }
 .editor-status {
