@@ -43,6 +43,6 @@ final readonly class VisitRecorder
     {
         $value = trim((string) $value);
 
-        return $value === '' ? null : mb_substr($value, 0, 2048);
+        return $value === '' ? null : substr($value, 0, 2048);
     }
 }
