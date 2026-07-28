@@ -55,6 +55,8 @@ php bin/katakata revisions:list <slug>
 php bin/katakata auth:owner <email> <password>
 php bin/katakata auth:invite <email> [admin|editor]
 php bin/katakata distribution:publish <post-slug> [newsletter]
+php bin/katakata analytics:check
+php bin/katakata analytics:prune
 ```
 
 ## Tests
@@ -64,6 +66,10 @@ composer install
 composer test
 # or: vendor/bin/phpunit
 ```
+
+Set `ANALYTICS_SECRET` (or `APP_KEY`) in `.env`, then run
+`php bin/katakata analytics:check` during deployment. Visit recording is
+failure-isolated and never stores raw IP addresses.
 
 The application itself never requires Composer's autoloader to run.
 
