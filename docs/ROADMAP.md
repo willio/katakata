@@ -58,8 +58,8 @@ distribution providers increase system activity.
 4. [x] Add reproducible SEO checks and `seo:check`.
 5. [x] Build the content-backed dashboard shell: published count, draft count,
    recent drafts, and latest posts.
-6. [ ] Add visits, trends, recent visits, and regional aggregates.
-7. [ ] Add the visitor map only after region derivation and disclosure copy are
+6. [x] Add visits, trends, and recent visits with failure-isolated analytics loading.
+7. [ ] Add regional aggregates and the visitor map only after region derivation and disclosure copy are
    verified.
 8. [ ] Add The Buzz after the Threads read adapter exists.
 
