@@ -47,7 +47,9 @@ MD);
         self::assertSame('Site page', $recent[0]['page']);
         self::assertSame('First article', $recent[1]['page']);
 
-        unlink($root . '/analytics.sqlite');
+        foreach (glob($root . '/analytics.sqlite*') ?: [] as $databaseFile) {
+            unlink($databaseFile);
+        }
         unlink($root . '/posts/2026/07/260728_first.md');
         rmdir($root . '/posts/2026/07');
         rmdir($root . '/posts/2026');
