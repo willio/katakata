@@ -7,6 +7,7 @@
     const status = document.querySelector('[data-save-status]');
     const panel = document.querySelector('[data-editor-panel]');
     const toggle = document.querySelector('[data-settings-toggle]');
+    const close = document.querySelector('[data-settings-close]');
     const slug = editor.dataset.draftId;
     const endpoint = editor.dataset.autosaveUrl;
     const storageKey = slug ? `katakata:draft:${slug}` : null;
@@ -16,7 +17,9 @@
     let bufferTimer = null;
     let saving = false;
 
-    const setStatus = (text) => { status.textContent = text; };
+    const setStatus = (text) => {
+        status.textContent = ['Saving…', 'Saved', 'Not saved'].includes(text) ? '' : text;
+    };
     const readBuffer = () => {
         if (!storageKey) return null;
         try { return JSON.parse(localStorage.getItem(storageKey)); } catch { return null; }
@@ -110,11 +113,14 @@
     window.addEventListener('online', () => { setStatus('Saving…'); void sync(); });
     window.addEventListener('offline', () => setStatus('Not saved — offline'));
 
-    toggle?.addEventListener('click', () => {
-        const opening = panel.hasAttribute('hidden');
+    const setPanelOpen = (opening) => {
         panel.toggleAttribute('hidden', !opening);
-        toggle.setAttribute('aria-expanded', String(opening));
-    });
+        toggle?.setAttribute('aria-expanded', String(opening));
+        if (opening) close?.focus();
+        else toggle?.focus();
+    };
+    toggle?.addEventListener('click', () => setPanelOpen(panel.hasAttribute('hidden')));
+    close?.addEventListener('click', () => setPanelOpen(false));
     document.addEventListener('keydown', (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === ',') {
             event.preventDefault();
