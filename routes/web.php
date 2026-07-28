@@ -16,6 +16,7 @@ use Katakata\Rendering\Archive;
 use Katakata\Rendering\AuthorArchive;
 use Katakata\Rendering\Feed;
 use Katakata\Rendering\Markdown;
+use Katakata\Seo\SeoChecker;
 use Katakata\View;
 
 /**
@@ -127,7 +128,7 @@ $requireUser = static function () use ($app): ?array {
 };
 
 $router->get('/login', function (Request $request) use ($renderAuth, $requireUser): Response {
-    return $requireUser() === null ? $renderAuth('login') : Response::redirect('/editor');
+    return $requireUser() === null ? $renderAuth('login') : Response::redirect('/dashboard');
 });
 
 $router->post('/login', function (Request $request) use ($app, $renderAuth): Response {
@@ -145,7 +146,7 @@ $router->post('/login', function (Request $request) use ($app, $renderAuth): Res
     }
 
     $session->login($account);
-    return Response::redirect('/editor');
+    return Response::redirect('/dashboard');
 });
 
 $router->post('/logout', function (Request $request) use ($app): Response {
@@ -175,10 +176,35 @@ $router->post('/register', function (Request $request) use ($app, $renderAuth): 
             $request->body['password'] ?? '',
         );
         $session->login($account);
-        return Response::redirect('/editor');
+        return Response::redirect('/dashboard');
     } catch (\Throwable $error) {
         return $renderAuth('register', $error->getMessage(), $token);
     }
+});
+
+$router->get('/dashboard', function (Request $request) use ($app, $requireUser): Response {
+    $user = $requireUser();
+    if ($user === null) {
+        return Response::redirect('/login', 302);
+    }
+
+    $repository = $app->make(Repository::class);
+    $posts = $repository->posts()->all();
+    $drafts = $repository->drafts()->all();
+    usort($drafts, static function ($left, $right): int {
+        return ($right->updatedAt?->getTimestamp() ?? 0) <=> ($left->updatedAt?->getTimestamp() ?? 0);
+    });
+
+    return Response::html($app->make(View::class)->render('dashboard', [
+        'user' => $user,
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'publishedCount' => count($posts),
+        'draftCount' => count($drafts),
+        'recentDrafts' => array_slice($drafts, 0, 5),
+        'latestPosts' => array_slice($posts, 0, 5),
+        'seo' => $app->make(SeoChecker::class)->check(),
+        'csrf' => $app->make(Session::class)->csrf(),
+    ]));
 });
 
 $renderEditor = static function (?\Katakata\Content\Draft $draft = null, ?string $notice = null) use ($app, $requireUser): Response {
