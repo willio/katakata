@@ -17,7 +17,7 @@ $hasDraft = $draft !== null;
     <link rel="stylesheet" href="/assets/css/site.css">
 </head>
 <body class="editor-page">
-<p class="editor-status" data-save-status aria-live="polite"><?= $hasDraft ? 'Saved' : 'Not saved' ?></p>
+<p class="editor-status" data-save-status aria-live="polite"></p>
 <button class="editor-settings-toggle" type="button" data-settings-toggle aria-label="Open settings" aria-controls="editor-panel" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
@@ -40,7 +40,14 @@ $hasDraft = $draft !== null;
         <textarea name="body" aria-label="Markdown draft" placeholder="Begin writing…" autofocus><?= e($draft?->body ?? '') ?></textarea>
 
         <aside class="editor-panel" id="editor-panel" data-editor-panel hidden>
-            <h1>Settings</h1>
+            <header class="editor-panel-header">
+                <h1>Settings</h1>
+                <button class="editor-panel-close" type="button" data-settings-close aria-label="Close settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M18 6 6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </header>
             <?php if ($notice !== null): ?><p class="editor-notice" role="status"><?= e($notice) ?></p><?php endif; ?>
             <div class="editor-fields">
                 <label>Slug <input name="slug" value="<?= e($draft?->slug ?? '') ?>" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required <?= $hasDraft ? 'readonly' : '' ?>></label>
