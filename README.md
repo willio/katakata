@@ -12,9 +12,9 @@ See [`docs/MASTER_SPECIFICATION.md`](docs/MASTER_SPECIFICATION.md) for
 the full vision, philosophy, and architecture. This README covers only
 what's needed to run what exists today.
 
-## Status: Phase 3 — Editorial complete
+## Status: Phase 4 — Distribution in progress
 
-Phases 0–3 are complete. Katakata now has a protected browser editor,
+Phases 0–3 are complete. Phase 4 now has a failure-isolated adapter boundary and provider-neutral newsletter outbox. Katakata also has a protected browser editor,
 invite-only email/password accounts, WebAuthn passkeys, a local filesystem
 editor, canonical revision history, scheduled drafts, and an atomic publishing pipeline. See [`docs/ROADMAP.md`](docs/ROADMAP.md)
 and [`docs/subsystems/editorial.md`](docs/subsystems/editorial.md).
@@ -54,6 +54,7 @@ php bin/katakata publish:due
 php bin/katakata revisions:list <slug>
 php bin/katakata auth:owner <email> <password>
 php bin/katakata auth:invite <email> [admin|editor]
+php bin/katakata distribution:publish <post-slug> [newsletter]
 ```
 
 ## Tests
