@@ -17,7 +17,11 @@ use Katakata\Editorial\Editor;
 use Katakata\Editorial\Publisher;
 use Katakata\Editorial\RevisionStore;
 use Katakata\Editorial\Scheduler;
+use Katakata\Distribution\ConfirmationMailer;
 use Katakata\Distribution\Distributor;
+use Katakata\Distribution\EmailTransport;
+use Katakata\Distribution\FilesystemEmailTransport;
+use Katakata\Distribution\MailQueue;
 use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Distribution\NewsletterAdapter;
 use Katakata\Distribution\SubscriberStore;
@@ -160,6 +164,29 @@ $app->singleton(
         (string) $container->config()->get('app.url', 'http://localhost:8000'),
         $container->make(Markdown::class),
         $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    EmailTransport::class,
+    static fn (Application $container): EmailTransport => new FilesystemEmailTransport(
+        $container->storagePath('distribution/mail/sent'),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    MailQueue::class,
+    static fn (Application $container): MailQueue => new MailQueue(
+        $container->storagePath('distribution/mail/queue'),
+        $container->make(EmailTransport::class),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    ConfirmationMailer::class,
+    static fn (Application $container): ConfirmationMailer => new ConfirmationMailer(
+        $container->make(MailQueue::class),
+        (string) $container->config()->get('app.url', 'http://localhost:8000'),
+        (string) $container->config()->get('app.name', 'Katakata'),
     ),
 );
 $app->singleton(
