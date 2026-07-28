@@ -67,12 +67,31 @@ Changing this secret invalidates existing unsubscribe links.
   validation.
 
 Public responses never expose stored subscriber state or confirmation tokens.
-Email delivery of confirmation links is the next transport slice.
+Confirmation messages are enqueued immediately. Process due messages with:
+
+```bash
+php bin/katakata mail:work [limit]
+```
+
+The transport contract is provider-independent. The default filesystem transport
+writes local delivery artifacts under `storage/distribution/mail/sent`; a
+production provider implements the same `EmailTransport` interface.
+
+## Durable delivery
+
+Queue items live under `storage/distribution/mail/queue`. Their SHA-256
+identifier is derived from a caller-supplied idempotency key. Re-enqueueing the
+same logical message does not duplicate it. Each item records attempts, delivery
+time, last error, and next attempt time. Temporary failures use bounded
+exponential backoff; delivered items are never sent again.
+
+Publication and consent changes do not wait for transport success. Operators may
+run the worker from cron or a process supervisor.
 
 ## Deliberate limits
 
-- No email transport/provider is selected.
-- Delivery attempts, retries, and idempotency are not yet persisted.
+- The default transport is a local filesystem sink; no production email provider
+  or provider credentials are selected yet.
 - Threads credentials and official API calls are not implemented.
 - Automatic dispatch after publication waits for a durable retry boundary so a
   downstream failure cannot affect canonical publication.
