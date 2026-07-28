@@ -25,9 +25,13 @@ final class ThreadsAdapter implements Adapter
         $url = rtrim($this->appUrl, '/') . $post->url();
         $lead = trim($post->excerpt ?? $post->title);
         $text = $lead . "\n\n" . $url;
-        if (mb_strlen($text) > 500) {
-            $available = 500 - mb_strlen("\n\n" . $url . '…');
-            $text = mb_substr($lead, 0, max(0, $available)) . "…\n\n" . $url;
+        $length = static fn (string $value): int => function_exists('mb_strlen') ? mb_strlen($value) : strlen($value);
+        $slice = static fn (string $value, int $limit): string => function_exists('mb_substr')
+            ? mb_substr($value, 0, $limit)
+            : substr($value, 0, $limit);
+        if ($length($text) > 500) {
+            $available = 500 - $length("\n\n" . $url . '…');
+            $text = $slice($lead, max(0, $available)) . "…\n\n" . $url;
         }
 
         $publication = $this->api->publish($text);
