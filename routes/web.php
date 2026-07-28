@@ -88,7 +88,7 @@ $router->get('/{year}/{month}/{slug}', function (
     string $year,
     string $month,
     string $slug,
-) use ($app): Response {
+) use ($app, $recordVisit): Response {
     if (!preg_match('/^\d{4}$/', $year) || !preg_match('/^(0[1-9]|1[0-2])$/', $month)) {
         return Response::notFound();
     }
