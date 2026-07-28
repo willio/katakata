@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use Katakata\Application;
+use Katakata\Analytics\AnalyticsStore;
+use Katakata\Analytics\VisitorHasher;
+use Katakata\Analytics\VisitRecorder;
 use Katakata\Auth\AccountStore;
 use Katakata\Auth\PasskeyStore;
 use Katakata\Auth\Session;
@@ -37,6 +40,26 @@ $app->boot();
 
 $router = new Router();
 $app->instance(Router::class, $router);
+
+$app->singleton(
+    AnalyticsStore::class,
+    static fn (Application $container): AnalyticsStore => new AnalyticsStore(
+        $container->storagePath('analytics/analytics.sqlite'),
+    ),
+);
+$app->singleton(
+    VisitorHasher::class,
+    static fn (Application $container): VisitorHasher => new VisitorHasher(
+        (string) $container->config()->get('analytics.secret', ''),
+    ),
+);
+$app->singleton(
+    VisitRecorder::class,
+    static fn (Application $container): VisitRecorder => new VisitRecorder(
+        $container->make(AnalyticsStore::class),
+        $container->make(VisitorHasher::class),
+    ),
+);
 
 $app->singleton(
     Repository::class,
