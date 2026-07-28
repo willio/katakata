@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Katakata\Analytics\VisitRecorder;
 use Katakata\Auth\AccountStore;
 use Katakata\Auth\Session;
 use Katakata\Auth\WebAuthn;
@@ -22,14 +23,20 @@ use Katakata\View;
  * @var \Katakata\Application $app
  */
 
-$router->get('/', function (Request $request) use ($app): Response {
+$recordVisit = static function (Request $request) use ($app): void {
+    $app->make(VisitRecorder::class)->record($request);
+};
+
+$router->get('/', function (Request $request) use ($app, $recordVisit): Response {
+    $recordVisit($request);
     return Response::html($app->make(View::class)->render('home', [
         'name' => (string) $app->config()->get('app.name', 'Katakata'),
         'tagline' => (string) $app->config()->get('app.tagline', ''),
     ]));
 });
 
-$router->get('/archive', function (Request $request) use ($app): Response {
+$router->get('/archive', function (Request $request) use ($app, $recordVisit): Response {
+    $recordVisit($request);
     $repository = $app->make(Repository::class);
 
     return Response::html($app->make(View::class)->render('archive', [
@@ -38,13 +45,15 @@ $router->get('/archive', function (Request $request) use ($app): Response {
     ]));
 });
 
-$router->get('/authors/{slug}', function (Request $request, string $slug) use ($app): Response {
+$router->get('/authors/{slug}', function (Request $request, string $slug) use ($app, $recordVisit): Response {
     $repository = $app->make(Repository::class);
     $author = $repository->findAuthor($slug);
 
     if ($author === null) {
         return Response::notFound();
     }
+
+    $recordVisit($request);
 
     return Response::html($app->make(View::class)->render('author', [
         'author' => $author,
@@ -91,6 +100,7 @@ $router->get('/{year}/{month}/{slug}', function (
     }
 
     $author = $post->author === null ? null : $app->make(Repository::class)->findAuthor($post->author);
+    $recordVisit($request);
 
     return Response::html($app->make(View::class)->render('article', [
         'post' => $post,
