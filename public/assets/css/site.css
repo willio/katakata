@@ -75,18 +75,25 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
 .auth-shell form { display: grid; gap: 1rem; }
 .auth-shell label { display: grid; gap: .35rem; }
 .auth-shell input, .auth-shell select { width: 100%; padding: .7rem; border: 1px solid var(--border); background: var(--surface); }
-.auth-shell button, .editor-panel button { padding: .65rem .9rem; border: 1px solid var(--border); background: var(--surface); }
+.auth-shell button, .editor-panel button {
+    padding: .65rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+}
 
 .editor-page { min-height: 100svh; background: var(--bg); font-family: var(--font-mono); }
 .editor-status {
     position: fixed;
     z-index: 3;
-    top: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 1rem;
+    left: 1rem;
+    max-width: min(28rem, calc(100% - 2rem));
+    margin: 0;
     color: var(--ink-muted);
     font-family: var(--font-sans);
     font-size: .75rem;
+    opacity: .72;
 }
 
 .editor-status:empty { display: none; }
@@ -154,6 +161,7 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
     background: transparent;
 }
 .editor-panel input:focus, .editor-panel select:focus { border-bottom-color: var(--accent); }
+.editor-panel input[readonly] { color: var(--ink-muted); }
 .editor-panel ul { padding-left: 1.2rem; }
 .editor-panel-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
 .editor-notice { color: var(--ink-muted); font-size: .82rem; }
