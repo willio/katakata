@@ -43,12 +43,16 @@ See [`docs/subsystems/rendering.md`](./subsystems/rendering.md).
 
 See [`docs/subsystems/editorial.md`](./subsystems/editorial.md).
 
-## Phase 4 — Distribution
+## Phase 4 — Distribution 🚧
 
-- [ ] Newsletter
+- [x] Adapter boundary and per-channel failure isolation
+- [x] Provider-neutral newsletter payload/outbox
+- [ ] Newsletter subscriber and transport contract
 - [ ] Threads adapter
 - [ ] Webhooks
 - [ ] Insights / engagement metadata
+
+See [`docs/subsystems/distribution.md`](./subsystems/distribution.md).
 
 ## Phase 5 — Extensibility
 
