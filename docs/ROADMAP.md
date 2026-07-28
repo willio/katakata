@@ -61,7 +61,7 @@ distribution providers increase system activity.
 6. [x] Add visits, trends, and recent visits with failure-isolated analytics loading.
 7. [ ] Add regional aggregates and the visitor map only after region derivation and disclosure copy are
    verified.
-8. [ ] Add The Buzz after the Threads read adapter exists.
+8. [x] Add the failure-isolated, read-only The Buzz from the Threads reply cache.
 
 See [`docs/subsystems/dashboard.md`](./subsystems/dashboard.md),
 [`docs/subsystems/analytics.md`](./subsystems/analytics.md), and
@@ -79,6 +79,7 @@ Work has resumed on the provider-independent distribution stack while Phase 4's 
 - [x] Automatic idempotent post-publication newsletter dispatch
 - [x] Production email provider (Resend)
 - [x] Threads publish/read adapters
+- [x] Explicit reply synchronization and Dashboard The Buzz presentation
 - [ ] Webhooks and retry processing
 - [ ] Engagement metadata synchronization
 
