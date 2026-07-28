@@ -208,18 +208,24 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
 .dashboard-intro { margin-bottom: 2.5rem; }
 .dashboard-intro h1 { font-size: clamp(2.2rem, 6vw, 4rem); }
 .dashboard-intro > p:last-child, .quiet { color: var(--ink-muted); }
-.dashboard-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 3rem; }
+.dashboard-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 3rem; }
 .dashboard-stats article { padding: 1.25rem 0; border-top: 1px solid var(--border); }
 .dashboard-stats strong, .dashboard-stats span { display: block; }
 .dashboard-stats strong { font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1; }
 .dashboard-stats span { margin-top: .6rem; color: var(--ink-muted); font-size: .8rem; }
+.dashboard-stats small { display: block; margin-top: .3rem; color: var(--ink-muted); font-size: .68rem; }
+.dashboard-stats .trend-up { color: var(--accent); }
+.dashboard-stats .trend-down { color: var(--error-light, #b3543f); }
 .dashboard-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(2rem, 6vw, 5rem); }
 .dashboard-columns h2, .dashboard-seo h2 { margin-top: 0; font-size: 1.15rem; }
 .dashboard-list { margin: 0; padding: 0; list-style: none; }
 .dashboard-list li { display: grid; gap: .2rem; padding: .8rem 0; border-top: 1px dotted var(--border); }
 .dashboard-list time { font-size: .7rem; }
-.dashboard-seo { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.dashboard-visits, .dashboard-seo { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
 .dashboard-seo ul { padding-left: 1.2rem; }
+.dashboard-visits .dashboard-list { max-width: 42rem; }
+.dashboard-visits .dashboard-list li { grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; }
+.dashboard-visits .dashboard-list .quiet { grid-column: 1 / -1; font-size: .75rem; }
 .form-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-block: 1.25rem; }
 .dashboard-shell > .form-actions { margin-top: 3rem; }
 
