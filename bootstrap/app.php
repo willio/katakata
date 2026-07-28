@@ -162,6 +162,14 @@ $app->singleton(
     ),
 );
 $app->singleton(
+    SubscriberStore::class,
+    static fn (Application $container): SubscriberStore => new SubscriberStore(
+        $container->storagePath('distribution/subscribers.json'),
+        (string) $container->config()->get('newsletter.secret', ''),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
     Distributor::class,
     static fn (Application $container): Distributor => new Distributor([
         $container->make(NewsletterAdapter::class),
