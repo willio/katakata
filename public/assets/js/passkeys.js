@@ -22,34 +22,40 @@
         if (!response.ok) throw new Error(data.error || 'Passkey operation failed.');
         return data;
     };
-    const message = (form, text, error = false) => {
-        const output = form.querySelector('[data-passkey-status]');
+    const outputFor = control => control.closest('form, .editor-panel')?.querySelector('[data-passkey-status]');
+    const message = (control, text, error = false) => {
+        const output = outputFor(control);
+        if (!output) return;
         output.textContent = text;
         output.setAttribute('role', error ? 'alert' : 'status');
     };
 
-    document.querySelectorAll('[data-passkey-register]').forEach(form => form.addEventListener('submit', async event => {
-        event.preventDefault();
-        if (!window.PublicKeyCredential) return message(form, 'Passkeys are not supported by this browser.', true);
-        const csrf = form.elements.csrf.value;
-        try {
-            message(form, 'Waiting for your device…');
-            const options = await post('/passkeys/register/options', {csrf});
-            options.challenge = decode(options.challenge);
-            options.user.id = decode(options.user.id);
-            options.excludeCredentials = options.excludeCredentials.map(item => ({...item, id: decode(item.id)}));
-            const credential = await navigator.credentials.create({publicKey: options});
-            const payload = {
-                id: credential.id,
-                clientDataJSON: encode(credential.response.clientDataJSON),
-                attestationObject: encode(credential.response.attestationObject),
-            };
-            await post('/passkeys/register', {csrf, credential: JSON.stringify(payload)});
-            message(form, 'Passkey added.');
-        } catch (error) {
-            message(form, error.message || 'Passkey registration failed.', true);
-        }
-    }));
+    document.querySelectorAll('[data-passkey-register]').forEach(control => {
+        const eventName = control.tagName === 'FORM' ? 'submit' : 'click';
+        control.addEventListener(eventName, async event => {
+            event.preventDefault();
+            if (!window.PublicKeyCredential) return message(control, 'Passkeys are not supported by this browser.', true);
+            const csrf = control.closest('form')?.elements.csrf?.value
+                || document.querySelector('input[name="csrf"]')?.value;
+            try {
+                message(control, 'Waiting for your device…');
+                const options = await post('/passkeys/register/options', {csrf});
+                options.challenge = decode(options.challenge);
+                options.user.id = decode(options.user.id);
+                options.excludeCredentials = options.excludeCredentials.map(item => ({...item, id: decode(item.id)}));
+                const credential = await navigator.credentials.create({publicKey: options});
+                const payload = {
+                    id: credential.id,
+                    clientDataJSON: encode(credential.response.clientDataJSON),
+                    attestationObject: encode(credential.response.attestationObject),
+                };
+                await post('/passkeys/register', {csrf, credential: JSON.stringify(payload)});
+                message(control, 'Passkey added.');
+            } catch (error) {
+                message(control, error.message || 'Passkey registration failed.', true);
+            }
+        });
+    });
 
     document.querySelectorAll('[data-passkey-login]').forEach(form => form.addEventListener('submit', async event => {
         event.preventDefault();
