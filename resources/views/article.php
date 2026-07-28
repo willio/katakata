@@ -28,6 +28,16 @@
                 </p>
             </header>
             <div class="article-body"><?= $bodyHtml ?></div>
+            <footer class="article-footer">
+                <?php if ($author !== null): ?>
+                    <p><strong><a href="/authors/<?= e($author->slug) ?>"><?= e($author->name) ?></a></strong></p>
+                    <?php if ($authorBioHtml !== null): ?><div><?= $authorBioHtml ?></div><?php endif; ?>
+                <?php endif; ?>
+                <nav class="article-footer-nav" aria-label="Continue reading">
+                    <a href="/archive">Archive</a>
+                    <a href="/feed.xml">RSS</a>
+                </nav>
+            </footer>
         </article>
     </main>
 </body>
