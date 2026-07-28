@@ -13,6 +13,7 @@ use Katakata\Editorial\Editor;
 use Katakata\Editorial\Publisher;
 use Katakata\Editorial\RevisionStore;
 use Katakata\Editorial\Scheduler;
+use Katakata\Distribution\Distributor;
 use Katakata\Http\Router;
 
 /**
@@ -43,6 +44,7 @@ final class Application
         $this->commands['draft:publish'] = fn (array $args): int => $this->draftPublish($args);
         $this->commands['publish:due'] = fn (): int => $this->publishDue();
         $this->commands['revisions:list'] = fn (array $args): int => $this->revisionsList($args);
+        $this->commands['distribution:publish'] = fn (array $args): int => $this->distributionPublish($args);
     }
 
     /**
@@ -271,6 +273,41 @@ final class Application
     }
 
     /** @param array<int, string> $args */
+
+    /** @param array<int, string> $args */
+    private function distributionPublish(array $args): int
+    {
+        $slug = $args[0] ?? '';
+        $channel = $args[1] ?? null;
+        if ($slug === '') {
+            return $this->usage('distribution:publish <post-slug> [newsletter]');
+        }
+
+        $post = $this->app->make(Repository::class)->findPost($slug);
+        if ($post === null || !$post->isPublished()) {
+            fwrite(STDERR, "Published post [{$slug}] not found.\n");
+            return 1;
+        }
+
+        $deliveries = $this->app->make(Distributor::class)->distribute($post, $channel);
+        if ($deliveries === []) {
+            fwrite(STDERR, "Distribution channel [{$channel}] not found.\n");
+            return 1;
+        }
+
+        $failed = false;
+        foreach ($deliveries as $delivery) {
+            if ($delivery->succeeded()) {
+                fwrite(STDOUT, "{$delivery->channel}: delivered\n");
+                continue;
+            }
+            $failed = true;
+            fwrite(STDERR, "{$delivery->channel}: failed — {$delivery->error}\n");
+        }
+
+        return $failed ? 1 : 0;
+    }
+
     private function revisionsList(array $args): int
     {
         $slug = $args[0] ?? '';
