@@ -56,10 +56,21 @@ NEWSLETTER_SECRET=a-long-random-secret
 
 Changing this secret invalidates existing unsubscribe links.
 
+## Public consent routes
+
+- `GET /newsletter` renders the subscription form.
+- `POST /newsletter/subscribe` creates a pending subscription without exposing
+  whether an address already exists.
+- `GET /newsletter/confirm?token=…` consumes a single-use confirmation link.
+- `GET /newsletter/unsubscribe?token=…` renders the unsubscribe decision.
+- `POST /newsletter/unsubscribe` performs immediate suppression behind CSRF
+  validation.
+
+Public responses never expose stored subscriber state or confirmation tokens.
+Email delivery of confirmation links is the next transport slice.
+
 ## Deliberate limits
 
-- This slice defines subscriber state and consent only; no public subscription
-  form or confirmation route is exposed yet.
 - No email transport/provider is selected.
 - Delivery attempts, retries, and idempotency are not yet persisted.
 - Threads credentials and official API calls are not implemented.
