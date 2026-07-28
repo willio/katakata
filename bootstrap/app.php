@@ -24,6 +24,7 @@ use Katakata\Distribution\FilesystemEmailTransport;
 use Katakata\Distribution\MailQueue;
 use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Distribution\NewsletterAdapter;
+use Katakata\Distribution\NewsletterDispatcher;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Http\Router;
 use Katakata\Rendering\Markdown;
@@ -187,6 +188,15 @@ $app->singleton(
         $container->make(MailQueue::class),
         (string) $container->config()->get('app.url', 'http://localhost:8000'),
         (string) $container->config()->get('app.name', 'Katakata'),
+    ),
+);
+$app->singleton(
+    NewsletterDispatcher::class,
+    static fn (Application $container): NewsletterDispatcher => new NewsletterDispatcher(
+        $container->make(NewsletterAdapter::class),
+        $container->make(SubscriberStore::class),
+        $container->make(MailQueue::class),
+        (string) $container->config()->get('app.url', 'http://localhost:8000'),
     ),
 );
 $app->singleton(
