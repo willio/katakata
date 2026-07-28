@@ -46,6 +46,9 @@
 /storage/index/*
 !/storage/index/.gitkeep
 
+/storage/analytics/*
+!/storage/analytics/.gitkeep
+
 /storage/logs/*
 !/storage/logs/.gitkeep
 
