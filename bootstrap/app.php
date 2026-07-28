@@ -18,6 +18,7 @@ use Katakata\Editorial\Publisher;
 use Katakata\Editorial\RevisionStore;
 use Katakata\Editorial\Scheduler;
 use Katakata\Distribution\Distributor;
+use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Distribution\NewsletterAdapter;
 use Katakata\Http\Router;
 use Katakata\Rendering\Markdown;
@@ -67,6 +68,13 @@ $app->singleton(
     static fn (Application $container): Repository => Repository::forApplication($container),
 );
 
+$app->singleton(
+    DashboardAnalytics::class,
+    static fn (Application $container): DashboardAnalytics => new DashboardAnalytics(
+        $container->make(AnalyticsStore::class),
+        $container->make(Repository::class),
+    ),
+);
 $app->singleton(
     SeoChecker::class,
     static fn (Application $container): SeoChecker => new SeoChecker(
