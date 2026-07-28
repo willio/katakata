@@ -6,6 +6,8 @@
 /** @var int $publishedCount */
 /** @var int $draftCount */
 /** @var \Katakata\Seo\SeoCheckSummary $seo */
+/** @var \Katakata\Analytics\AnalyticsSummary|null $analytics */
+/** @var array<int, array{at: \DateTimeImmutable, page: string, referrer: ?string, region: ?string}> $recentVisits */
 /** @var string $csrf */
 ?>
 <!doctype html>
@@ -32,6 +34,18 @@
     </header>
 
     <section class="dashboard-stats" aria-label="Site summary">
+        <article>
+            <strong><?= $analytics?->visits7d ?? '—' ?></strong>
+            <span>Visits (7d)</span>
+            <?php if ($analytics !== null): ?>
+                <small class="<?= $analytics->visits7dTrendPct < 0 ? 'trend-down' : 'trend-up' ?>">
+                    <?= $analytics->visits7dTrendPct > 0 ? '↑' : ($analytics->visits7dTrendPct < 0 ? '↓' : '→') ?>
+                    <?= e((string) abs($analytics->visits7dTrendPct)) ?>% vs prior 7d
+                </small>
+            <?php else: ?>
+                <small>Analytics unavailable</small>
+            <?php endif; ?>
+        </article>
         <article><strong><?= $publishedCount ?></strong><span>Published posts</span></article>
         <article><strong><?= $draftCount ?></strong><span>Drafts in progress</span></article>
         <article>
@@ -73,6 +87,25 @@
             <?php endif; ?>
         </section>
     </div>
+
+    <section class="dashboard-visits" aria-labelledby="recent-visits">
+        <h2 id="recent-visits">Recent visits</h2>
+        <?php if ($analytics === null): ?>
+            <p class="quiet">Analytics is unavailable. Run <code>php bin/katakata analytics:check</code>.</p>
+        <?php elseif ($recentVisits === []): ?>
+            <p class="quiet">No visits recorded yet.</p>
+        <?php else: ?>
+            <ol class="dashboard-list">
+                <?php foreach ($recentVisits as $visit): ?>
+                    <li>
+                        <strong><?= e($visit['page']) ?></strong>
+                        <time datetime="<?= e($visit['at']->format(DATE_ATOM)) ?>"><?= e($visit['at']->format('M j, H:i')) ?> UTC</time>
+                        <?php if ($visit['referrer'] !== null): ?><span class="quiet">via <?= e(parse_url($visit['referrer'], PHP_URL_HOST) ?: 'direct') ?></span><?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            </ol>
+        <?php endif; ?>
+    </section>
 
     <?php if (!$seo->passed()): ?>
         <section class="dashboard-seo" aria-labelledby="seo-issues">
