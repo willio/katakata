@@ -69,12 +69,12 @@ See [`docs/subsystems/dashboard.md`](./subsystems/dashboard.md),
 
 ## Phase 5 — Distribution 🚧
 
-The provider-independent foundation already exists; provider work resumes
-after the Phase 4 owner/analytics boundary is operational.
+Work has resumed on the provider-independent distribution stack while Phase 4's regional and Threads-dependent dashboard items remain deliberately deferred.
 
 - [x] Adapter boundary and per-channel failure isolation
 - [x] Provider-neutral newsletter payload/outbox
-- [ ] Newsletter subscriber consent, storage, and transport
+- [x] Filesystem-backed newsletter subscriber consent and storage
+- [ ] Public double-opt-in routes and provider-independent email transport
 - [ ] Threads publish/read adapters
 - [ ] Webhooks and retry processing
 - [ ] Engagement metadata synchronization
