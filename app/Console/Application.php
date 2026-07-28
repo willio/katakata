@@ -17,6 +17,7 @@ use Katakata\Editorial\Scheduler;
 use Katakata\Distribution\Distributor;
 use Katakata\Distribution\MailQueue;
 use Katakata\Distribution\NewsletterDispatcher;
+use Katakata\Distribution\ThreadsReplySync;
 use Katakata\Http\Router;
 use Katakata\Seo\SeoChecker;
 
@@ -51,6 +52,7 @@ final class Application
         $this->commands['distribution:publish'] = fn (array $args): int => $this->distributionPublish($args);
         $this->commands['mail:work'] = fn (array $args): int => $this->mailWork($args);
         $this->commands['newsletter:dispatch'] = fn (array $args): int => $this->newsletterDispatch($args);
+        $this->commands['threads:sync'] = fn (): int => $this->threadsSync();
         $this->commands['analytics:check'] = fn (): int => $this->analyticsCheck();
         $this->commands['analytics:prune'] = fn (): int => $this->analyticsPrune();
         $this->commands['seo:check'] = fn (): int => $this->seoCheck();
@@ -370,6 +372,29 @@ final class Application
                 "Mail queue: %d processed, %d delivered, %d failed.\n",
                 $result['processed'],
                 $result['delivered'],
+                $result['failed'],
+            ));
+            return $result['failed'] > 0 ? 1 : 0;
+        } catch (\Throwable $error) {
+            fwrite(STDERR, $error->getMessage() . "\n");
+            return 1;
+        }
+    }
+
+    private function threadsSync(): int
+    {
+        if (!(bool) $this->app->config()->get('threads.enabled', false)) {
+            fwrite(STDERR, "Threads is disabled. Set THREADS_ENABLED=true before syncing.\n");
+            return 1;
+        }
+
+        try {
+            $result = $this->app->make(ThreadsReplySync::class)->sync();
+            fwrite(STDOUT, sprintf(
+                "Threads replies: %d post(s) synced, %d repl%s cached, %d failed.\n",
+                $result['posts'],
+                $result['replies'],
+                $result['replies'] === 1 ? 'y' : 'ies',
                 $result['failed'],
             ));
             return $result['failed'] > 0 ? 1 : 0;
