@@ -75,7 +75,8 @@ Work has resumed on the provider-independent distribution stack while Phase 4's 
 - [x] Provider-neutral newsletter payload/outbox
 - [x] Filesystem-backed newsletter subscriber consent and storage
 - [x] Public subscribe, confirm, and unsubscribe routes
-- [ ] Provider-independent email transport
+- [x] Provider-independent email transport, durable attempts, idempotency, and retries
+- [ ] Production email provider and automatic post-publication dispatch
 - [ ] Threads publish/read adapters
 - [ ] Webhooks and retry processing
 - [ ] Engagement metadata synchronization
