@@ -102,7 +102,7 @@ The editor is a fullscreen text surface:
 
 - Centered at 60–75ch, monospace, with line-height around 1.7.
 - No formatting toolbar; writers type Markdown directly.
-- One permanent textual save-state element.
+- Routine saving is invisible. Only offline, failed-save, recovery, and validation warnings surface.
 - Title, slug, metadata, publishing, accounts, and other controls remain in
   a settings panel hidden until explicitly summoned.
 
@@ -124,8 +124,7 @@ Markdown file is authoritative.
    500ms–1s.
 2. Synchronize to the server every 5–10 seconds and on blur or visibility
    change.
-3. Show honest text: `Saving…`, `Saved`, `Not saved — offline`, or
-   `Save failed`.
+3. Keep routine `Saving…` and `Saved` states invisible. Surface only actionable exceptions such as `Not saved — offline` or `Save failed`.
 4. If the browser holds a newer buffer than the server response, compare a
    monotonic timestamp/version and prompt the writer to reconcile. Never
    silently overwrite either side.
@@ -134,6 +133,24 @@ Markdown file is authoritative.
 
 Two tabs or devices editing one draft remain a last-write-wins limitation in
 v1. CRDT or operational-transform collaboration is deferred.
+
+### Derived post identity
+
+- The first line of the Markdown body is the post title. A leading Markdown heading marker is ignored.
+- New-draft slugs are generated automatically from the derived title.
+- A published or already-created draft keeps its existing slug so editing a title never breaks its canonical URL.
+- Title and slug are visible as read-only confirmation in per-post settings, not separate writing tasks.
+
+### Controls and warnings
+
+- Buttons render as compact pills. Icon-only close controls remain circular.
+- Routine persistence has no permanent status label.
+- Actionable warnings render as dim, text-only toasts in the bottom-left. They never cover the writing line or demand dismissal unless a choice is required.
+- Settings retain an explicit close button and close with Escape.
+
+### Dashboard
+
+The authenticated dashboard follows the same calm interface rule. It is an orientation surface, not a second editor: one slim header, a fixed information hierarchy, no customizable widget grid, and no decorative charting. See `docs/subsystems/dashboard.md`.
 
 ### Editor icons
 
