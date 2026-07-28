@@ -15,6 +15,7 @@ use Katakata\Editorial\Publisher;
 use Katakata\Editorial\RevisionStore;
 use Katakata\Editorial\Scheduler;
 use Katakata\Distribution\Distributor;
+use Katakata\Distribution\MailQueue;
 use Katakata\Http\Router;
 use Katakata\Seo\SeoChecker;
 
@@ -47,6 +48,7 @@ final class Application
         $this->commands['publish:due'] = fn (): int => $this->publishDue();
         $this->commands['revisions:list'] = fn (array $args): int => $this->revisionsList($args);
         $this->commands['distribution:publish'] = fn (array $args): int => $this->distributionPublish($args);
+        $this->commands['mail:work'] = fn (array $args): int => $this->mailWork($args);
         $this->commands['analytics:check'] = fn (): int => $this->analyticsCheck();
         $this->commands['analytics:prune'] = fn (): int => $this->analyticsPrune();
         $this->commands['seo:check'] = fn (): int => $this->seoCheck();
@@ -311,6 +313,25 @@ final class Application
         }
 
         return $failed ? 1 : 0;
+    }
+
+    /** @param array<int, string> $args */
+    private function mailWork(array $args): int
+    {
+        $limit = isset($args[0]) ? max(1, (int) $args[0]) : 50;
+        try {
+            $result = $this->app->make(MailQueue::class)->work($limit);
+            fwrite(STDOUT, sprintf(
+                "Mail queue: %d processed, %d delivered, %d failed.\n",
+                $result['processed'],
+                $result['delivered'],
+                $result['failed'],
+            ));
+            return $result['failed'] > 0 ? 1 : 0;
+        } catch (\Throwable $error) {
+            fwrite(STDERR, $error->getMessage() . "\n");
+            return 1;
+        }
     }
 
     private function analyticsCheck(): int
