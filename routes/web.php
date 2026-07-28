@@ -7,6 +7,7 @@ use Katakata\Auth\AccountStore;
 use Katakata\Auth\Session;
 use Katakata\Auth\WebAuthn;
 use Katakata\Content\Repository;
+use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Editorial\DraftEditor;
 use Katakata\Editorial\DraftVersion;
 use Katakata\Editorial\Publisher;
@@ -191,6 +192,8 @@ $router->get('/dashboard', function (Request $request) use ($app, $requireUser):
     $repository = $app->make(Repository::class);
     $posts = $repository->posts()->all();
     $drafts = $repository->drafts()->all();
+    $dashboardAnalytics = $app->make(DashboardAnalytics::class);
+    $analytics = $dashboardAnalytics->summary();
     usort($drafts, static function ($left, $right): int {
         return ($right->updatedAt?->getTimestamp() ?? 0) <=> ($left->updatedAt?->getTimestamp() ?? 0);
     });
@@ -203,6 +206,8 @@ $router->get('/dashboard', function (Request $request) use ($app, $requireUser):
         'recentDrafts' => array_slice($drafts, 0, 5),
         'latestPosts' => array_slice($posts, 0, 5),
         'seo' => $app->make(SeoChecker::class)->check(),
+        'analytics' => $analytics,
+        'recentVisits' => $dashboardAnalytics->recent($analytics),
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
