@@ -12,16 +12,16 @@ See [`docs/MASTER_SPECIFICATION.md`](docs/MASTER_SPECIFICATION.md) for
 the full vision, philosophy, and architecture. This README covers only
 what's needed to run what exists today.
 
-## Status: Phase 4 — Distribution in progress
+## Status: Phase 4 — Dashboard and Analytics in progress
 
-Phases 0–3 are complete. Phase 4 now has a failure-isolated adapter boundary and provider-neutral newsletter outbox. Katakata also has a protected browser editor,
+Phases 0–3 are complete. Phase 4 now prioritizes the owner dashboard, privacy-bounded SQLite analytics, and reproducible SEO checks. The distribution adapter boundary and provider-neutral newsletter outbox already exist as the Phase 5 foundation. Katakata also has a protected browser editor,
 invite-only email/password accounts, WebAuthn passkeys, a local filesystem
 editor, canonical revision history, scheduled drafts, and an atomic publishing pipeline. See [`docs/ROADMAP.md`](docs/ROADMAP.md)
 and [`docs/subsystems/editorial.md`](docs/subsystems/editorial.md).
 
 ## Requirements
 
-- PHP 8.2 or later with OpenSSL
+- PHP 8.2 or later with OpenSSL and PDO SQLite
 - Composer (optional — only needed to run the test suite via PHPUnit)
 
 ## Quickstart
@@ -96,6 +96,7 @@ web-accessible.
 - [ADR 0006 — Plain PHP Views](docs/adr/0006-plain-php-views.md)
 - [ADR 0007 — Filesystem Editorial Transactions](docs/adr/0007-filesystem-editorial-transactions.md)
 - [ADR 0008 — Invite-only Authentication](docs/adr/0008-invite-only-authentication.md)
+- [ADR 0009 — SQLite Analytics and SEO](docs/adr/0009-sqlite-analytics-seo.md)
 
 ## Non-Negotiable Rules
 
