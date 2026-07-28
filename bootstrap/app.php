@@ -20,6 +20,7 @@ use Katakata\Editorial\Scheduler;
 use Katakata\Distribution\Distributor;
 use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Distribution\NewsletterAdapter;
+use Katakata\Distribution\SubscriberStore;
 use Katakata\Http\Router;
 use Katakata\Rendering\Markdown;
 use Katakata\Seo\SeoChecker;
