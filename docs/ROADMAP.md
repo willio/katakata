@@ -78,7 +78,7 @@ Work has resumed on the provider-independent distribution stack while Phase 4's 
 - [x] Provider-independent email transport, durable attempts, idempotency, and retries
 - [x] Automatic idempotent post-publication newsletter dispatch
 - [x] Production email provider (Resend)
-- [ ] Threads publish/read adapters
+- [x] Threads publish/read adapters
 - [ ] Webhooks and retry processing
 - [ ] Engagement metadata synchronization
 
