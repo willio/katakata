@@ -169,10 +169,22 @@ $app->singleton(
 );
 $app->singleton(
     EmailTransport::class,
-    static fn (Application $container): EmailTransport => new FilesystemEmailTransport(
-        $container->storagePath('distribution/mail/sent'),
-        $container->make(AtomicFile::class),
-    ),
+    static function (Application $container): EmailTransport {
+        $transport = strtolower((string) $container->config()->get('mail.transport', 'filesystem'));
+        if ($transport === 'resend') {
+            return new ResendEmailTransport(
+                (string) $container->config()->get('mail.resend_key', ''),
+                (string) $container->config()->get('mail.from', ''),
+            );
+        }
+        if ($transport !== 'filesystem') {
+            throw new RuntimeException("Unsupported mail transport [{$transport}].");
+        }
+        return new FilesystemEmailTransport(
+            $container->storagePath('distribution/mail/sent'),
+            $container->make(AtomicFile::class),
+        );
+    },
 );
 $app->singleton(
     MailQueue::class,
