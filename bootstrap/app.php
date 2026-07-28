@@ -23,6 +23,7 @@ use Katakata\Distribution\EmailTransport;
 use Katakata\Distribution\FilesystemEmailTransport;
 use Katakata\Distribution\MailQueue;
 use Katakata\Dashboard\DashboardAnalytics;
+use Katakata\Dashboard\DashboardBuzz;
 use Katakata\Distribution\NewsletterAdapter;
 use Katakata\Distribution\NewsletterDispatcher;
 use Katakata\Distribution\MetaThreadsApi;
