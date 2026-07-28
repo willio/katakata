@@ -12,6 +12,7 @@ use Katakata\Editorial\DraftEditor;
 use Katakata\Editorial\DraftVersion;
 use Katakata\Editorial\Publisher;
 use Katakata\Distribution\ConfirmationMailer;
+use Katakata\Distribution\NewsletterDispatcher;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
@@ -384,7 +385,16 @@ $router->post('/editor/drafts/{slug}/publish', function (Request $request, strin
     }
 
     $app->make(Publisher::class)->publish($draft);
-    $app->make(Repository::class)->refresh();
+    $repository = $app->make(Repository::class);
+    $repository->refresh();
+    $post = $repository->findPost($draft->slug);
+    if ($post !== null) {
+        try {
+            $app->make(NewsletterDispatcher::class)->dispatch($post);
+        } catch (\Throwable) {
+            // Publication is canonical; downstream queue failure must not roll it back.
+        }
+    }
     return Response::redirect('/archive');
 });
 
