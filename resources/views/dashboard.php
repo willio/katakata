@@ -107,6 +107,28 @@
         <?php endif; ?>
     </section>
 
+    <section class="dashboard-buzz" aria-labelledby="dashboard-buzz">
+        <h2 id="dashboard-buzz">The Buzz</h2>
+        <?php if ($buzz === null): ?>
+            <p class="quiet">Threads replies are unavailable. Enable Threads and run <code>php bin/katakata threads:sync</code>.</p>
+        <?php elseif ($buzz === []): ?>
+            <p class="quiet">No synced replies yet.</p>
+        <?php else: ?>
+            <ol class="dashboard-list">
+                <?php foreach ($buzz as $reply): ?>
+                    <li>
+                        <a href="<?= e($reply['permalink']) ?>" rel="noreferrer">
+                            <strong>@<?= e($reply['username']) ?></strong>
+                            <span><?= e($reply['text']) ?></span>
+                        </a>
+                        <time datetime="<?= e($reply['timestamp']) ?>"><?= e((new DateTimeImmutable($reply['timestamp']))->format('M j, H:i')) ?> UTC</time>
+                        <span class="quiet">on <?= e($reply['post_slug']) ?></span>
+                    </li>
+                <?php endforeach; ?>
+            </ol>
+        <?php endif; ?>
+    </section>
+
     <?php if (!$seo->passed()): ?>
         <section class="dashboard-seo" aria-labelledby="seo-issues">
             <h2 id="seo-issues">SEO checks</h2>
