@@ -258,9 +258,12 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
 .dashboard-list { margin: 0; padding: 0; list-style: none; }
 .dashboard-list li { display: grid; gap: .2rem; padding: .8rem 0; border-top: 1px dotted var(--border); }
 .dashboard-list time { font-size: .7rem; }
-.dashboard-visits, .dashboard-seo { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.dashboard-visits, .dashboard-buzz, .dashboard-seo { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
 .dashboard-seo ul { padding-left: 1.2rem; }
-.dashboard-visits .dashboard-list { max-width: 42rem; }
+.dashboard-visits .dashboard-list, .dashboard-buzz .dashboard-list { max-width: 42rem; }
+.dashboard-buzz .dashboard-list a { display: grid; gap: .2rem; color: inherit; text-decoration: none; }
+.dashboard-buzz .dashboard-list a:hover strong { color: var(--accent); }
+.dashboard-buzz .dashboard-list span { overflow-wrap: anywhere; }
 .dashboard-visits .dashboard-list li { grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; }
 .dashboard-visits .dashboard-list .quiet { grid-column: 1 / -1; font-size: .75rem; }
 .form-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-block: 1.25rem; }
