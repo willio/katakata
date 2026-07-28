@@ -88,10 +88,27 @@ exponential backoff; delivered items are never sent again.
 Publication and consent changes do not wait for transport success. Operators may
 run the worker from cron or a process supervisor.
 
+## Publication dispatch
+
+A successful editor, CLI, or scheduled publication derives one newsletter
+message per confirmed subscriber from the canonical Post. Each message includes
+a signed unsubscribe link and uses `newsletter:{post}:{subscriber-hash}` as its
+idempotency boundary. Re-running dispatch cannot duplicate a queued or delivered
+message.
+
+Dispatch a published post explicitly when recovering from a queue outage:
+
+```bash
+php bin/katakata newsletter:dispatch <post-slug>
+php bin/katakata mail:work
+```
+
 ## Deliberate limits
 
 - The default transport is a local filesystem sink; no production email provider
   or provider credentials are selected yet.
+- Failed queue creation is reported by CLI publication and isolated from
+  canonical publication; operators can safely rerun `newsletter:dispatch`.
 - Threads credentials and official API calls are not implemented.
 - Automatic dispatch after publication waits for a durable retry boundary so a
   downstream failure cannot affect canonical publication.
