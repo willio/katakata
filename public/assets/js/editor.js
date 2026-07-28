@@ -22,13 +22,23 @@
         .split(/\r?\n/, 1)[0]
         .replace(/^\s{0,3}#{1,6}\s+/, '')
         .trim();
-    const slugify = (value) => value
-        .normalize('NFKD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 120);
+    const slugify = (value) => {
+        const ascii = value
+            .normalize('NFKD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 120);
+        if (ascii || !value) return ascii;
+
+        let hash = 2166136261;
+        for (const character of value) {
+            hash ^= character.codePointAt(0);
+            hash = Math.imul(hash, 16777619);
+        }
+        return `post-${(hash >>> 0).toString(36)}`;
+    };
     const deriveMetadata = () => {
         const nextTitle = firstLine();
         title.value = nextTitle;
