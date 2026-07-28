@@ -98,11 +98,11 @@ button,
 
 | Mode | Background | Text |
 |---|---|---|
-| Light | `--btn-bg: #B9C6E3` | `--btn-ink: #22314F` |
+| Light | `--btn-bg: #4C566A` | `--btn-ink: #ECEFF4` |
 | Dark | `--btn-bg: #EBCB8B` | `--btn-ink: #2E3440` |
 
 Button color is intentionally distinct from the link and active-state accent:
-buttons signal actions; links signal navigation. Both pairs must be verified
+buttons signal actions; links signal navigation. The light pairing uses Nord3 with Nord6 ink; the dark pairing uses Nord13 with Nord0 ink. Both pairs must be verified
 with an automated contrast check before release.
 
 ### States
