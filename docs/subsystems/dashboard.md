@@ -1,6 +1,6 @@
 # Subsystem: Dashboard (Owner's View)
 
-Phase: 4 (Dashboard and Analytics)
+Phase: 4 (Dashboard and Analytics)\n\nStatus: content-backed shell implemented; analytics presentation in progress
 
 ## Purpose
 
@@ -183,7 +183,7 @@ guarantee across multi-day windows; the Dashboard's stat cards should
 use the same careful language, not silently promise more precision
 than the underlying counts support.
 
-`SeoCheckSummary` is computed fresh from `Repository::posts()` per
+`SeoCheckSummary` is implemented under `app/Seo/`, exposed by `seo:check`, and computed fresh from `Repository::posts()` per
 ADR 0009's "basic SEO monitoring" scope — reproducible, cacheable,
 never persisted as historical data.
 
