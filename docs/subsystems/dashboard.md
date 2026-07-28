@@ -1,6 +1,6 @@
 # Subsystem: Dashboard (Owner's View)
 
-Phase: 4 (Dashboard and Analytics)\n\nStatus: content-backed shell implemented; analytics presentation in progress
+Phase: 4 (Dashboard and Analytics)\n\nStatus: content-backed shell, SEO status, visit trend, and recent visits implemented
 
 ## Purpose
 
@@ -14,8 +14,7 @@ is not a place to accumulate widgets.
 ## Remaining dependency
 
 ADR 0009 and `docs/subsystems/analytics.md` now define the SQLite store,
-privacy-bounded recording, summary queries, and retention. The dashboard can
-consume `AnalyticsSummary` without knowing how it is stored.
+privacy-bounded recording, summary queries, and retention. The dashboard consumes `AnalyticsSummary` through a failure-isolated presenter without knowing how it is stored.
 
 IP-to-region derivation remains deliberately unresolved. The visitor map
 must wait until its source, precision, disclosure copy, and retention
