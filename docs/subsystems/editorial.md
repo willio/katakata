@@ -49,3 +49,10 @@ Authenticated users enroll passkeys from `/editor`; the login page supports pass
 WebAuthn ceremonies use five-minute, single-use challenges stored in the session. Verification binds the challenge, account, exact `APP_URL` origin, RP ID, credential ownership, user presence, and user verification. Registration accepts only `none` attestation and P-256 or RSA public keys. Authentication verifies the assertion signature and advances any nonzero authenticator counter. Password login remains the recovery path.
 
 Production passkeys require HTTPS. `http://localhost` remains valid for local WebAuthn development. The PHP OpenSSL extension is required for assertion signatures.
+
+
+## Design and autosave
+
+The browser editor implements `docs/design_specification.md` as a fullscreen 68ch monospace writing surface. Metadata, draft navigation, publishing, invitations, passkeys, and account actions remain in a hidden settings panel toggled by its quiet affordance or `Cmd/Ctrl+,`.
+
+For existing drafts, `public/assets/js/editor.js` writes a debounced draft-specific local recovery buffer, synchronizes after seven seconds and on focus/visibility changes, and reports honest textual save state. `POST /editor/drafts/{slug}/autosave` reuses `DraftEditor`, returns the canonical content version, and confirms the client version. The buffer is cleared only when that exact version is acknowledged. A newer local buffer prompts before restoration. Multi-tab and multi-device editing remains documented last-write-wins behavior.
