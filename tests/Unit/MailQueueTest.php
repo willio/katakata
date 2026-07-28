@@ -33,12 +33,12 @@ final class MailQueueTest extends TestCase
 
     public function testEnqueueIsIdempotentAndDeliveryIsRecorded(): void
     {
-        $sent = 0;
-        $transport = new class($sent) implements EmailTransport {
-            public function __construct(private int &$sent) {}
+        $counter = (object) ['sent' => 0];
+        $transport = new class($counter) implements EmailTransport {
+            public function __construct(private object $counter) {}
             public function send(EmailMessage $message, string $idempotencyKey): array
             {
-                $this->sent++;
+                $this->counter->sent++;
                 return ['id' => $idempotencyKey];
             }
         };
@@ -48,7 +48,7 @@ final class MailQueueTest extends TestCase
         self::assertSame($queue->enqueue('same-key', $message), $queue->enqueue('same-key', $message));
         self::assertSame(['processed' => 1, 'delivered' => 1, 'failed' => 0], $queue->work());
         self::assertSame(['processed' => 0, 'delivered' => 0, 'failed' => 0], $queue->work());
-        self::assertSame(1, $sent);
+        self::assertSame(1, $counter->sent);
     }
 
     public function testFailureIsRetriedAfterBackoff(): void
@@ -64,7 +64,11 @@ final class MailQueueTest extends TestCase
             }
         };
         $queue = new MailQueue($this->root, $transport, new AtomicFile());
-        $queue->enqueue('retry-key', new EmailMessage('reader@example.com', 'Subject', '', 'Body'));
+        $queue->enqueue(
+            'retry-key',
+            new EmailMessage('reader@example.com', 'Subject', '', 'Body'),
+            new DateTimeImmutable('2026-07-28T10:00:00Z'),
+        );
 
         self::assertSame(1, $queue->work(50, new DateTimeImmutable('2026-07-28T10:00:00Z'))['failed']);
         self::assertSame(1, $queue->work(50, new DateTimeImmutable('2026-07-28T10:01:00Z'))['delivered']);
