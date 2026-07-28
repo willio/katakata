@@ -186,9 +186,12 @@ than the underlying counts support.
 ADR 0009's "basic SEO monitoring" scope — reproducible, cacheable,
 never persisted as historical data.
 
-`ThreadsReply` can be implemented once ADR 0004's sync mechanism
-exists (currently architecture-only, per the ADR's own status note —
-"no Threads adapter exists yet").
+`ThreadsReply` is now backed by the rebuildable Threads reply cache. The
+Dashboard reads it through a failure-isolated presenter: disabled Threads or
+unreadable generated state produces a quiet unavailable message, while an
+available empty cache produces a distinct no-replies state. Refresh explicitly
+with `php bin/katakata threads:sync`; the Dashboard never calls the provider
+during a page request.
 
 ## What's deliberately not here
 
