@@ -21,6 +21,7 @@ use Katakata\Distribution\Distributor;
 use Katakata\Distribution\NewsletterAdapter;
 use Katakata\Http\Router;
 use Katakata\Rendering\Markdown;
+use Katakata\Seo\SeoChecker;
 use Katakata\Support\DotEnv;
 use Katakata\View;
 
@@ -64,6 +65,14 @@ $app->singleton(
 $app->singleton(
     Repository::class,
     static fn (Application $container): Repository => Repository::forApplication($container),
+);
+
+$app->singleton(
+    SeoChecker::class,
+    static fn (Application $container): SeoChecker => new SeoChecker(
+        $container->make(Repository::class),
+        $container->basePath('public'),
+    ),
 );
 
 $app->singleton(AtomicFile::class, static fn (): AtomicFile => new AtomicFile());
