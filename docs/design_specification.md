@@ -143,10 +143,18 @@ v1. CRDT or operational-transform collaboration is deferred.
 
 ### Controls and warnings
 
-- Buttons render as compact pills. Icon-only close controls remain circular.
+- Fields use a dotted bottom border only, with no box or background.
+- Text buttons render as slim, wide pills whose vertical padding is
+  substantially smaller than their horizontal padding. Icon-only close
+  controls remain circular.
+- Action rows provide deliberate separation from fields and surrounding
+  content; buttons never collide with field underlines or container edges.
 - Routine persistence has no permanent status label.
 - Actionable warnings render as dim, text-only toasts in the bottom-left. They never cover the writing line or demand dismissal unless a choice is required.
 - Settings retain an explicit close button and close with Escape.
+- `docs/fields-buttons-styleguide.md` is the implementation contract for
+  field states, clear controls, button tokens, proportions, spacing, and
+  accessibility.
 
 ### Dashboard
 
