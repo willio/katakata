@@ -286,6 +286,7 @@ $router->get('/dashboard', function (Request $request) use ($app, $requireUser):
         'seo' => $app->make(SeoChecker::class)->check(),
         'analytics' => $analytics,
         'recentVisits' => $dashboardAnalytics->recent($analytics),
+        'buzz' => $app->make(DashboardBuzz::class)->recent(),
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
