@@ -17,7 +17,7 @@ $hasDraft = $draft !== null;
     <link rel="stylesheet" href="/assets/css/site.css">
 </head>
 <body class="editor-page">
-<p class="editor-status" data-save-status aria-live="polite"></p>
+<p class="editor-status" data-save-status role="status" aria-live="polite"></p>
 <button class="editor-settings-toggle" type="button" data-settings-toggle aria-label="Open settings" aria-controls="editor-panel" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
@@ -37,7 +37,7 @@ $hasDraft = $draft !== null;
         data-server-updated-at="<?= e($draft?->updatedAt?->format(DATE_ATOM) ?? '') ?>"
     >
         <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-        <textarea name="body" aria-label="Markdown draft" placeholder="Begin writing…" autofocus><?= e($draft?->body ?? '') ?></textarea>
+        <textarea name="body" aria-label="Markdown draft" placeholder="Begin with your title…" autofocus><?= e($draft?->body ?? '') ?></textarea>
 
         <aside class="editor-panel" id="editor-panel" data-editor-panel hidden>
             <header class="editor-panel-header">
@@ -50,8 +50,9 @@ $hasDraft = $draft !== null;
             </header>
             <?php if ($notice !== null): ?><p class="editor-notice" role="status"><?= e($notice) ?></p><?php endif; ?>
             <div class="editor-fields">
-                <label>Slug <input name="slug" value="<?= e($draft?->slug ?? '') ?>" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required <?= $hasDraft ? 'readonly' : '' ?>></label>
-                <label>Title <input name="title" value="<?= e($draft?->title ?? '') ?>" required></label>
+                <label>Title <input name="title" value="<?= e($draft?->title ?? '') ?>" data-derived-title readonly></label>
+                <label>Slug <input name="slug" value="<?= e($draft?->slug ?? '') ?>" data-derived-slug readonly></label>
+                <p class="editor-notice">Title follows the first line. Slug follows the title.</p>
             </div>
             <div class="editor-panel-actions">
                 <button type="submit"><?= $hasDraft ? 'Save now' : 'Create draft' ?></button>
