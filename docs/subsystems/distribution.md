@@ -130,11 +130,14 @@ THREADS_USER_ID=...
 THREADS_ACCESS_TOKEN=...
 ```
 
-With Threads enabled, publish explicitly using:
+With Threads enabled, publish and synchronize replies explicitly using:
 
 ```bash
 php bin/katakata distribution:publish <post-slug> threads
+php bin/katakata threads:sync
 ```
+
+`threads:sync` returns a nonzero status when any mapped post fails, while preserving successful per-post cache updates. Schedule it independently from publication; provider read failure never affects canonical content or Dashboard availability.
 
 The access token is never written to generated state. Missing or invalid
 credentials fail only the Threads delivery; canonical publication and other
@@ -146,6 +149,6 @@ channels remain unaffected.
   API key, and a continuously scheduled `mail:work` process.
 - Failed queue creation is reported by CLI publication and isolated from
   canonical publication; operators can safely rerun `newsletter:dispatch`.
-- OAuth connection UI, token refresh, reply-sync scheduling, and the Dashboard Buzz presentation remain subsequent slices.
+- OAuth connection UI, token refresh, and deployment-specific reply-sync scheduling remain subsequent slices.
 - Automatic dispatch after publication waits for a durable retry boundary so a
   downstream failure cannot affect canonical publication.
