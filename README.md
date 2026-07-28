@@ -35,7 +35,7 @@ php bin/katakata serve
 Visit `http://127.0.0.1:8000/` for the homepage,
 `http://127.0.0.1:8000/healthz` for the health check, or a post's
 canonical `/{year}/{month}/{slug}` URL. The complete published archive is
-available at `/archive`; feeds are available at `/feed.xml` and `/feed.json`,
+available at `/archive`; the authenticated owner dashboard is at `/dashboard`; feeds are available at `/feed.xml` and `/feed.json`,
 and author archives at `/authors/{slug}`.
 
 ## CLI
@@ -57,6 +57,7 @@ php bin/katakata auth:invite <email> [admin|editor]
 php bin/katakata distribution:publish <post-slug> [newsletter]
 php bin/katakata analytics:check
 php bin/katakata analytics:prune
+php bin/katakata seo:check
 ```
 
 ## Tests
