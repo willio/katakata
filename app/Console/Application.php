@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Katakata\Console;
 
 use Katakata\Application as Kernel;
+use Katakata\Analytics\AnalyticsStore;
 use Katakata\Auth\AccountStore;
 use DateTimeImmutable;
 use Katakata\Content\Repository;
@@ -45,6 +46,8 @@ final class Application
         $this->commands['publish:due'] = fn (): int => $this->publishDue();
         $this->commands['revisions:list'] = fn (array $args): int => $this->revisionsList($args);
         $this->commands['distribution:publish'] = fn (array $args): int => $this->distributionPublish($args);
+        $this->commands['analytics:check'] = fn (): int => $this->analyticsCheck();
+        $this->commands['analytics:prune'] = fn (): int => $this->analyticsPrune();
     }
 
     /**
@@ -306,6 +309,42 @@ final class Application
         }
 
         return $failed ? 1 : 0;
+    }
+
+    private function analyticsCheck(): int
+    {
+        $store = $this->app->make(AnalyticsStore::class);
+        $secret = (string) $this->app->config()->get('analytics.secret', '');
+        if (!$store->available()) {
+            fwrite(STDERR, "pdo_sqlite is not available.\n");
+            return 1;
+        }
+        if ($secret === '') {
+            fwrite(STDERR, "ANALYTICS_SECRET or APP_KEY is not configured.\n");
+            return 1;
+        }
+
+        try {
+            $store->summary();
+            fwrite(STDOUT, "Analytics is ready.\n");
+            return 0;
+        } catch (\Throwable $error) {
+            fwrite(STDERR, $error->getMessage() . "\n");
+            return 1;
+        }
+    }
+
+    private function analyticsPrune(): int
+    {
+        try {
+            $days = (int) $this->app->config()->get('analytics.retention_days', 400);
+            $deleted = $this->app->make(AnalyticsStore::class)->prune($days);
+            fwrite(STDOUT, "Pruned {$deleted} analytics visit(s) older than {$days} days.\n");
+            return 0;
+        } catch (\Throwable $error) {
+            fwrite(STDERR, $error->getMessage() . "\n");
+            return 1;
+        }
     }
 
     private function revisionsList(array $args): int
