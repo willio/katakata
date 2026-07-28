@@ -220,10 +220,43 @@ $app->singleton(
     ),
 );
 $app->singleton(
+    ThreadsStore::class,
+    static fn (Application $container): ThreadsStore => new ThreadsStore(
+        $container->storagePath('distribution/threads.json'),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    ThreadsApi::class,
+    static fn (Application $container): ThreadsApi => new MetaThreadsApi(
+        (string) $container->config()->get('threads.user_id', ''),
+        (string) $container->config()->get('threads.access_token', ''),
+    ),
+);
+$app->singleton(
+    ThreadsAdapter::class,
+    static fn (Application $container): ThreadsAdapter => new ThreadsAdapter(
+        $container->make(ThreadsApi::class),
+        $container->make(ThreadsStore::class),
+        (string) $container->config()->get('app.url', 'http://localhost:8000'),
+    ),
+);
+$app->singleton(
+    ThreadsReplySync::class,
+    static fn (Application $container): ThreadsReplySync => new ThreadsReplySync(
+        $container->make(ThreadsApi::class),
+        $container->make(ThreadsStore::class),
+    ),
+);
+$app->singleton(
     Distributor::class,
-    static fn (Application $container): Distributor => new Distributor([
-        $container->make(NewsletterAdapter::class),
-    ]),
+    static function (Application $container): Distributor {
+        $adapters = [$container->make(NewsletterAdapter::class)];
+        if ((bool) $container->config()->get('threads.enabled', false)) {
+            $adapters[] = $container->make(ThreadsAdapter::class);
+        }
+        return new Distributor($adapters);
+    },
 );
 
 $app->singleton(
