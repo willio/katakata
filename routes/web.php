@@ -11,6 +11,7 @@ use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Editorial\DraftEditor;
 use Katakata\Editorial\DraftVersion;
 use Katakata\Editorial\Publisher;
+use Katakata\Distribution\ConfirmationMailer;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
@@ -112,7 +113,8 @@ $router->post('/newsletter/subscribe', function (Request $request) use ($app, $r
     }
 
     try {
-        $app->make(SubscriberStore::class)->request($request->body['email'] ?? '');
+        $subscription = $app->make(SubscriberStore::class)->request($request->body['email'] ?? '');
+        $app->make(ConfirmationMailer::class)->queue($subscription);
     } catch (\InvalidArgumentException) {
         return $renderNewsletter('subscribe', null, 'Email is invalid. Please enter a valid address.');
     } catch (\Throwable) {
