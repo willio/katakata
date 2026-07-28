@@ -8,6 +8,7 @@
 /** @var \Katakata\Seo\SeoCheckSummary $seo */
 /** @var \Katakata\Analytics\AnalyticsSummary|null $analytics */
 /** @var array<int, array{at: \DateTimeImmutable, page: string, referrer: ?string, region: ?string}> $recentVisits */
+/** @var list<array{id: string, post_slug: string, text: string, username: string, timestamp: string, permalink: string, avatar_url: ?string}>|null $buzz */
 /** @var string $csrf */
 ?>
 <!doctype html>
