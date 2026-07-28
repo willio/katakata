@@ -4,19 +4,37 @@
 
     const textarea = editor.querySelector('[name="body"]');
     const title = editor.querySelector('[name="title"]');
+    const slugInput = editor.querySelector('[name="slug"]');
     const status = document.querySelector('[data-save-status]');
     const panel = document.querySelector('[data-editor-panel]');
     const toggle = document.querySelector('[data-settings-toggle]');
     const close = document.querySelector('[data-settings-close]');
-    const slug = editor.dataset.draftId;
+    const draftSlug = editor.dataset.draftId;
     const endpoint = editor.dataset.autosaveUrl;
-    const storageKey = slug ? `katakata:draft:${slug}` : null;
+    const storageKey = draftSlug ? `katakata:draft:${draftSlug}` : null;
     let serverVersion = editor.dataset.serverVersion || '';
     let serverUpdatedAt = Date.parse(editor.dataset.serverUpdatedAt || '') || 0;
     let timer = null;
     let bufferTimer = null;
     let saving = false;
 
+    const firstLine = () => textarea.value
+        .split(/\r?\n/, 1)[0]
+        .replace(/^\s{0,3}#{1,6}\s+/, '')
+        .trim();
+    const slugify = (value) => value
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 120);
+    const deriveMetadata = () => {
+        const nextTitle = firstLine();
+        title.value = nextTitle;
+        if (!draftSlug) slugInput.value = slugify(nextTitle);
+        return nextTitle;
+    };
     const setStatus = (text) => {
         status.textContent = ['Saving…', 'Saved', 'Not saved'].includes(text) ? '' : text;
     };
@@ -25,10 +43,8 @@
         try { return JSON.parse(localStorage.getItem(storageKey)); } catch { return null; }
     };
     const writeBuffer = () => {
-        if (!storageKey) {
-            setStatus('Not saved');
-            return null;
-        }
+        deriveMetadata();
+        if (!storageKey) return null;
         const next = {
             body: textarea.value,
             title: title.value,
@@ -37,7 +53,7 @@
             updatedAt: Date.now(),
         };
         localStorage.setItem(storageKey, JSON.stringify(next));
-        setStatus(navigator.onLine ? 'Saving…' : 'Not saved — offline');
+        if (!navigator.onLine) setStatus('Not saved — offline');
         return next;
     };
 
@@ -56,7 +72,6 @@
         }
 
         saving = true;
-        setStatus('Saving…');
         const form = new FormData(editor);
         form.set('client_version', pending.clientVersion);
 
@@ -72,9 +87,8 @@
             const current = readBuffer();
             if (current?.clientVersion === result.client_version) {
                 localStorage.removeItem(storageKey);
-                setStatus('Saved');
+                setStatus('');
             } else {
-                setStatus('Saving…');
                 schedule();
             }
         } catch {
@@ -84,24 +98,34 @@
         }
     };
 
+    deriveMetadata();
     const local = readBuffer();
     if (local && local.updatedAt > serverUpdatedAt && (local.body !== textarea.value || local.title !== title.value)) {
         if (window.confirm('A newer local recovery buffer exists. Restore it?')) {
             textarea.value = local.body;
-            title.value = local.title;
-            setStatus('Saving…');
+            deriveMetadata();
             schedule();
         } else {
             localStorage.removeItem(storageKey);
         }
     }
 
-    editor.addEventListener('input', () => {
+    editor.addEventListener('input', (event) => {
+        if (event.target !== textarea) return;
+        deriveMetadata();
         clearTimeout(bufferTimer);
         bufferTimer = setTimeout(() => {
             writeBuffer();
             schedule();
         }, 750);
+    });
+    editor.addEventListener('submit', (event) => {
+        deriveMetadata();
+        if (!title.value || !slugInput.value) {
+            event.preventDefault();
+            setStatus('Begin with a title before creating this draft');
+            textarea.focus();
+        }
     });
     editor.addEventListener('focusout', () => { writeBuffer(); void sync(); });
     document.addEventListener('visibilitychange', () => {
@@ -110,7 +134,7 @@
             void sync();
         }
     });
-    window.addEventListener('online', () => { setStatus('Saving…'); void sync(); });
+    window.addEventListener('online', () => { setStatus(''); void sync(); });
     window.addEventListener('offline', () => setStatus('Not saved — offline'));
 
     const setPanelOpen = (opening) => {
