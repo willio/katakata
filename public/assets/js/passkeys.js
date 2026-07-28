@@ -22,6 +22,7 @@
         if (!response.ok) throw new Error(data.error || 'Passkey operation failed.');
         return data;
     };
+    const passkeysSupported = Boolean(window.isSecureContext && window.PublicKeyCredential && navigator.credentials);
     const outputFor = control => control.closest('form, .editor-panel')?.querySelector('[data-passkey-status]');
     const message = (control, text, error = false) => {
         const output = outputFor(control);
@@ -31,10 +32,14 @@
     };
 
     document.querySelectorAll('[data-passkey-register]').forEach(control => {
+        if (!passkeysSupported) {
+            control.hidden = true;
+            return;
+        }
         const eventName = control.tagName === 'FORM' ? 'submit' : 'click';
         control.addEventListener(eventName, async event => {
             event.preventDefault();
-            if (!window.PublicKeyCredential) return message(control, 'Passkeys are not supported by this browser.', true);
+            if (!passkeysSupported) return;
             const csrf = control.closest('form')?.elements.csrf?.value
                 || document.querySelector('input[name="csrf"]')?.value;
             try {
@@ -57,9 +62,14 @@
         });
     });
 
-    document.querySelectorAll('[data-passkey-login]').forEach(form => form.addEventListener('submit', async event => {
+    document.querySelectorAll('[data-passkey-login]').forEach(form => {
+        if (!passkeysSupported) {
+            form.hidden = true;
+            return;
+        }
+        form.addEventListener('submit', async event => {
         event.preventDefault();
-        if (!window.PublicKeyCredential) return message(form, 'Passkeys are not supported by this browser.', true);
+        if (!passkeysSupported) return;
         const csrf = form.elements.csrf.value;
         const email = form.elements.email.value;
         try {
@@ -80,5 +90,6 @@
         } catch (error) {
             message(form, error.message || 'Passkey authentication failed.', true);
         }
-    }));
+        });
+    });
 })();
