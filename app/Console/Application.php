@@ -391,8 +391,11 @@ final class Application
         }
 
         $path = $this->app->storagePath('distribution/resend/webhooks');
-        $parent = dirname($path);
-        if ((is_dir($path) && !is_writable($path)) || (!is_dir($path) && !is_writable($parent))) {
+        $writable = $path;
+        while (!is_dir($writable) && dirname($writable) !== $writable) {
+            $writable = dirname($writable);
+        }
+        if (!is_writable($writable)) {
             fwrite(STDERR, "Resend webhook storage is not writable.\n");
             return 1;
         }
