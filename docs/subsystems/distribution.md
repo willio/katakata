@@ -89,6 +89,34 @@ HTML and plain text to `POST /emails`, forwards the queue idempotency key, and
 turns non-success or malformed provider responses into ordinary retryable queue
 failures. Keep `MAIL_TRANSPORT=filesystem` for local development.
 
+## Resend delivery reconciliation
+
+Register the production endpoint in Resend as:
+
+```text
+POST https://your-domain.example/webhooks/resend
+```
+
+Set its signing secret independently from the API key:
+
+```env
+RESEND_WEBHOOK_SECRET=whsec_...
+```
+
+The endpoint verifies the raw request body, `svix-id`, timestamp, and every
+eligible v1 signature before processing. Timestamps outside a five-minute
+window are rejected. Each `svix-id` is persisted once under
+`storage/distribution/resend/webhooks`, making provider retries and manual
+replays idempotent.
+
+The stored record is deliberately minimal: provider email id, event type,
+hashed recipients, provider/receipt timestamps, and the suppression count.
+Raw webhook payloads, subjects, and duplicate recipient addresses are not
+retained. Verified `email.bounced` and `email.complained` events immediately
+suppress an existing subscriber. Delivered and failed states are recorded
+without changing consent. A provider suppression cannot be bypassed through
+the public subscription flow.
+
 ## Durable delivery
 
 Queue items live under `storage/distribution/mail/queue`. Their SHA-256
@@ -150,5 +178,5 @@ channels remain unaffected.
 - Failed queue creation is reported by CLI publication and isolated from
   canonical publication; operators can safely rerun `newsletter:dispatch`.
 - OAuth connection UI, token refresh, and deployment-specific reply-sync scheduling remain subsequent slices.
-- Automatic dispatch after publication waits for a durable retry boundary so a
-  downstream failure cannot affect canonical publication.
+- Webhook storage is provider operational state and remains outside canonical
+  Markdown content.
