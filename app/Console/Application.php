@@ -51,6 +51,7 @@ final class Application
         $this->commands['revisions:list'] = fn (array $args): int => $this->revisionsList($args);
         $this->commands['distribution:publish'] = fn (array $args): int => $this->distributionPublish($args);
         $this->commands['mail:work'] = fn (array $args): int => $this->mailWork($args);
+        $this->commands['resend:webhooks:check'] = fn (): int => $this->resendWebhooksCheck();
         $this->commands['newsletter:dispatch'] = fn (array $args): int => $this->newsletterDispatch($args);
         $this->commands['threads:sync'] = fn (): int => $this->threadsSync();
         $this->commands['analytics:check'] = fn (): int => $this->analyticsCheck();
@@ -379,6 +380,26 @@ final class Application
             fwrite(STDERR, $error->getMessage() . "\n");
             return 1;
         }
+    }
+
+    private function resendWebhooksCheck(): int
+    {
+        $secret = (string) $this->app->config()->get('mail.resend_webhook_secret', '');
+        if (!str_starts_with($secret, 'whsec_')) {
+            fwrite(STDERR, "RESEND_WEBHOOK_SECRET is not configured.\n");
+            return 1;
+        }
+
+        $path = $this->app->storagePath('distribution/resend/webhooks');
+        $parent = dirname($path);
+        if ((is_dir($path) && !is_writable($path)) || (!is_dir($path) && !is_writable($parent))) {
+            fwrite(STDERR, "Resend webhook storage is not writable.\n");
+            return 1;
+        }
+
+        $events = count(glob($path . '/*.json') ?: []);
+        fwrite(STDOUT, "Resend webhooks are ready. {$events} event(s) recorded.\n");
+        return 0;
     }
 
     private function threadsSync(): int
