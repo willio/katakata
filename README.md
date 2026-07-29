@@ -12,90 +12,98 @@ See [`docs/MASTER_SPECIFICATION.md`](docs/MASTER_SPECIFICATION.md) for
 the full vision, philosophy, and architecture. This README covers only
 what's needed to run what exists today.
 
-## Status: Phase 1 — Content Engine
+## Status: Phase 4 — Dashboard and Analytics in progress
 
-Phase 0 (Foundation) and Phase 1 (Content Engine) are done: the
-application bootstrap, routing, and a Repository that reads
-`content/` — posts, drafts, authors, assets — into structured objects.
-There is no rendering yet — that's Phase 2, and until then the
-homepage stays a placeholder. See
-[`docs/ROADMAP.md`](docs/ROADMAP.md) for the full phase plan and
-[`docs/subsystems/content-engine.md`](docs/subsystems/content-engine.md)
-for how the Content Engine works.
+Phases 0–3 are complete. Phase 4 now prioritizes the owner dashboard, privacy-bounded SQLite analytics, and reproducible SEO checks. The distribution adapter boundary and provider-neutral newsletter outbox already exist as the Phase 5 foundation. Katakata also has a protected browser editor,
+invite-only email/password accounts, WebAuthn passkeys, a local filesystem
+editor, canonical revision history, scheduled drafts, and an atomic publishing pipeline. See [`docs/ROADMAP.md`](docs/ROADMAP.md)
+and [`docs/subsystems/editorial.md`](docs/subsystems/editorial.md).
 
 ## Requirements
 
-- PHP 8.2 or later
+- PHP 8.2 or later with OpenSSL and PDO SQLite
 - Composer (optional — only needed to run the test suite via PHPUnit)
 
 ## Quickstart
 
 ```bash
 cp .env.example .env
-
-# Serve the site (defaults to http://127.0.0.1:8000)
 php bin/katakata serve
-
-# Or use PHP's built-in server directly
-php -S 127.0.0.1:8000 -t public
+# or: php -S 127.0.0.1:8000 -t public
 ```
 
-Visit `http://127.0.0.1:8000/` for the placeholder homepage, or
-`http://127.0.0.1:8000/healthz` for a JSON health check.
+Visit `http://127.0.0.1:8000/` for the homepage,
+`http://127.0.0.1:8000/healthz` for the health check, or a post's
+canonical `/{year}/{month}/{slug}` URL. The complete published archive is
+available at `/archive`; the authenticated owner dashboard is at `/dashboard`; feeds are available at `/feed.xml` and `/feed.json`,
+and author archives at `/authors/{slug}`.
 
 ## CLI
 
 ```bash
-php bin/katakata about             # Print app name and tagline
-php bin/katakata routes:list       # List registered routes
-php bin/katakata serve [host]      # Serve via PHP's built-in server
-php bin/katakata content:list      # List posts, drafts, authors, and assets
-php bin/katakata content:validate  # Validate all content; exit 1 if anything fails
+php bin/katakata about
+php bin/katakata routes:list
+php bin/katakata serve [host]
+php bin/katakata content:list
+php bin/katakata content:validate
+php bin/katakata draft:create <slug> <title>
+php bin/katakata draft:edit <slug>
+php bin/katakata draft:schedule <slug> <ISO-8601>
+php bin/katakata draft:publish <slug> [ISO-8601]
+php bin/katakata publish:due
+php bin/katakata revisions:list <slug>
+php bin/katakata auth:owner <email> <password>
+php bin/katakata auth:invite <email> [admin|editor]
+php bin/katakata distribution:publish <post-slug> [newsletter]
+php bin/katakata analytics:check
+php bin/katakata analytics:prune
+php bin/katakata seo:check
 ```
 
 ## Tests
 
 ```bash
-composer install   # only needed the first time, to fetch PHPUnit
+composer install
 composer test
 # or: vendor/bin/phpunit
 ```
 
-The application itself never requires Composer's autoloader to run —
-only the test suite does, via PHPUnit as a dev dependency.
+Set `ANALYTICS_SECRET` (or `APP_KEY`) in `.env`, then run
+`php bin/katakata analytics:check` during deployment. Visit recording is
+failure-isolated and never stores raw IP addresses.
+
+The application itself never requires Composer's autoloader to run.
 
 ## Repository Structure
 
 ```
-app/         Application code (Kernel, Container, Config, Http, Console, Content)
-bin/         CLI entrypoint (bin/katakata)
-bootstrap/   Shared bootstrap for HTTP, CLI, workers, and tests
-config/      Configuration files (loaded once at boot, then frozen)
-content/     Canonical Markdown content (posts, drafts, authors, assets)
-docs/        Master Specification, Roadmap, ADRs, subsystem specs
-public/      The only web-accessible directory (public/index.php)
-resources/   Views and other non-code assets (Phase 2+)
+app/         Application code
+bin/         CLI entrypoint
+bootstrap/   Shared bootstrap
+config/      Immutable configuration
+content/     Canonical Markdown content
+docs/        Specifications, ADRs, and subsystem docs
+public/      Web document root
+resources/   Plain PHP views and assets
 routes/      Route definitions
-storage/     Logs, cache, framework files
-tests/       PHPUnit test suite (plus tests/Fixtures/ for content fixtures)
+storage/     Reproducible runtime files
+tests/       PHPUnit suite and fixtures
 ```
 
-The `content/` folder ships with a couple of example posts, an
-author, and a draft so `content:list` has something to show out of
-the box — replace or delete them as you start writing for real.
-
-Only `public/` is web-accessible; everything else should sit outside
-the webserver's document root in a real deployment.
+The `content/` folder ships with example content. Only `public/` is
+web-accessible.
 
 ## Design Principles
-
-Three ADRs explain the foundational decisions behind what's here:
 
 - [ADR 0001 — Plain Markdown Storage](docs/adr/0001-plain-markdown-storage.md)
 - [ADR 0002 — PHP Runtime](docs/adr/0002-php-runtime.md)
 - [ADR 0003 — Static-first Architecture](docs/adr/0003-static-first-architecture.md)
-- [ADR 0004 — Threads Discussion Layer](docs/adr/0004-threads-discussion-layer.md) *(architecture only — no Threads adapter exists yet; that's Phase 4)*
+- [ADR 0004 — Threads Discussion Layer](docs/adr/0004-threads-discussion-layer.md)
 - [ADR 0005 — Minimal Front Matter Parser](docs/adr/0005-minimal-front-matter-parser.md)
+- [ADR 0006 — Plain PHP Views](docs/adr/0006-plain-php-views.md)
+- [ADR 0007 — Filesystem Editorial Transactions](docs/adr/0007-filesystem-editorial-transactions.md)
+- [ADR 0008 — Invite-only Authentication](docs/adr/0008-invite-only-authentication.md)
+- [ADR 0009 — SQLite Analytics and SEO](docs/adr/0009-sqlite-analytics-seo.md)
 
 ## Non-Negotiable Rules
 

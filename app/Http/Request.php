@@ -12,12 +12,14 @@ final class Request
     /**
      * @param array<string, string> $query
      * @param array<string, string> $server
+     * @param array<string, string> $body
      */
     public function __construct(
         public readonly string $method,
         public readonly string $path,
         public readonly array $query = [],
         public readonly array $server = [],
+        public readonly array $body = [],
     ) {
     }
 
@@ -32,6 +34,7 @@ final class Request
             path: $normalized === '' ? '/' : $normalized,
             query: $_GET,
             server: $_SERVER,
+            body: array_filter($_POST, 'is_string'),
         );
     }
 }

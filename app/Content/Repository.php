@@ -109,6 +109,17 @@ final class Repository
         return null;
     }
 
+    public function findDraft(string $slug): ?Draft
+    {
+        foreach ($this->drafts() as $draft) {
+            if ($draft->slug === $slug) {
+                return $draft;
+            }
+        }
+
+        return null;
+    }
+
     public function findAuthor(string $slug): ?Author
     {
         foreach ($this->authors() as $author) {

@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Katakata\Editorial;
+
+final class Document
+{
+    /** @param array<string, mixed> $meta */
+    public static function markdown(array $meta, string $body): string
+    {
+        $lines = ['---'];
+        foreach ($meta as $key => $value) {
+            if ($value === null || $value === []) {
+                continue;
+            }
+
+            if (is_array($value)) {
+                $lines[] = $key . ': [' . implode(', ', array_map(self::scalar(...), $value)) . ']';
+                continue;
+            }
+
+            $lines[] = $key . ': ' . self::scalar($value);
+        }
+
+        $lines[] = '---';
+        $lines[] = '';
+        $lines[] = rtrim($body);
+
+        return implode("\n", $lines) . "\n";
+    }
+
+    private static function scalar(mixed $value): string
+    {
+        $value = (string) $value;
+        if ($value !== '' && preg_match('/^[a-zA-Z0-9_.@\/-]+$/', $value)) {
+            return $value;
+        }
+
+        return '"' . str_replace(['\\', '"', "\n"], ['\\\\', '\\"', '\\n'], $value) . '"';
+    }
+}

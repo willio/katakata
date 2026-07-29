@@ -79,6 +79,7 @@ Katakata enables writers to:
 - document projects
 - collaborate with multiple authors
 - build permanent archives
+- understand publication health through privacy-bounded analytics
 
 from one canonical source.
 
@@ -324,6 +325,21 @@ Reading should be:
 The interface should never compete with the content.
 
 ---
+
+# Owner Dashboard
+
+The authenticated dashboard is the owner's orientation surface after login.
+
+It answers two questions without becoming a second content editor:
+
+- What is happening?
+- What should I do next?
+
+Content status is always useful without analytics. Observational analytics use
+the narrow SQLite exception accepted by ADR 0009; Markdown remains canonical
+and files remain authoritative for every authored object. Raw IP addresses
+are never stored. Dashboard failures never affect reading, editing, or
+publishing.
 
 # Newsletter
 
@@ -917,14 +933,23 @@ Editorial
 
 ## Phase 4
 
+Dashboard and Analytics
+
+- owner dashboard
+- privacy-bounded visit analytics
+- recent activity and regional aggregates
+- basic SEO checks
+
+## Phase 5
+
 Distribution
 
 - newsletter
 - Threads
 - webhooks
-- insights
+- engagement synchronization
 
-## Phase 5
+## Phase 6
 
 Extensibility
 
