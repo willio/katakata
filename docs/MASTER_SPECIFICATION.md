@@ -1,6 +1,6 @@
 # Katakata
 ## Master Specification
-### Revision 2.0
+### Revision 2.1
 
 > **Status:** Canonical Product Specification
 >
@@ -748,6 +748,88 @@ Every cache must be reproducible from canonical content.
 
 ---
 
+# Operational Data Strategy
+
+Katakata separates canonical content, operational state, analytical data, and published output.
+
+## Tier 1 — Canonical Content
+
+Markdown files under `content/` remain the only source of truth for articles, drafts, authors, and their durable metadata.
+
+No database may become authoritative for canonical content.
+
+## Tier 2 — Operational Index
+
+SQLite may be used for operational concerns that benefit from fast indexed access or transactional state.
+
+Approved uses include:
+
+- full-text search through FTS5
+- article, tag, author, and archive indexes
+- metadata caches
+- incremental build manifests
+- related-content indexes
+- sessions and queues when later required
+
+SQLite state must be reproducible from canonical content or other durable configuration wherever applicable. Deleting the operational index must never delete an article or prevent a full rebuild.
+
+## Tier 3 — Analytical Warehouse
+
+DuckDB may be used for analytical workloads over publication and engagement datasets.
+
+Approved uses include:
+
+- readership and publication trends
+- article and author performance
+- newsletter metrics
+- Threads engagement
+- dashboard datasets
+- historical and cohort analysis
+
+Analytics should be captured as append-only events and materialized into open formats such as Parquet. DuckDB queries these datasets but does not own canonical content or participate in the critical publishing path.
+
+## Tier 4 — Published Outputs
+
+Published HTML, RSS, JSON Feed, newsletters, search artifacts, and distribution payloads are derived outputs.
+
+All published outputs must remain reproducible from canonical content and configuration.
+
+## Data Flow
+
+```
+Markdown (canonical)
+        │
+        ▼
+Content Engine
+        │
+        ├──────────────► Renderer / Publishing Outputs
+        │
+        ├──────────────► SQLite Operational Index
+        │                  ├── Search
+        │                  ├── Metadata cache
+        │                  └── Incremental build state
+        │
+        └──────────────► Append-only Analytics Events
+                           │
+                           ▼
+                        Parquet
+                           │
+                           ▼
+                        DuckDB
+                           │
+                           ▼
+                     Reports / Insights
+```
+
+## Failure Boundaries
+
+- Publishing must work without DuckDB.
+- A missing SQLite index must be recoverable through a deterministic rebuild.
+- Analytics failures must never block publishing.
+- Neither SQLite nor DuckDB may contain the only durable copy of article content.
+
+---
+
 # Runtime
 
 Katakata uses a lightweight application kernel.
@@ -876,6 +958,25 @@ Extensibility
 - APIs
 - additional publishers
 
+## Phase 6
+
+Operational Index
+
+- SQLite schema and migrations
+- FTS5 search
+- metadata and archive indexes
+- incremental build manifest
+- deterministic rebuild commands
+
+## Phase 7
+
+Analytics Platform
+
+- append-only event model
+- Parquet export pipeline
+- DuckDB query service
+- publication, readership, newsletter, and Threads reports
+
 ---
 
 # Architecture Decision Records
@@ -888,6 +989,7 @@ Examples:
 - PHP Runtime
 - Static-first Architecture
 - Threads Discussion Layer
+- Operational and Analytical Data Layers
 
 ADRs explain **why** decisions exist.
 
@@ -900,6 +1002,8 @@ Subsystem documents explain **how** they work.
 - Markdown is canonical.
 - Files are authoritative.
 - Generated artifacts are disposable.
+- SQLite is supporting operational infrastructure, never canonical content storage.
+- DuckDB is supporting analytical infrastructure, never required for publishing.
 - Writers own their content.
 - Threads hosts discussion.
 - Katakata owns publication.
