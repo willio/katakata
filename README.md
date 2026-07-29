@@ -78,6 +78,15 @@ failure-isolated and never stores raw IP addresses.
 
 The application itself never requires Composer's autoloader to run.
 
+## Production identity and email
+
+The canonical production origin is `https://katakata.example`; the default
+administrative and sender address is `admin@katakata.example`. Production email
+uses a named transport selected by `MAIL_TRANSPORT`, with Resend as the initial
+provider and the filesystem driver retained for development.
+
+See the complete [mail transport and Resend setup guide](docs/subsystems/distribution.md#resend-production-setup-for-katakatancom).
+
 ## Repository Structure
 
 ```
