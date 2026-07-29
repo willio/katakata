@@ -76,25 +76,92 @@ php bin/katakata mail:work [limit]
 The transport contract is provider-independent. The default filesystem transport
 writes local delivery artifacts under `storage/distribution/mail/sent`.
 
-Production delivery uses Resend without changing queue or subscriber semantics:
+## Mail transport abstraction
+
+`MailQueue`, confirmation mail, and newsletter dispatch depend only on the
+`EmailTransport` interface. `EmailTransportRegistry` lazily resolves the
+named driver selected by `MAIL_TRANSPORT`; provider credentials are not
+validated until that driver is actually selected.
+
+The registered drivers are:
+
+- `filesystem` — local delivery artifacts; the development default.
+- `resend` — production HTTPS delivery through Resend.
+
+Adding another provider requires an `EmailTransport` implementation, one named
+registration in `bootstrap/app.php`, provider-specific immutable
+configuration, and a focused contract test. Queue persistence, idempotency,
+retry policy, subscriber state, and newsletter rendering must not contain
+provider branches. Only one transport is selected per process, but deployments
+can switch providers through configuration without changing calling code.
+
+The Resend adapter sends HTML and plain text to `POST /emails`, forwards the
+queue idempotency key, and turns non-success or malformed provider responses
+into ordinary retryable queue failures.
+
+## Resend production setup for katakata.example
+
+The canonical production site is `https://katakata.example`. The default
+administrative address and outbound sender are `admin@katakata.example`, rendered
+as `Katakata <admin@katakata.example>`. `MAIL_FROM` may later be changed without
+altering application code.
+
+1. In Resend, open **Domains**, add `katakata.example`, and use Resend's
+   Cloudflare connection to add the generated sending-authentication records.
+   For manual setup, copy the exact DKIM and SPF/return-path records shown by
+   Resend; their values are account-specific.
+2. Do not enable Resend inbound receiving and do not replace the existing root
+   MX records. Incoming mail for `admin@katakata.example` remains with the
+   configured mailbox provider; Resend is used only for application sending.
+3. Wait for the domain to show **Verified** in Resend.
+4. Create a dedicated API key named `katakata-production`, restrict it to
+   sending from `katakata.example`, and copy it immediately. Store it only in the
+   production environment.
+5. Configure production:
 
 ```env
+APP_URL=https://katakata.example
+NEWSLETTER_SECRET=use-a-long-random-secret
 MAIL_TRANSPORT=resend
-MAIL_FROM=Katakata <letters@example.com>
+MAIL_FROM="Katakata <admin@katakata.example>"
 RESEND_API_KEY=re_...
+RESEND_WEBHOOK_SECRET=whsec_...
 ```
 
-`MAIL_FROM` must use a sender on a verified Resend domain. The adapter sends
-HTML and plain text to `POST /emails`, forwards the queue idempotency key, and
-turns non-success or malformed provider responses into ordinary retryable queue
-failures. Keep `MAIL_TRANSPORT=filesystem` for local development.
+6. In Resend **Webhooks**, add
+   `https://katakata.example/webhooks/resend` and select
+   `email.delivered`, `email.bounced`, `email.complained`, and
+   `email.failed`. Copy that endpoint's signing secret into
+   `RESEND_WEBHOOK_SECRET`; it is separate from `RESEND_API_KEY`.
+7. Run the queue worker continuously or every minute. A cPanel cron entry can
+   use:
+
+```cron
+* * * * * cd /absolute/path/to/katakata && php bin/katakata mail:work >/dev/null 2>&1
+```
+
+8. Validate the deployment:
+
+```bash
+php bin/katakata routes:list
+php bin/katakata resend:webhooks:check
+php bin/katakata mail:work
+```
+
+Then submit a real address at `https://katakata.example/newsletter`, run the
+worker, confirm the message appears in Resend logs, use its confirmation link,
+and verify subsequent delivery/webhook events. Resend's current references are
+the [Cloudflare domain guide](https://resend.com/docs/knowledge-base/cloudflare),
+[domain management](https://resend.com/docs/dashboard/domains/introduction),
+[API-key management](https://resend.com/docs/dashboard/api-keys/introduction),
+and [webhook event types](https://resend.com/docs/webhooks/event-types).
 
 ## Resend delivery reconciliation
 
 Register the production endpoint in Resend as:
 
 ```text
-POST https://your-domain.example/webhooks/resend
+POST https://katakata.example/webhooks/resend
 ```
 
 Set its signing secret independently from the API key:
@@ -181,7 +248,7 @@ channels remain unaffected.
 
 ## Deliberate limits
 
-- Resend is the production transport; delivery still requires a verified sender,
+- Resend is the initial production transport; the registry permits additional providers. Delivery still requires a verified sender,
   API key, and a continuously scheduled `mail:work` process.
 - Failed queue creation is reported by CLI publication and isolated from
   canonical publication; operators can safely rerun `newsletter:dispatch`.
