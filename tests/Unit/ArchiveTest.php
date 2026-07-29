@@ -22,7 +22,7 @@ final class ArchiveTest extends TestCase
 
         $years = (new Archive())->years($posts);
 
-        self::assertSame(['2026', '2025'], array_keys($years));
+        self::assertSame([2026, 2025], array_keys($years));
         self::assertSame(['new'], array_map(
             static fn (Post $post): string => $post->slug,
             $years['2026'],

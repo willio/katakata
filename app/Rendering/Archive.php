@@ -10,9 +10,9 @@ use Katakata\Content\Post;
 final class Archive
 {
     /**
-     * @param Collection<Post> $posts
-     * @return array<string, array<int, Post>>
-     */
+	 * @param Collection<Post> $posts
+	 * @return array<int, array<int, Post>>
+	 */
     public function years(Collection $posts): array
     {
         $years = [];
