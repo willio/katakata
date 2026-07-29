@@ -103,6 +103,12 @@ Set its signing secret independently from the API key:
 RESEND_WEBHOOK_SECRET=whsec_...
 ```
 
+Validate deployment configuration and storage access with:
+
+```bash
+php bin/katakata resend:webhooks:check
+```
+
 The endpoint verifies the raw request body, `svix-id`, timestamp, and every
 eligible v1 signature before processing. Timestamps outside a five-minute
 window are rejected. Each `svix-id` is persisted once under
@@ -112,7 +118,9 @@ replays idempotent.
 The stored record is deliberately minimal: provider email id, event type,
 hashed recipients, provider/receipt timestamps, and the suppression count.
 Raw webhook payloads, subjects, and duplicate recipient addresses are not
-retained. Verified `email.bounced` and `email.complained` events immediately
+retained. Resend dashboard replays enter the same idempotent endpoint; Katakata
+does not retain authenticated raw payloads for a second local replay system.
+Verified `email.bounced` and `email.complained` events immediately
 suppress an existing subscriber. Delivered and failed states are recorded
 without changing consent. A provider suppression cannot be bypassed through
 the public subscription flow.
