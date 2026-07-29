@@ -85,7 +85,7 @@ administrative and sender address is `admin@katakata.example`. Production email
 uses a named transport selected by `MAIL_TRANSPORT`, with Resend as the initial
 provider and the filesystem driver retained for development.
 
-See the complete [mail transport and Resend setup guide](docs/subsystems/distribution.md#resend-production-setup-for-katakatancom).
+See the complete [mail transport and Resend setup guide](docs/subsystems/distribution.md#resend-production-setup-for-katakatacom).
 
 ## Repository Structure
 
