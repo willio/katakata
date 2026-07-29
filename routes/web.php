@@ -8,6 +8,7 @@ use Katakata\Auth\Session;
 use Katakata\Auth\WebAuthn;
 use Katakata\Content\Repository;
 use Katakata\Dashboard\DashboardAnalytics;
+use Katakata\Dashboard\DashboardBuzz;
 use Katakata\Editorial\DraftEditor;
 use Katakata\Editorial\DraftVersion;
 use Katakata\Editorial\Publisher;
