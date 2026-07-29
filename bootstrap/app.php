@@ -20,6 +20,7 @@ use Katakata\Editorial\Scheduler;
 use Katakata\Distribution\ConfirmationMailer;
 use Katakata\Distribution\Distributor;
 use Katakata\Distribution\EmailTransport;
+use Katakata\Distribution\EmailTransportRegistry;
 use Katakata\Distribution\FilesystemEmailTransport;
 use Katakata\Distribution\MailQueue;
 use Katakata\Dashboard\DashboardAnalytics;
@@ -183,23 +184,30 @@ $app->singleton(
     ),
 );
 $app->singleton(
-    EmailTransport::class,
-    static function (Application $container): EmailTransport {
-        $transport = strtolower((string) $container->config()->get('mail.transport', 'filesystem'));
-        if ($transport === 'resend') {
-            return new ResendEmailTransport(
-                (string) $container->config()->get('mail.resend_key', ''),
-                (string) $container->config()->get('mail.from', ''),
+    EmailTransportRegistry::class,
+    static function (Application $container): EmailTransportRegistry {
+        return (new EmailTransportRegistry())
+            ->register(
+                'filesystem',
+                static fn (): EmailTransport => new FilesystemEmailTransport(
+                    $container->storagePath('distribution/mail/sent'),
+                    $container->make(AtomicFile::class),
+                ),
+            )
+            ->register(
+                'resend',
+                static fn (): EmailTransport => new ResendEmailTransport(
+                    (string) $container->config()->get('mail.resend_key', ''),
+                    (string) $container->config()->get('mail.from', ''),
+                ),
             );
-        }
-        if ($transport !== 'filesystem') {
-            throw new RuntimeException("Unsupported mail transport [{$transport}].");
-        }
-        return new FilesystemEmailTransport(
-            $container->storagePath('distribution/mail/sent'),
-            $container->make(AtomicFile::class),
-        );
     },
+);
+$app->singleton(
+    EmailTransport::class,
+    static fn (Application $container): EmailTransport => $container
+        ->make(EmailTransportRegistry::class)
+        ->resolve((string) $container->config()->get('mail.transport', 'filesystem')),
 );
 $app->singleton(
     MailQueue::class,
