@@ -32,6 +32,8 @@ use Katakata\Distribution\ResendEmailTransport;
 use Katakata\Distribution\ResendWebhook;
 use Katakata\Distribution\ThreadsAdapter;
 use Katakata\Distribution\ThreadsApi;
+use Katakata\Distribution\ThreadsEngagementSync;
+use Katakata\Distribution\ThreadsInsightsApi;
 use Katakata\Distribution\ThreadsReplySync;
 use Katakata\Distribution\ThreadsStore;
 use Katakata\Distribution\SubscriberStore;
@@ -266,11 +268,22 @@ $app->singleton(
     ),
 );
 $app->singleton(
+    ThreadsInsightsApi::class,
+    static fn (Application $container): ThreadsInsightsApi => $container->make(ThreadsApi::class),
+);
+$app->singleton(
     ThreadsAdapter::class,
     static fn (Application $container): ThreadsAdapter => new ThreadsAdapter(
         $container->make(ThreadsApi::class),
         $container->make(ThreadsStore::class),
         (string) $container->config()->get('app.url', 'http://localhost:8000'),
+    ),
+);
+$app->singleton(
+    ThreadsEngagementSync::class,
+    static fn (Application $container): ThreadsEngagementSync => new ThreadsEngagementSync(
+        $container->make(ThreadsInsightsApi::class),
+        $container->make(ThreadsStore::class),
     ),
 );
 $app->singleton(
