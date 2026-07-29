@@ -103,10 +103,12 @@ final class SubscriberStore
                 is_array($subscriber)
                 && hash_equals($this->unsubscribeToken((string) $id, (string) ($subscriber['email'] ?? '')), $token)
             ) {
-                $subscriber['status'] = 'unsubscribed';
-                $subscriber['unsubscribed_at'] = $now->format(DateTimeImmutable::ATOM);
-                $data['subscribers'][$id] = $subscriber;
-                $this->write($data);
+                if (($subscriber['status'] ?? null) !== 'suppressed') {
+                    $subscriber['status'] = 'unsubscribed';
+                    $subscriber['unsubscribed_at'] = $now->format(DateTimeImmutable::ATOM);
+                    $data['subscribers'][$id] = $subscriber;
+                    $this->write($data);
+                }
 
                 return ['email' => (string) $subscriber['email'], 'status' => 'unsubscribed'];
             }
