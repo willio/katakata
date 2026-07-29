@@ -55,6 +55,10 @@ php bin/katakata revisions:list <slug>
 php bin/katakata auth:owner <email> <password>
 php bin/katakata auth:invite <email> [admin|editor]
 php bin/katakata distribution:publish <post-slug> [newsletter]
+php bin/katakata newsletter:dispatch <post-slug>
+php bin/katakata mail:work [limit]
+php bin/katakata resend:webhooks:check
+php bin/katakata threads:sync
 php bin/katakata analytics:check
 php bin/katakata analytics:prune
 php bin/katakata seo:check
