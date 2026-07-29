@@ -31,8 +31,8 @@ final class SubscriberStore
         $id = hash('sha256', $email);
         $existing = $data['subscribers'][$id] ?? null;
 
-        if (is_array($existing) && ($existing['status'] ?? null) === 'active') {
-            throw new RuntimeException('This email address is already subscribed.');
+        if (is_array($existing) && in_array(($existing['status'] ?? null), ['active', 'suppressed'], true)) {
+            throw new RuntimeException('This email address cannot start a new subscription.');
         }
 
         $token = bin2hex(random_bytes(32));
@@ -113,6 +113,30 @@ final class SubscriberStore
         }
 
         throw new RuntimeException('Newsletter unsubscribe token is invalid.');
+    }
+
+    public function suppress(string $email, string $reason, ?DateTimeImmutable $now = null): bool
+    {
+        $email = $this->email($email);
+        $now ??= new DateTimeImmutable();
+        $data = $this->read();
+        $id = hash('sha256', $email);
+        $subscriber = $data['subscribers'][$id] ?? null;
+
+        if (!is_array($subscriber)) {
+            return false;
+        }
+        if (($subscriber['status'] ?? null) === 'suppressed') {
+            return false;
+        }
+
+        $subscriber['status'] = 'suppressed';
+        $subscriber['suppressed_at'] = $now->format(DateTimeImmutable::ATOM);
+        $subscriber['suppression_reason'] = $reason;
+        $data['subscribers'][$id] = $subscriber;
+        $this->write($data);
+
+        return true;
     }
 
     /** @return list<array{email: string, status: string, requested_at: string, confirmed_at: ?string}> */
