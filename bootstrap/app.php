@@ -28,6 +28,7 @@ use Katakata\Distribution\NewsletterAdapter;
 use Katakata\Distribution\NewsletterDispatcher;
 use Katakata\Distribution\MetaThreadsApi;
 use Katakata\Distribution\ResendEmailTransport;
+use Katakata\Distribution\ResendWebhook;
 use Katakata\Distribution\ThreadsAdapter;
 use Katakata\Distribution\ThreadsApi;
 use Katakata\Distribution\ThreadsReplySync;
@@ -230,6 +231,15 @@ $app->singleton(
     static fn (Application $container): SubscriberStore => new SubscriberStore(
         $container->storagePath('distribution/subscribers.json'),
         (string) $container->config()->get('newsletter.secret', ''),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    ResendWebhook::class,
+    static fn (Application $container): ResendWebhook => new ResendWebhook(
+        $container->storagePath('distribution/resend/webhooks'),
+        (string) $container->config()->get('mail.resend_webhook_secret', ''),
+        $container->make(SubscriberStore::class),
         $container->make(AtomicFile::class),
     ),
 );
