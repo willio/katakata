@@ -41,6 +41,23 @@ final class ThreadsStore
         $this->write($state);
     }
 
+    /** @param array{views: int, likes: int, replies: int, reposts: int, quotes: int, shares: int} $metrics */
+    public function replaceEngagement(string $postSlug, array $metrics): void
+    {
+        $state = $this->read();
+        $state['engagement'][$postSlug] = [
+            'metrics' => $metrics,
+            'synced_at' => gmdate(DATE_ATOM),
+        ];
+        $this->write($state);
+    }
+
+    /** @return array<string, array{metrics: array{views: int, likes: int, replies: int, reposts: int, quotes: int, shares: int}, synced_at: string}> */
+    public function engagement(): array
+    {
+        return $this->read()['engagement'];
+    }
+
     /** @return list<array{id: string, post_slug: string, text: string, username: string, timestamp: string, permalink: string, avatar_url: ?string}> */
     public function recentReplies(int $limit = 8): array
     {
@@ -55,15 +72,15 @@ final class ThreadsStore
         return array_slice(array_values($all), 0, max(0, $limit));
     }
 
-    /** @return array{version: int, publications: array<string, array{media_id: string, permalink: ?string, published_at: string}>, replies: array<string, list<array{id: string, text: string, username: string, timestamp: string, permalink: string, avatar_url: ?string}>>, synced_at: ?string} */
+    /** @return array{version: int, publications: array<string, array{media_id: string, permalink: ?string, published_at: string}>, replies: array<string, list<array{id: string, text: string, username: string, timestamp: string, permalink: string, avatar_url: ?string}>>, engagement: array<string, array{metrics: array{views: int, likes: int, replies: int, reposts: int, quotes: int, shares: int}, synced_at: string}>, synced_at: ?string} */
     private function read(): array
     {
         if (!is_file($this->path)) {
-            return ['version' => 1, 'publications' => [], 'replies' => [], 'synced_at' => null];
+            return ['version' => 2, 'publications' => [], 'replies' => [], 'engagement' => [], 'synced_at' => null];
         }
         $decoded = json_decode((string) file_get_contents($this->path), true);
         return is_array($decoded)
-            ? array_replace(['version' => 1, 'publications' => [], 'replies' => [], 'synced_at' => null], $decoded)
+            ? array_replace(['version' => 2, 'publications' => [], 'replies' => [], 'engagement' => [], 'synced_at' => null], $decoded)
             : ['version' => 1, 'publications' => [], 'replies' => [], 'synced_at' => null];
     }
 
