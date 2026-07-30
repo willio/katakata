@@ -14,6 +14,7 @@ use Katakata\Editorial\DraftVersion;
 use Katakata\Editorial\Publisher;
 use Katakata\Distribution\ConfirmationMailer;
 use Katakata\Distribution\NewsletterDispatcher;
+use Katakata\Distribution\ResendWebhook;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
@@ -105,6 +106,25 @@ $renderNewsletter = static function (
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
     ]), $error === null ? 200 : 422);
 };
+
+$router->post('/webhooks/resend', function (Request $request) use ($app): Response {
+    try {
+        $result = $app->make(ResendWebhook::class)->handle($request->rawBody, [
+            'svix-id' => $request->header('svix-id') ?? '',
+            'svix-timestamp' => $request->header('svix-timestamp') ?? '',
+            'svix-signature' => $request->header('svix-signature') ?? '',
+        ]);
+
+        return Response::json([
+            'received' => true,
+            'duplicate' => $result['duplicate'],
+        ]);
+    } catch (\InvalidArgumentException) {
+        return Response::json(['error' => 'Invalid webhook.'], 400);
+    } catch (\Throwable) {
+        return Response::json(['error' => 'Webhook processing failed.'], 500);
+    }
+});
 
 $router->get('/newsletter', fn (Request $request): Response => $renderNewsletter());
 

@@ -20,6 +20,7 @@ final class Request
         public readonly array $query = [],
         public readonly array $server = [],
         public readonly array $body = [],
+        public readonly string $rawBody = '',
     ) {
     }
 
@@ -35,6 +36,15 @@ final class Request
             query: $_GET,
             server: $_SERVER,
             body: array_filter($_POST, 'is_string'),
+            rawBody: (string) file_get_contents('php://input'),
         );
+    }
+
+    public function header(string $name): ?string
+    {
+        $key = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+        $value = $this->server[$key] ?? null;
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 }

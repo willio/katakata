@@ -55,6 +55,10 @@ php bin/katakata revisions:list <slug>
 php bin/katakata auth:owner <email> <password>
 php bin/katakata auth:invite <email> [admin|editor]
 php bin/katakata distribution:publish <post-slug> [newsletter]
+php bin/katakata newsletter:dispatch <post-slug>
+php bin/katakata mail:work [limit]
+php bin/katakata resend:webhooks:check
+php bin/katakata threads:sync
 php bin/katakata analytics:check
 php bin/katakata analytics:prune
 php bin/katakata seo:check
@@ -73,6 +77,15 @@ Set `ANALYTICS_SECRET` (or `APP_KEY`) in `.env`, then run
 failure-isolated and never stores raw IP addresses.
 
 The application itself never requires Composer's autoloader to run.
+
+## Production identity and email
+
+The canonical production origin is `https://katakata.example`; the default
+administrative and sender address is `admin@katakata.example`. Production email
+uses a named transport selected by `MAIL_TRANSPORT`, with Resend as the initial
+provider and the filesystem driver retained for development.
+
+See the complete [mail transport and Resend setup guide](docs/subsystems/distribution.md#resend-production-setup-for-katakatacom).
 
 ## Repository Structure
 

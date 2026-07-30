@@ -80,7 +80,7 @@ Work has resumed on the provider-independent distribution stack while Phase 4's 
 - [x] Production email provider (Resend)
 - [x] Threads publish/read adapters
 - [x] Explicit reply synchronization and Dashboard The Buzz presentation
-- [ ] Webhooks and retry processing
+- [x] Authenticated Resend webhooks and delivery-state reconciliation
 - [ ] Engagement metadata synchronization
 
 See [`docs/subsystems/distribution.md`](./subsystems/distribution.md).
