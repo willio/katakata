@@ -30,6 +30,7 @@ See [`docs/subsystems/content-engine.md`](./subsystems/content-engine.md).
 - [x] Chronological and author archives
 - [x] RSS and JSON Feed
 - [x] Typography system
+- [x] Reader-facing homepage with latest articles, author context, newsletter signup, and feed discovery
 
 See [`docs/subsystems/rendering.md`](./subsystems/rendering.md).
 
