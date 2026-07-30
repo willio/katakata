@@ -6,7 +6,7 @@ namespace Katakata\Distribution;
 
 use RuntimeException;
 
-final class MetaThreadsApi implements ThreadsApi
+final class MetaThreadsApi implements ThreadsApi, ThreadsInsightsApi
 {
     public function __construct(
         private readonly string $userId,
@@ -66,6 +66,28 @@ final class MetaThreadsApi implements ThreadsApi
         }
 
         return $replies;
+    }
+
+    public function insights(string $mediaId): array
+    {
+        $payload = $this->request('GET', "/{$mediaId}/insights", [
+            'metric' => 'views,likes,replies,reposts,quotes,shares',
+        ]);
+        $rows = $payload['data'] ?? [];
+        if (!is_array($rows)) {
+            throw new RuntimeException('Threads returned an invalid insights response.');
+        }
+
+        $metrics = ['views' => 0, 'likes' => 0, 'replies' => 0, 'reposts' => 0, 'quotes' => 0, 'shares' => 0];
+        foreach ($rows as $row) {
+            if (!is_array($row) || !is_string($row['name'] ?? null) || !array_key_exists($row['name'], $metrics)) {
+                continue;
+            }
+            $value = $row['values'][0]['value'] ?? $row['total_value']['value'] ?? 0;
+            $metrics[$row['name']] = is_numeric($value) ? max(0, (int) $value) : 0;
+        }
+
+        return $metrics;
     }
 
     /** @param array<string, string> $parameters @return array<string, mixed> */

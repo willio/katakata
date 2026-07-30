@@ -218,7 +218,7 @@ php bin/katakata newsletter:dispatch <post-slug>
 php bin/katakata mail:work
 ```
 
-## Threads publish and reply sync
+## Threads publish, reply, and engagement sync
 
 Threads remains opt-in and uses the official Threads API behind `ThreadsApi`.
 Publishing creates a text container from the canonical Post and canonical URL,
@@ -238,9 +238,12 @@ With Threads enabled, publish and synchronize replies explicitly using:
 ```bash
 php bin/katakata distribution:publish <post-slug> threads
 php bin/katakata threads:sync
+php bin/katakata threads:engagement:sync
 ```
 
 `threads:sync` returns a nonzero status when any mapped post fails, while preserving successful per-post cache updates. Schedule it independently from publication; provider read failure never affects canonical content or Dashboard availability.
+
+`threads:engagement:sync` reads aggregate `views`, `likes`, `replies`, `reposts`, `quotes`, and `shares` from the official media insights endpoint. It stores one rebuildable metric snapshot per mapped post in the same generated Threads state. Failures are isolated per post and preserve the last successful snapshot; no engagement metric is written into canonical Markdown.
 
 The access token is never written to generated state. Missing or invalid
 credentials fail only the Threads delivery; canonical publication and other
@@ -252,6 +255,6 @@ channels remain unaffected.
   API key, and a continuously scheduled `mail:work` process.
 - Failed queue creation is reported by CLI publication and isolated from
   canonical publication; operators can safely rerun `newsletter:dispatch`.
-- OAuth connection UI, token refresh, and deployment-specific reply-sync scheduling remain subsequent slices.
+- OAuth connection UI, token refresh, and deployment-specific reply/engagement scheduling remain subsequent slices.
 - Webhook storage is provider operational state and remains outside canonical
   Markdown content.
