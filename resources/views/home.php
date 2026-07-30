@@ -4,9 +4,17 @@
 /** @var string $siteUrl */
 /** @var array<int, \Katakata\Content\Post> $posts */
 /** @var array<string, \Katakata\Content\Author|null> $authors */
-/** @var string $csrf */
 $lead = $posts[0] ?? null;
-$more = array_slice($posts, 1);
+$previous = array_slice($posts, 1, 5);
+$leadAuthor = $lead === null ? null : ($authors[$lead->slug] ?? null);
+$archiveYear = null;
+
+foreach ($posts as $post) {
+    if ($lead !== null && $post->date->format('Y') !== $lead->date->format('Y')) {
+        $archiveYear = $post->date->format('Y');
+        break;
+    }
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -20,93 +28,64 @@ $more = array_slice($posts, 1);
     <link rel="alternate" type="application/feed+json" title="<?= e($name) ?> JSON Feed" href="/feed.json">
     <link rel="stylesheet" href="/assets/css/site.css">
 </head>
-<body>
-    <header class="site-header">
-        <a class="site-name" href="/"><?= e($name) ?></a>
+<body class="home-page">
+    <header class="home-header">
+        <a class="home-mark" href="/" aria-label="<?= e($name) ?> home"><?= e($name) ?></a>
         <nav aria-label="Primary">
+            <a href="/newsletter">Newsletter</a>
             <a href="/archive">Archive</a>
-            <a href="/feed.xml">RSS</a>
         </nav>
     </header>
-    <main class="page-shell home-shell">
-        <header class="home-intro">
-            <p class="eyebrow">Independent publishing</p>
-            <h1><?= e($name) ?></h1>
-            <p class="tagline"><?= e($tagline) ?></p>
-        </header>
 
+    <main class="home-editorial">
         <?php if ($lead === null): ?>
             <section class="home-empty" aria-labelledby="latest-writing">
-                <p class="eyebrow">Latest writing</p>
-                <h2 id="latest-writing">The first article is taking shape.</h2>
+                <p class="home-eyebrow">Latest</p>
+                <h1 id="latest-writing">The first article is taking shape.</h1>
                 <p>New writing will appear here when it is published.</p>
                 <a href="/archive">Browse the archive</a>
             </section>
         <?php else: ?>
-            <section class="home-latest" aria-labelledby="latest-writing">
-                <header class="section-heading">
-                    <p class="eyebrow">Latest writing</p>
-                    <a href="/archive">View all</a>
-                </header>
-                <article class="lead-story">
-                    <p class="story-meta">
-                        <time datetime="<?= e($lead->date->format('Y-m-d')) ?>"><?= e($lead->date->format('F j, Y')) ?></time>
-                        <?php $leadAuthor = $authors[$lead->slug] ?? null; ?>
-                        <?php if ($leadAuthor !== null): ?>
-                            · <a href="/authors/<?= e($leadAuthor->slug) ?>"><?= e($leadAuthor->name) ?></a>
-                        <?php elseif ($lead->author !== null): ?>
-                            · <?= e($lead->author) ?>
-                        <?php endif; ?>
-                    </p>
-                    <h2 id="latest-writing"><a href="<?= e($lead->url()) ?>"><?= e($lead->title) ?></a></h2>
-                    <?php if ($lead->excerpt !== null): ?><p class="story-excerpt"><?= e($lead->excerpt) ?></p><?php endif; ?>
-                    <a class="story-link" href="<?= e($lead->url()) ?>">Read article</a>
-                </article>
+            <article class="home-lead" aria-labelledby="latest-writing">
+                <p class="home-eyebrow">Latest</p>
+                <h1 id="latest-writing"><a href="<?= e($lead->url()) ?>"><?= e($lead->title) ?></a></h1>
+                <?php if ($lead->excerpt !== null): ?><p class="home-dek"><?= e($lead->excerpt) ?></p><?php endif; ?>
+                <p class="home-actions"><a href="<?= e($lead->url()) ?>">Read</a></p>
+            </article>
 
-                <?php if ($more !== []): ?>
-                    <ol class="home-story-list">
-                        <?php foreach ($more as $post): ?>
+            <?php if ($previous !== []): ?>
+                <section class="home-index" aria-label="Previous writing">
+                    <ol>
+                        <?php foreach ($previous as $post): ?>
                             <?php $author = $authors[$post->slug] ?? null; ?>
                             <li>
-                                <article>
-                                    <p class="story-meta">
-                                        <time datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('F j, Y')) ?></time>
-                                        <?php if ($author !== null): ?>
-                                            · <a href="/authors/<?= e($author->slug) ?>"><?= e($author->name) ?></a>
-                                        <?php elseif ($post->author !== null): ?>
-                                            · <?= e($post->author) ?>
-                                        <?php endif; ?>
-                                    </p>
-                                    <h3><a href="<?= e($post->url()) ?>"><?= e($post->title) ?></a></h3>
-                                    <?php if ($post->excerpt !== null): ?><p><?= e($post->excerpt) ?></p><?php endif; ?>
-                                </article>
+                                <a class="home-index-title" href="<?= e($post->url()) ?>"><?= e($post->title) ?></a>
+                                <p class="home-index-meta">
+                                    <?php if ($author !== null): ?>
+                                        <a href="/authors/<?= e($author->slug) ?>"><?= e($author->name) ?></a>
+                                    <?php elseif ($post->author !== null): ?>
+                                        <?= e($post->author) ?>
+                                    <?php endif; ?>
+                                    <time datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('Y m d')) ?></time>
+                                </p>
                             </li>
                         <?php endforeach; ?>
                     </ol>
-                <?php endif; ?>
-            </section>
+                </section>
+            <?php endif; ?>
+
+            <?php if ($archiveYear !== null): ?>
+                <p class="home-previous-edition"><a href="/archive#year-<?= e($archiveYear) ?>"><?= e($archiveYear) ?> Edition →</a></p>
+            <?php endif; ?>
         <?php endif; ?>
 
-        <aside class="home-newsletter" aria-labelledby="newsletter-title">
-            <div>
-                <p class="eyebrow">Newsletter</p>
-                <h2 id="newsletter-title">New writing, delivered quietly.</h2>
-                <p>Receive each new article by email. No feed algorithms, no noise.</p>
-            </div>
-            <form method="post" action="/newsletter/subscribe">
-                <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                <div class="field">
-                    <label for="home-newsletter-email">Email</label>
-                    <div class="field-control">
-                        <input id="home-newsletter-email" name="email" type="email" autocomplete="email" placeholder="Email" required>
-                    </div>
-                </div>
-                <div class="form-actions"><button class="button" type="submit">Subscribe</button></div>
-                <p class="quiet">Confirm once. Unsubscribe whenever you like.</p>
-            </form>
-        </aside>
+        <form class="home-search" method="get" action="/archive" role="search">
+            <label for="home-search-query">Search editions</label>
+            <input id="home-search-query" name="q" type="search" autocomplete="off">
+        </form>
     </main>
-    <footer class="site-footer">
+
+    <footer class="home-footer">
         <p><?= e($name) ?></p>
         <nav aria-label="Feeds"><a href="/feed.xml">RSS</a><a href="/feed.json">JSON Feed</a></nav>
     </footer>

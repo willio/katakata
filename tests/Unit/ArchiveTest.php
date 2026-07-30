@@ -1,7 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
 namespace Katakata\Tests\Unit;
 
 use DateTimeImmutable;
@@ -33,17 +32,40 @@ final class ArchiveTest extends TestCase
         ));
     }
 
-    private function post(string $slug, string $date, string $status = 'published'): Post
+    public function testItFiltersPublishedPostsAcrossEditorialFields(): void
     {
+        $posts = new Collection([
+            $this->post('calm-software', '2026-07-27', title: 'What Calm Software Means Here', body: 'Quiet systems.'),
+            $this->post('hello-world', '2026-01-15', title: 'Hello, World', tags: ['introduction']),
+            $this->post('private-note', '2026-01-01', 'draft', title: 'Calm draft'),
+        ]);
+
+        $years = (new Archive())->years($posts, 'calm');
+
+        self::assertSame([2026], array_keys($years));
+        self::assertSame(['calm-software'], array_map(
+            static fn (Post $post): string => $post->slug,
+            $years['2026'],
+        ));
+    }
+
+    private function post(
+        string $slug,
+        string $date,
+        string $status = 'published',
+        ?string $title = null,
+        array $tags = [],
+        string $body = '',
+    ): Post {
         return new Post(
             slug: $slug,
-            title: ucfirst($slug),
+            title: $title ?? ucfirst($slug),
             date: new DateTimeImmutable($date),
             author: null,
-            tags: [],
+            tags: $tags,
             excerpt: null,
             status: $status,
-            body: '',
+            body: $body,
             meta: [],
             path: "/content/{$slug}.md",
         );

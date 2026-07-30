@@ -60,10 +60,12 @@ $router->get('/', function (Request $request) use ($app, $recordVisit): Response
 $router->get('/archive', function (Request $request) use ($app, $recordVisit): Response {
     $recordVisit($request);
     $repository = $app->make(Repository::class);
+    $query = trim($request->query['q'] ?? '');
 
     return Response::html($app->make(View::class)->render('archive', [
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
-        'years' => $app->make(Archive::class)->years($repository->posts()),
+        'years' => $app->make(Archive::class)->years($repository->posts(), $query),
+        'query' => $query,
     ]));
 });
 
@@ -104,7 +106,6 @@ $router->get('/feed.json', function (Request $request) use ($app): Response {
 
     return new Response($feed, 200, ['Content-Type' => 'application/feed+json; charset=utf-8']);
 });
-
 
 $renderNewsletter = static function (
     string $mode = 'subscribe',
@@ -314,245 +315,107 @@ $router->get('/dashboard', function (Request $request) use ($app, $requireUser):
 
     return Response::html($app->make(View::class)->render('dashboard', [
         'user' => $user,
-        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
-        'publishedCount' => count($posts),
-        'draftCount' => count($drafts),
-        'recentDrafts' => array_slice($drafts, 0, 5),
-        'latestPosts' => array_slice($posts, 0, 5),
-        'seo' => $app->make(SeoChecker::class)->check(),
+        'posts' => $posts,
+        'drafts' => $drafts,
         'analytics' => $analytics,
-        'recentVisits' => $dashboardAnalytics->recent($analytics),
-        'buzz' => $app->make(DashboardBuzz::class)->recent(),
+        'buzz' => $app->make(DashboardBuzz::class)->latest(),
+        'seo' => $app->make(SeoChecker::class)->review($repository->posts()),
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
 
-$renderEditor = static function (?\Katakata\Content\Draft $draft = null, ?string $notice = null) use ($app, $requireUser): Response {
-    $user = $requireUser();
-    if ($user === null) {
+$router->get('/dashboard/editor', function (Request $request) use ($app, $requireUser): Response {
+    if ($requireUser() === null) {
         return Response::redirect('/login', 302);
     }
 
     return Response::html($app->make(View::class)->render('editor', [
-        'user' => $user,
-        'drafts' => $app->make(Repository::class)->drafts(),
-        'draft' => $draft,
+        'draft' => $app->make(DraftEditor::class)->open($request->query['slug'] ?? null),
         'csrf' => $app->make(Session::class)->csrf(),
-        'canInvite' => $app->make(Session::class)->canInvite(),
-        'notice' => $notice,
-        'draftVersion' => $draft === null ? '' : DraftVersion::of($draft),
     ]));
-};
-
-$router->get('/editor', fn (Request $request): Response => $renderEditor());
-$router->get('/editor/new', fn (Request $request): Response => $renderEditor());
-$router->get('/editor/drafts/{slug}', function (Request $request, string $slug) use ($app, $renderEditor): Response {
-    $draft = $app->make(Repository::class)->findDraft($slug);
-    return $draft === null ? Response::notFound() : $renderEditor($draft);
 });
 
-$router->post('/editor/drafts', function (Request $request) use ($app, $requireUser): Response {
+$router->post('/dashboard/editor/save', function (Request $request) use ($app, $requireUser): Response {
     if ($requireUser() === null) {
-        return Response::redirect('/login', 302);
-    }
-    if (!$app->make(Session::class)->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::html('Invalid CSRF token.', 419);
+        return Response::json(['error' => 'Unauthorised.'], 401);
     }
 
-    $slug = $request->body['slug'] ?? '';
-    $existing = $app->make(Repository::class)->findDraft($slug);
-    $meta = $existing?->meta ?? [];
-    unset($meta['title'], $meta['updated_at']);
-    $app->make(DraftEditor::class)->save($slug, $request->body['title'] ?? '', $request->body['body'] ?? '', $meta);
-    $app->make(Repository::class)->refresh();
-
-    return Response::redirect('/editor/drafts/' . rawurlencode($slug));
-});
-
-$router->post('/editor/drafts/{slug}/autosave', function (Request $request, string $slug) use ($app, $requireUser): Response {
-    if ($requireUser() === null) {
-        return Response::json(['error' => 'Authentication required.'], 401);
-    }
-    if (!$app->make(Session::class)->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::json(['error' => 'Invalid CSRF token.'], 419);
-    }
-
-    $existing = $app->make(Repository::class)->findDraft($slug);
-    if ($existing === null || !hash_equals($slug, $request->body['slug'] ?? '')) {
-        return Response::json(['error' => 'Draft was not found.'], 404);
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::json(['error' => 'The editor session expired.'], 422);
     }
 
     try {
-        $meta = $existing->meta;
-        unset($meta['title'], $meta['updated_at']);
-        $app->make(DraftEditor::class)->save(
-            $slug,
-            $request->body['title'] ?? '',
-            $request->body['body'] ?? '',
-            $meta,
-        );
-        $repository = $app->make(Repository::class);
-        $repository->refresh();
-        $saved = $repository->findDraft($slug);
-        if ($saved === null) {
-            throw new RuntimeException('Saved draft could not be reloaded.');
-        }
-
+        $draft = $app->make(DraftEditor::class)->save($request->body);
         return Response::json([
-            'version' => DraftVersion::of($saved),
-            'updated_at' => $saved->updatedAt?->format(DATE_ATOM),
-            'client_version' => $request->body['client_version'] ?? '',
+            'saved' => true,
+            'slug' => $draft->slug,
+            'updated_at' => $draft->updatedAt?->format(DATE_ATOM),
         ]);
-    } catch (Throwable $error) {
+    } catch (\Throwable $error) {
         return Response::json(['error' => $error->getMessage()], 422);
     }
 });
 
-$router->post('/editor/drafts/{slug}/publish', function (Request $request, string $slug) use ($app, $requireUser): Response {
+$router->post('/dashboard/editor/publish', function (Request $request) use ($app, $requireUser): Response {
     if ($requireUser() === null) {
         return Response::redirect('/login', 302);
     }
-    if (!$app->make(Session::class)->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::html('Invalid CSRF token.', 419);
-    }
 
-    $draft = $app->make(Repository::class)->findDraft($slug);
-    if ($draft === null) {
-        return Response::notFound();
-    }
-
-    $app->make(Publisher::class)->publish($draft);
-    $repository = $app->make(Repository::class);
-    $repository->refresh();
-    $post = $repository->findPost($draft->slug);
-    if ($post !== null) {
-        try {
-            $app->make(NewsletterDispatcher::class)->dispatch($post);
-        } catch (\Throwable) {
-            // Publication is canonical; downstream queue failure must not roll it back.
-        }
-    }
-    return Response::redirect('/archive');
-});
-
-$router->post('/editor/invitations', function (Request $request) use ($app): Response {
     $session = $app->make(Session::class);
-    if (!$session->canInvite()) {
-        return Response::html('Forbidden', 403);
-    }
     if (!$session->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::html('Invalid CSRF token.', 419);
-    }
-
-    $invite = $app->make(AccountStore::class)->invite(
-        $request->body['email'] ?? '',
-        $request->body['role'] ?? 'editor',
-    );
-    $url = rtrim((string) $app->config()->get('app.url', 'http://localhost:8000'), '/');
-    return Response::html('Invitation: ' . e($url . '/register?token=' . $invite['token']));
-});
-
-
-$decodeCredential = static function (mixed $value): array {
-    if (!is_string($value)) {
-        throw new RuntimeException('Passkey response is missing.');
-    }
-    $decoded = json_decode($value, true);
-    if (!is_array($decoded)) {
-        throw new RuntimeException('Passkey response is invalid.');
-    }
-    foreach ($decoded as $key => $item) {
-        if (!is_string($key) || !is_string($item)) {
-            throw new RuntimeException('Passkey response is invalid.');
-        }
-    }
-    return $decoded;
-};
-
-$router->post('/passkeys/register/options', function (Request $request) use ($app): Response {
-    $session = $app->make(Session::class);
-    $account = $session->user();
-    if ($account === null) {
-        return Response::json(['error' => 'Authentication required.'], 401);
-    }
-    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::json(['error' => 'Invalid CSRF token.'], 419);
-    }
-
-    $challenge = $session->beginPasskey('register', ['account_id' => (string) $account['id']]);
-    return Response::json($app->make(WebAuthn::class)->registrationOptions($account, $challenge));
-});
-
-$router->post('/passkeys/register', function (Request $request) use ($app, $decodeCredential): Response {
-    $session = $app->make(Session::class);
-    $account = $session->user();
-    if ($account === null) {
-        return Response::json(['error' => 'Authentication required.'], 401);
-    }
-    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::json(['error' => 'Invalid CSRF token.'], 419);
+        return Response::redirect('/dashboard/editor?error=expired', 302);
     }
 
     try {
-        $ceremony = $session->consumePasskey('register');
-        if ($ceremony === null || !hash_equals((string) $account['id'], (string) ($ceremony['account_id'] ?? ''))) {
-            throw new RuntimeException('Passkey registration expired.');
-        }
-        $app->make(WebAuthn::class)->register(
-            (string) $account['id'],
-            (string) $ceremony['challenge'],
-            $decodeCredential($request->body['credential'] ?? null),
-        );
-        return Response::json(['ok' => true]);
-    } catch (Throwable $error) {
+        $post = $app->make(Publisher::class)->publish($request->body['slug'] ?? '');
+        $app->make(NewsletterDispatcher::class)->queue($post);
+        return Response::redirect($post->url(), 302);
+    } catch (\Throwable $error) {
+        return Response::redirect('/dashboard/editor?error=' . rawurlencode($error->getMessage()), 302);
+    }
+});
+
+$router->get('/dashboard/editor/version', function (Request $request) use ($app, $requireUser): Response {
+    if ($requireUser() === null) {
+        return Response::json(['error' => 'Unauthorised.'], 401);
+    }
+
+    try {
+        return Response::json([
+            'body' => $app->make(DraftVersion::class)->read(
+                $request->query['slug'] ?? '',
+                $request->query['version'] ?? '',
+            ),
+        ]);
+    } catch (\Throwable $error) {
+        return Response::json(['error' => $error->getMessage()], 404);
+    }
+});
+
+$router->post('/dashboard/passkeys/options', function (Request $request) use ($app, $requireUser): Response {
+    $user = $requireUser();
+    if ($user === null) {
+        return Response::json(['error' => 'Unauthorised.'], 401);
+    }
+
+    try {
+        return Response::json($app->make(WebAuthn::class)->registrationOptions($user));
+    } catch (\Throwable $error) {
         return Response::json(['error' => $error->getMessage()], 422);
     }
 });
 
-$router->post('/passkeys/login/options', function (Request $request) use ($app): Response {
-    $session = $app->make(Session::class);
-    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::json(['error' => 'Invalid CSRF token.'], 419);
+$router->post('/dashboard/passkeys/register', function (Request $request) use ($app, $requireUser): Response {
+    $user = $requireUser();
+    if ($user === null) {
+        return Response::json(['error' => 'Unauthorised.'], 401);
     }
 
     try {
-        $account = $app->make(AccountStore::class)->findByEmail($request->body['email'] ?? '');
-        if ($account === null) {
-            throw new RuntimeException('No passkey is registered for this account.');
-        }
-        $challenge = $session->beginPasskey('login', ['account_id' => (string) $account['id']]);
-        return Response::json($app->make(WebAuthn::class)->authenticationOptions($account, $challenge));
-    } catch (Throwable $error) {
+        $app->make(WebAuthn::class)->register($user, $request->rawBody);
+        return Response::json(['registered' => true]);
+    } catch (\Throwable $error) {
         return Response::json(['error' => $error->getMessage()], 422);
     }
-});
-
-$router->post('/passkeys/login', function (Request $request) use ($app, $decodeCredential): Response {
-    $session = $app->make(Session::class);
-    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::json(['error' => 'Invalid CSRF token.'], 419);
-    }
-
-    try {
-        $ceremony = $session->consumePasskey('login');
-        $account = is_array($ceremony)
-            ? $app->make(AccountStore::class)->find((string) ($ceremony['account_id'] ?? ''))
-            : null;
-        if ($account === null) {
-            throw new RuntimeException('Passkey authentication expired.');
-        }
-        $app->make(WebAuthn::class)->authenticate(
-            (string) $account['id'],
-            (string) $ceremony['challenge'],
-            $decodeCredential($request->body['credential'] ?? null),
-        );
-        $session->login($account);
-        return Response::json(['ok' => true, 'redirect' => '/editor']);
-    } catch (Throwable $error) {
-        return Response::json(['error' => $error->getMessage()], 422);
-    }
-});
-
-$router->get('/healthz', function (Request $request): Response {
-    return Response::json(['status' => 'ok']);
 });
