@@ -21,6 +21,7 @@ use Katakata\Http\Response;
 use Katakata\Rendering\Archive;
 use Katakata\Rendering\AuthorArchive;
 use Katakata\Rendering\Feed;
+use Katakata\Rendering\Home;
 use Katakata\Rendering\Markdown;
 use Katakata\Seo\SeoChecker;
 use Katakata\View;
