@@ -12,6 +12,7 @@ use Katakata\Http\Response;
 use Katakata\Mail\CampaignDispatcher;
 use Katakata\Mail\CampaignDraft;
 use Katakata\Mail\CampaignDraftConflict;
+use Katakata\Mail\CampaignDraftFactory;
 use Katakata\Mail\CampaignDraftReviewer;
 use Katakata\Mail\CampaignDraftStore;
 use Katakata\Mail\CampaignRetryService;
@@ -226,6 +227,29 @@ $router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, 
     }
 
     return Response::redirect('/mail/campaign/' . rawurlencode($campaign->id), 303);
+});
+
+$router->post('/mail/campaign/{id}/drafts', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
+    }
+
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::html('Invalid CSRF token.', 419);
+    }
+
+    $campaign = $app->make(CampaignStore::class)->find($id);
+    if ($campaign === null) {
+        return Response::notFound();
+    }
+
+    $actor = (string) ($user['email'] ?? $user['id'] ?? 'owner');
+    $draft = $app->make(CampaignDraftFactory::class)->fromCampaign($campaign, $actor);
+    $app->make(CampaignDraftStore::class)->create($draft);
+
+    return Response::redirect('/mail/campaign-drafts/' . rawurlencode($draft->id), 303);
 });
 
 $router->get('/mail/campaigns', function (Request $request) use ($app, $authorizeMail): Response {
