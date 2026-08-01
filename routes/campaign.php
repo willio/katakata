@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Katakata\Auth\Session;
+use Katakata\Email\DraftStore;
 use Katakata\Email\Mailbox;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
@@ -41,9 +42,11 @@ $router->get('/mail', function (Request $request) use ($app, $requireUser): Resp
         'attention' => $attention->summary(),
         'mailboxReadiness' => $mailbox->readiness(),
         'messages' => $mailbox->inbox(),
+        'drafts' => $app->make(DraftStore::class)->recent(),
         'queue' => $workspace->reviewQueue(),
         'audience' => $workspace->recipientPreview(),
         'campaign' => $workspace->campaignPreview($request->query['post'] ?? ''),
+        'newsletterReady' => !($app->make(\Katakata\Distribution\SubscriberStore::class) instanceof \Katakata\Distribution\UnavailableSubscriberStore),
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
@@ -101,9 +104,7 @@ $router->post('/mail/confirm', function (Request $request) use ($app, $requireUs
     }
 
     try {
-        $campaign = $app->make(CampaignDispatcher::class)->confirmAndQueue(
-            $request->body['post'] ?? '',
-        );
+        $campaign = $app->make(CampaignDispatcher::class)->confirmAndQueue($request->body['post'] ?? '');
         return Response::redirect('/mail/campaign/' . rawurlencode($campaign->id), 303);
     } catch (\Throwable) {
         return Response::redirect('/mail?area=campaigns', 302);
