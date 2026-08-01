@@ -79,7 +79,7 @@ $router->get('/mail/messages/{messageId}/attachments/{attachmentId}', function (
         return Response::notFound();
     }
 
-    return new Response($download->contents, 200, [
+    return new Response($download->content, 200, [
         'Content-Type' => $download->mediaType,
         'Content-Disposition' => 'attachment; filename="' . addcslashes($download->name, "\\\"") . '"',
     ]);
