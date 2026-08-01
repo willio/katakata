@@ -17,6 +17,7 @@ use Katakata\Mail\CampaignDispatcher;
 use Katakata\Mail\CampaignRetryService;
 use Katakata\Mail\CampaignStatus;
 use Katakata\Mail\CampaignStore;
+use Katakata\Mail\MailAttention;
 use Katakata\Mail\MailWorkspace;
 use Katakata\Rendering\Markdown;
 
@@ -65,6 +66,14 @@ $app->singleton(
     CampaignStatus::class,
     static fn (Application $container): CampaignStatus => new CampaignStatus(
         $container->storagePath('distribution/mail/queue'),
+    ),
+);
+$app->singleton(
+    MailAttention::class,
+    static fn (Application $container): MailAttention => new MailAttention(
+        $container->make(Mailbox::class),
+        $container->make(CampaignStore::class),
+        $container->make(CampaignStatus::class),
     ),
 );
 $app->singleton(
