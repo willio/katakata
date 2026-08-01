@@ -8,6 +8,7 @@ use Katakata\Auth\Session;
 use Katakata\Auth\WebAuthn;
 use Katakata\Content\Repository;
 use Katakata\Dashboard\DashboardAnalytics;
+use Katakata\Dashboard\DashboardAttention;
 use Katakata\Dashboard\DashboardBuzz;
 use Katakata\Editorial\DraftEditor;
 use Katakata\Editorial\DraftVersion;
@@ -23,7 +24,6 @@ use Katakata\Rendering\AuthorArchive;
 use Katakata\Rendering\Feed;
 use Katakata\Rendering\Home;
 use Katakata\Rendering\Markdown;
-use Katakata\Seo\SeoChecker;
 use Katakata\View;
 
 /**
@@ -156,7 +156,6 @@ $router->post('/newsletter/subscribe', function (Request $request) use ($app, $r
     } catch (\InvalidArgumentException) {
         return $renderNewsletter('subscribe', null, 'Email is invalid. Please enter a valid address.');
     } catch (\Throwable) {
-        // Deliberately hide whether the address already exists.
     }
 
     return $renderNewsletter(
@@ -291,13 +290,26 @@ $router->get('/dashboard', function (Request $request) use ($app, $requireUser):
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'recentDrafts' => array_slice($drafts, 0, 5),
         'latestPosts' => array_slice($posts, 0, 5),
-        'publishedCount' => count($posts),
-        'draftCount' => count($drafts),
+        'cards' => $app->make(DashboardAttention::class)->cards(),
         'analytics' => $analytics,
         'recentVisits' => $dashboardAnalytics->recent($analytics),
         'buzz' => $app->make(DashboardBuzz::class)->recent(),
-        'seo' => $app->make(SeoChecker::class)->check(),
         'csrf' => $app->make(Session::class)->csrf(),
+    ]));
+});
+
+$router->get('/analytics', function (Request $request) use ($app, $requireUser): Response {
+    if ($requireUser() === null) {
+        return Response::redirect('/login', 302);
+    }
+
+    $dashboardAnalytics = $app->make(DashboardAnalytics::class);
+    $analytics = $dashboardAnalytics->summary();
+
+    return Response::html($app->make(View::class)->render('analytics', [
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'analytics' => $analytics,
+        'recentVisits' => $dashboardAnalytics->recent($analytics),
     ]));
 });
 
@@ -378,20 +390,6 @@ $router->post('/dashboard/passkeys/options', function (Request $request) use ($a
 
     try {
         return Response::json($app->make(WebAuthn::class)->registrationOptions($user));
-    } catch (\Throwable $error) {
-        return Response::json(['error' => $error->getMessage()], 422);
-    }
-});
-
-$router->post('/dashboard/passkeys/register', function (Request $request) use ($app, $requireUser): Response {
-    $user = $requireUser();
-    if ($user === null) {
-        return Response::json(['error' => 'Unauthorised.'], 401);
-    }
-
-    try {
-        $app->make(WebAuthn::class)->register($user, $request->rawBody);
-        return Response::json(['registered' => true]);
     } catch (\Throwable $error) {
         return Response::json(['error' => $error->getMessage()], 422);
     }
