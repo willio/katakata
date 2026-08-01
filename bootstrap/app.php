@@ -309,8 +309,4 @@ $app->singleton(
     static fn (Application $container): View => View::forApplication($container),
 );
 
-(static function () use ($router, $app): void {
-    require $app->routesPath('web.php');
-})();
-
 return $app;

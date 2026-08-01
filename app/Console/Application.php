@@ -19,7 +19,6 @@ use Katakata\Distribution\MailQueue;
 use Katakata\Distribution\NewsletterDispatcher;
 use Katakata\Distribution\ThreadsEngagementSync;
 use Katakata\Distribution\ThreadsReplySync;
-use Katakata\Http\Router;
 use Katakata\Seo\SeoChecker;
 
 /**
@@ -126,9 +125,8 @@ final class Application
 
     private function routesList(): int
     {
-        $router = new Router();
         $app = $this->app;
-        require $this->app->routesPath('web.php');
+        $router = require $this->app->basePath('bootstrap/routes.php');
 
         foreach ($router->all() as $route) {
             fwrite(STDOUT, sprintf("%-6s %s\n", $route['method'], $route['path']));
