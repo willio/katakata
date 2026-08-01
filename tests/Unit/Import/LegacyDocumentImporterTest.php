@@ -29,15 +29,15 @@ final class LegacyDocumentImporterTest extends TestCase
 
         $fixture = DocxFixture::minimal($this->root . '/converted-template.docx');
         putenv('KATAKATA_TEST_DOCX=' . $fixture);
-        file_put_contents($this->root . '/bin/soffice', <<<'PHP'
-#!/opt/homebrew/bin/php
+        $script = '#!' . PHP_BINARY . "\n" . <<<'PHP'
 <?php
 $outIndex = array_search('--outdir', $argv, true);
 $out = $outIndex === false ? '' : ($argv[$outIndex + 1] ?? '');
 $source = $argv[count($argv) - 1] ?? '';
 $target = $out . DIRECTORY_SEPARATOR . pathinfo($source, PATHINFO_FILENAME) . '.docx';
 exit(copy((string) getenv('KATAKATA_TEST_DOCX'), $target) ? 0 : 1);
-PHP);
+PHP;
+        file_put_contents($this->root . '/bin/soffice', $script);
         chmod($this->root . '/bin/soffice', 0775);
         putenv('PATH=' . $this->root . '/bin:' . $this->originalPath);
     }
