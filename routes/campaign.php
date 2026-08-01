@@ -18,13 +18,25 @@ use Katakata\View;
 /**
  * @var \Katakata\Http\Router $router
  * @var \Katakata\Application $app
- * @var callable(): ?array $requireUser
  */
 
-$router->get('/mail', function (Request $request) use ($app, $requireUser): Response {
-    $user = $requireUser();
+$authorizeMail = static function () use ($app): array|Response {
+    $session = $app->make(Session::class);
+    $user = $session->user();
     if ($user === null) {
         return Response::redirect('/login', 302);
+    }
+    if (!$session->canManageMail()) {
+        return Response::html('Forbidden.', 403);
+    }
+
+    return $user;
+};
+
+$router->get('/mail', function (Request $request) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
     $workspace = $app->make(MailWorkspace::class);
@@ -51,10 +63,10 @@ $router->get('/mail', function (Request $request) use ($app, $requireUser): Resp
     ]));
 });
 
-$router->get('/mail/campaigns', function (Request $request) use ($app, $requireUser): Response {
-    $user = $requireUser();
-    if ($user === null) {
-        return Response::redirect('/login', 302);
+$router->get('/mail/campaigns', function (Request $request) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
     $status = $app->make(CampaignStatus::class);
@@ -74,10 +86,10 @@ $router->get('/mail/campaigns', function (Request $request) use ($app, $requireU
     ]));
 });
 
-$router->get('/mail/confirm', function (Request $request) use ($app, $requireUser): Response {
-    $user = $requireUser();
-    if ($user === null) {
-        return Response::redirect('/login', 302);
+$router->get('/mail/confirm', function (Request $request) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
     $proof = $app->make(MailWorkspace::class)->dispatchProof($request->query['post'] ?? '');
@@ -93,9 +105,10 @@ $router->get('/mail/confirm', function (Request $request) use ($app, $requireUse
     ]));
 });
 
-$router->post('/mail/confirm', function (Request $request) use ($app, $requireUser): Response {
-    if ($requireUser() === null) {
-        return Response::redirect('/login', 302);
+$router->post('/mail/confirm', function (Request $request) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
     $session = $app->make(Session::class);
@@ -111,9 +124,10 @@ $router->post('/mail/confirm', function (Request $request) use ($app, $requireUs
     }
 });
 
-$router->post('/mail/campaign/{id}/retry', function (Request $request, string $id) use ($app, $requireUser): Response {
-    if ($requireUser() === null) {
-        return Response::redirect('/login', 302);
+$router->post('/mail/campaign/{id}/retry', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
     $session = $app->make(Session::class);
@@ -134,10 +148,10 @@ $router->post('/mail/campaign/{id}/retry', function (Request $request, string $i
     return Response::redirect('/mail/campaign/' . rawurlencode($id), 303);
 });
 
-$router->get('/mail/campaign/{id}', function (Request $request, string $id) use ($app, $requireUser): Response {
-    $user = $requireUser();
-    if ($user === null) {
-        return Response::redirect('/login', 302);
+$router->get('/mail/campaign/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
     try {
