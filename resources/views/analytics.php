@@ -15,7 +15,7 @@
 <header class="dashboard-header">
     <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
     <nav aria-label="Analytics actions">
-        <a href="/posts">Posts</a>
+        <a class="button" href="/editor/new">New post</a>
         <a href="/dashboard/settings">Settings</a>
     </nav>
 </header>
