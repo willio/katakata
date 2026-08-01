@@ -46,6 +46,10 @@ These remain in `.env` or machine configuration and are never written by the das
 
 The dashboard may report whether required deployment values are present, but it must not render their values.
 
+Deployment readiness is shown as a calm non-secret setup state in the settings
+UI. It is distinct from editable global preferences and must never turn the
+settings page into an infrastructure console.
+
 ### Account and security management
 
 Passwords, passkeys, sessions, invitations, and account identity remain owned by the authentication subsystem. The settings page links to those controls rather than storing security data in the application settings file.

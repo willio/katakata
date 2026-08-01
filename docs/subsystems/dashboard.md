@@ -22,9 +22,9 @@ implications are approved. Region fields therefore remain nullable.
 
 ## Layout
 
-Single scrollable column, in this order. No sidebar navigation
-competing with content on this screen — top-level nav (Dashboard /
-New Post / Settings) is a slim persistent header, nothing more.
+Single scrollable column, in this order. No sidebar or persistent application
+navigation competes with content. The header contains only the publication
+identity, a separate New Post action, and global Settings.
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -51,7 +51,7 @@ commitment to computing and displaying that number forever):
 | Visitors (7d) | Total + trend vs. prior 7d | `AnalyticsSummary` (SQLite, ADR 0009) |
 | Published posts | Total count | `Repository::posts()` — exists today |
 | Drafts in progress | Total count | `Repository::drafts()` — exists today |
-| Threads replies (7d) | Total across synced discussions | Threads sync metadata (ADR 0004) |
+| Inbox | Combined new reader messages and campaign work | Mail workspace attention summary |
 
 Each card: a single large number, a one-line label, an optional small
 trend indicator (▲/▼ + %, sans, muted color — not a full sparkline
@@ -109,6 +109,11 @@ Two columns on desktop, stacked on narrow viewports.
   but the default view must never require analytics to be configured
   to show something useful. Backed by `Repository::posts()` today for
   the default state.
+
+Each card is a contextual link: Visits opens Analytics (including SEO/content
+diagnostics), Posts opens the content index, Drafts opens that index filtered
+to drafts, and Inbox opens the Mail workspace. SEO is deliberately not a
+dashboard card.
 
 ## Header actions
 
