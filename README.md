@@ -134,6 +134,7 @@ web-accessible.
 - [ADR 0007 — Filesystem Editorial Transactions](docs/adr/0007-filesystem-editorial-transactions.md)
 - [ADR 0008 — Invite-only Authentication](docs/adr/0008-invite-only-authentication.md)
 - [ADR 0009 — SQLite Analytics and SEO](docs/adr/0009-sqlite-analytics-seo.md)
+- [ADR 0010 — IMAP Inbox Adapter](docs/adr/0010-imap-inbox-adapter.md)
 
 ## Non-Negotiable Rules
 

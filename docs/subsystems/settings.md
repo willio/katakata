@@ -50,6 +50,10 @@ Deployment readiness is shown as a calm non-secret setup state in the settings
 UI. It is distinct from editable global preferences and must never turn the
 settings page into an infrastructure console.
 
+For the Mail workspace, this readiness state covers an IMAP inbox adapter as
+defined by [ADR 0010](../adr/0010-imap-inbox-adapter.md). It names the missing
+or stale capability but never renders credentials.
+
 ### Account and security management
 
 Passwords, passkeys, sessions, invitations, and account identity remain owned by the authentication subsystem. The settings page links to those controls rather than storing security data in the application settings file.
