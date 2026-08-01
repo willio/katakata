@@ -58,4 +58,17 @@ final class RouteCompositionTest extends TestCase
         $this->assertSame(303, $response->status);
         $this->assertSame('/2026/01/hello-world?comment=expired#discussion', $response->headers['Location']);
     }
+
+    public function test_dashboard_route_uses_the_dashboard_service_and_view_contracts(): void
+    {
+        $routes = file_get_contents(dirname(__DIR__, 2) . '/routes/web.php');
+
+        $this->assertIsString($routes);
+        $this->assertStringContainsString("'siteName' =>", $routes);
+        $this->assertStringContainsString("'recentDrafts' =>", $routes);
+        $this->assertStringContainsString("'latestPosts' =>", $routes);
+        $this->assertStringContainsString("'recentVisits' => \$dashboardAnalytics->recent(\$analytics)", $routes);
+        $this->assertStringContainsString('DashboardBuzz::class)->recent()', $routes);
+        $this->assertStringContainsString('SeoChecker::class)->check()', $routes);
+    }
 }
