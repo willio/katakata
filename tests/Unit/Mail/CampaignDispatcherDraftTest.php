@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Katakata\Tests\Unit\Mail;
 
 use DateTimeImmutable;
+use Katakata\Distribution\EmailMessage;
 use Katakata\Distribution\EmailTransport;
 use Katakata\Distribution\MailQueue;
 use Katakata\Distribution\SubscriberStore;
@@ -35,8 +36,10 @@ final class CampaignDispatcherDraftTest extends TestCase
         $queue = new MailQueue(
             $root . '/queue',
             new class implements EmailTransport {
-                public function send(\Katakata\Distribution\EmailMessage $message, string $idempotencyKey): void
+                /** @return array<string, mixed> */
+                public function send(EmailMessage $message, string $idempotencyKey): array
                 {
+                    return ['idempotency_key' => $idempotencyKey];
                 }
             },
             $files,
