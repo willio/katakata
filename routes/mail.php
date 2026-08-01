@@ -16,19 +16,32 @@ use Katakata\View;
  * @var \Katakata\Application $app
  */
 
-$requireMailUser = static function () use ($app): ?array {
-    return $app->make(Session::class)->user();
+$authorizeMail = $authorizeMail ?? static function () use ($app): array|Response {
+    $session = $app->make(Session::class);
+    $user = $session->user();
+    if ($user === null) {
+        return Response::redirect('/login', 302);
+    }
+    if (!$session->canManageMail()) {
+        return Response::html('Forbidden.', 403);
+    }
+
+    return $user;
 };
 
 $validMailCsrf = static function (Request $request) use ($app): bool {
     return $app->make(Session::class)->validCsrf($request->body['csrf'] ?? null);
 };
 
-$router->get('/dashboard/mail', fn (Request $request): Response => Response::redirect('/mail', 302));
+$router->get('/dashboard/mail', function (Request $request) use ($authorizeMail): Response {
+    $user = $authorizeMail();
+    return $user instanceof Response ? $user : Response::redirect('/mail', 302);
+});
 
-$router->get('/mail/messages/{id}', function (Request $request, string $id) use ($app, $requireMailUser): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->get('/mail/messages/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
     $message = $app->make(Mailbox::class)->message($id);
@@ -44,9 +57,10 @@ $router->get('/mail/messages/{id}', function (Request $request, string $id) use 
 });
 
 foreach (['read' => true, 'unread' => false] as $action => $read) {
-    $router->post('/mail/messages/{id}/' . $action, function (Request $request, string $id) use ($app, $requireMailUser, $validMailCsrf, $read): Response {
-        if ($requireMailUser() === null) {
-            return Response::redirect('/login', 302);
+    $router->post('/mail/messages/{id}/' . $action, function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf, $read): Response {
+        $user = $authorizeMail();
+        if ($user instanceof Response) {
+            return $user;
         }
         if (!$validMailCsrf($request)) {
             return Response::html('Invalid CSRF token.', 419);
@@ -57,9 +71,10 @@ foreach (['read' => true, 'unread' => false] as $action => $read) {
     });
 }
 
-$router->post('/mail/messages/{id}/archive', function (Request $request, string $id) use ($app, $requireMailUser, $validMailCsrf): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->post('/mail/messages/{id}/archive', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
     if (!$validMailCsrf($request)) {
         return Response::html('Invalid CSRF token.', 419);
@@ -69,9 +84,10 @@ $router->post('/mail/messages/{id}/archive', function (Request $request, string 
     return Response::redirect('/mail?area=inbox', 303);
 });
 
-$router->get('/mail/messages/{messageId}/attachments/{attachmentId}', function (Request $request, string $messageId, string $attachmentId) use ($app, $requireMailUser): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->get('/mail/messages/{messageId}/attachments/{attachmentId}', function (Request $request, string $messageId, string $attachmentId) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
     $download = $app->make(Mailbox::class)->attachment($messageId, $attachmentId);
@@ -82,21 +98,24 @@ $router->get('/mail/messages/{messageId}/attachments/{attachmentId}', function (
     return new Response($download->content, 200, [
         'Content-Type' => $download->mediaType,
         'Content-Disposition' => 'attachment; filename="' . addcslashes($download->name, "\\\"") . '"',
+        'X-Content-Type-Options' => 'nosniff',
     ]);
 });
 
-$router->get('/mail/compose', function (Request $request) use ($app, $requireMailUser): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->get('/mail/compose', function (Request $request) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
     $draft = $app->make(DraftComposer::class)->compose('', '', '');
     return Response::redirect('/mail/drafts/' . rawurlencode($draft->id), 302);
 });
 
-$router->post('/mail/messages/{id}/reply', function (Request $request, string $id) use ($app, $requireMailUser, $validMailCsrf): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->post('/mail/messages/{id}/reply', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
     if (!$validMailCsrf($request)) {
         return Response::html('Invalid CSRF token.', 419);
@@ -117,9 +136,10 @@ $router->post('/mail/messages/{id}/reply', function (Request $request, string $i
     return Response::redirect('/mail/drafts/' . rawurlencode($draft->id), 303);
 });
 
-$router->get('/mail/drafts/{id}', function (Request $request, string $id) use ($app, $requireMailUser): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->get('/mail/drafts/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
     $draft = $app->make(DraftStore::class)->find($id);
@@ -135,9 +155,10 @@ $router->get('/mail/drafts/{id}', function (Request $request, string $id) use ($
     ]));
 });
 
-$router->post('/mail/drafts/{id}', function (Request $request, string $id) use ($app, $requireMailUser, $validMailCsrf): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->post('/mail/drafts/{id}', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
     if (!$validMailCsrf($request)) {
         return Response::html('Invalid CSRF token.', 419);
