@@ -12,7 +12,13 @@ use ZipArchive;
 
 final class DocxDocumentParser
 {
-    public function parse(string $path, ?string $fallbackAuthor = null): ImportedDocument
+    private const MAX_XML_BYTES = 4 * 1024 * 1024;
+
+    public function parse(
+        string $path,
+        ?string $fallbackAuthor = null,
+        ?string $fallbackSourcePath = null,
+    ): ImportedDocument
     {
         if (!is_file($path)) {
             throw new RuntimeException("Document not found [{$path}].");
@@ -27,18 +33,18 @@ final class DocxDocumentParser
         }
 
         try {
-            $documentXml = $zip->getFromName('word/document.xml');
-            if (!is_string($documentXml) || $documentXml === '') {
-                throw new RuntimeException('DOCX document.xml is missing.');
-            }
-
-            $coreXml = $zip->getFromName('docProps/core.xml');
+            $documentXml = $this->xmlEntry($zip, 'word/document.xml', true);
+            $coreXml = $this->xmlEntry($zip, 'docProps/core.xml', false);
             $metadata = is_string($coreXml) ? $this->coreMetadata($coreXml) : [];
             $paragraphs = $this->paragraphs($documentXml);
 
             [$title, $titleConfidence, $titleIndex] = $this->detectTitle($metadata, $paragraphs, $path);
             [$author, $authorConfidence, $authorIndex] = $this->detectAuthor($metadata, $paragraphs, $fallbackAuthor);
-            [$date, $dateConfidence, $dateIndex] = $this->detectDate($metadata, $paragraphs, $path);
+            [$date, $dateConfidence, $dateIndex] = $this->detectDate(
+                $metadata,
+                $paragraphs,
+                $fallbackSourcePath ?? $path,
+            );
 
             $skip = array_filter([$titleIndex, $authorIndex, $dateIndex], static fn (?int $value): bool => $value !== null);
             $body = $this->renderMarkdown($paragraphs, $skip);
@@ -59,6 +65,33 @@ final class DocxDocumentParser
         } finally {
             $zip->close();
         }
+    }
+
+    private function xmlEntry(ZipArchive $zip, string $name, bool $required): ?string
+    {
+        $stat = $zip->statName($name, ZipArchive::FL_UNCHANGED);
+        if (!is_array($stat)) {
+            if ($required) {
+                throw new RuntimeException("DOCX XML entry is missing [{$name}].");
+            }
+            return null;
+        }
+
+        $size = $stat['size'] ?? null;
+        if (!is_int($size) || $size < 0) {
+            throw new RuntimeException("DOCX XML entry size is invalid [{$name}].");
+        }
+        if ($size > self::MAX_XML_BYTES) {
+            throw new RuntimeException(
+                "DOCX XML entry [{$name}] exceeds the limit of " . self::MAX_XML_BYTES . ' bytes.',
+            );
+        }
+
+        $xml = $zip->getFromName($name, 0, ZipArchive::FL_UNCHANGED);
+        if (!is_string($xml) || ($required && $xml === '')) {
+            throw new RuntimeException("Unable to extract DOCX XML entry [{$name}].");
+        }
+        return $xml;
     }
 
     /** @return array<string, string> */
@@ -270,11 +303,11 @@ final class DocxDocumentParser
 
             if (preg_match('/heading\s*([1-6])|heading([1-6])/', $paragraph['style'], $matches) === 1) {
                 $level = (int) ($matches[1] !== '' ? $matches[1] : $matches[2]);
-                $lines[] = str_repeat('#', max(2, $level)) . ' ' . trim($text, '*_ ');
+                $lines[] = str_repeat('#', max(2, $level)) . ' ' . trim($text);
             } elseif ($paragraph['list']) {
-                $lines[] = '- ' . trim($text, '*_ ');
+                $lines[] = '- ' . trim($text);
             } elseif ($paragraph['quote']) {
-                $lines[] = '> ' . trim($text, '*_ ');
+                $lines[] = '> ' . trim($text);
             } else {
                 $lines[] = $text;
             }

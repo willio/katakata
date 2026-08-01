@@ -31,7 +31,11 @@ final class LegacyDocumentImporter
                 $source = $converted;
             }
 
-            $document = $this->docx->parse($source, $author);
+            $document = $this->docx->parse(
+                $source,
+                $author,
+                $extension === 'doc' ? $path : null,
+            );
             if ($extension === 'doc') {
                 $document = new ImportedDocument(
                     $document->title,

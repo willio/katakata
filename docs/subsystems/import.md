@@ -36,12 +36,12 @@ The canonical title and author are stored as ordinary `title` and `author` field
 
 ## DOCX interpretation
 
-DOCX files are read as ZIP archives. The parser uses core properties where available, then document cues and finally explicit fallbacks. It preserves headings, list items, quote paragraphs, bold and italic runs, and text inside hyperlink elements. It imports hyperlink text but does not currently emit a Markdown URL because relationship targets are not part of the supported contract.
+DOCX files are read as ZIP archives. Before extraction, each XML entry's declared uncompressed size is inspected and limited to exactly 4 MiB (4,194,304 bytes). Larger entries are rejected without expansion. The parser uses core properties where available, then document cues and finally explicit fallbacks. It preserves headings, list items, quote paragraphs, bold and italic runs—including emphasis inside headings, lists, and quotes—and text inside hyperlink elements. It imports hyperlink text but does not currently emit a Markdown URL because relationship targets are not part of the supported contract.
 
 Dates are accepted only when PHP reports no parsing warnings or errors. Calendar-invalid values such as `31/02/2024` remain body text and the parser continues to the filename or file-modification fallback.
 
 ## Legacy `.doc` conversion
 
-Legacy Word files require `soffice` or `libreoffice` on `PATH`. Each conversion uses a unique directory beneath `storage/tmp/import`; the converted DOCX remains there until parsing finishes, then the whole workspace is removed. The resulting draft records the original `.doc` basename, not the temporary `.docx` filename.
+Legacy Word files require `soffice` or `libreoffice` on `PATH`. Each conversion uses a unique owner-only (`0700`) directory beneath `storage/tmp/import`; the converted DOCX remains there until parsing finishes, then the whole workspace is removed. A cleanup failure is surfaced as an import failure rather than ignored. The resulting draft records the original `.doc` basename, not the temporary `.docx` filename, and an undated conversion falls back to the original `.doc` filename and modification time rather than temporary DOCX provenance.
 
 DOCX import requires PHP's DOM and ZIP extensions. LibreOffice is optional unless `.doc` files are imported.

@@ -28,12 +28,12 @@ final class LegacyDocConverter
             throw new RuntimeException('Legacy .doc conversion requires LibreOffice (soffice) to be installed and available on PATH.');
         }
 
-        if (!is_dir($this->temporaryPath) && !mkdir($this->temporaryPath, 0775, true) && !is_dir($this->temporaryPath)) {
+        if (!is_dir($this->temporaryPath) && !mkdir($this->temporaryPath, 0700, true) && !is_dir($this->temporaryPath)) {
             throw new RuntimeException("Unable to create temporary import directory [{$this->temporaryPath}].");
         }
 
         $workspace = rtrim($this->temporaryPath, '/\\') . DIRECTORY_SEPARATOR . 'doc-' . bin2hex(random_bytes(6));
-        if (!mkdir($workspace, 0775, true) && !is_dir($workspace)) {
+        if (!mkdir($workspace, 0700, true) && !is_dir($workspace)) {
             throw new RuntimeException("Unable to create conversion workspace [{$workspace}].");
         }
 
@@ -55,7 +55,15 @@ final class LegacyDocConverter
 
             return $converted;
         } catch (\Throwable $error) {
-            $this->removeDirectory($workspace);
+            try {
+                $this->removeDirectory($workspace);
+            } catch (\Throwable $cleanupError) {
+                throw new RuntimeException(
+                    $error->getMessage() . ' Cleanup also failed: ' . $cleanupError->getMessage(),
+                    0,
+                    $error,
+                );
+            }
             throw $error;
         }
     }
@@ -90,15 +98,26 @@ final class LegacyDocConverter
             return;
         }
 
-        foreach (scandir($path) ?: [] as $item) {
+        $items = @scandir($path);
+        if (!is_array($items)) {
+            throw new RuntimeException("Unable to inspect import cleanup directory [{$path}].");
+        }
+
+        foreach ($items as $item) {
             if ($item === '.' || $item === '..') {
                 continue;
             }
 
             $target = $path . DIRECTORY_SEPARATOR . $item;
-            is_dir($target) ? $this->removeDirectory($target) : @unlink($target);
+            if (is_dir($target)) {
+                $this->removeDirectory($target);
+            } elseif (!@unlink($target)) {
+                throw new RuntimeException("Unable to cleanup import file [{$target}].");
+            }
         }
 
-        @rmdir($path);
+        if (!@rmdir($path)) {
+            throw new RuntimeException("Unable to cleanup import directory [{$path}].");
+        }
     }
 }

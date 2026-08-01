@@ -39,13 +39,13 @@ final class DocxDocumentParserTest extends TestCase
         self::assertSame('medium', $document->confidence['author']);
         self::assertSame('medium', $document->confidence['date']);
         self::assertSame(<<<'MARKDOWN'
-## Section heading
+## Section **heading**
 
 This is **bold** and *italic*.
 
-- List item
+- **List item**
 
-> Quoted line
+> *Quoted line*
 
 Before linked text after.
 MARKDOWN . "\n", $document->body);
@@ -61,5 +61,17 @@ MARKDOWN . "\n", $document->body);
         self::assertSame('2025-01-02', $document->date);
         self::assertSame('low', $document->confidence['date']);
         self::assertStringStartsWith("31/02/2024\n\nImported body.", $document->body);
+    }
+
+    public function testItRejectsOversizedXmlBeforeExtraction(): void
+    {
+        $path = DocxFixture::minimal($this->root . '/oversized.docx');
+        DocxFixture::claimEntrySize($path, 'word/document.xml', 4 * 1024 * 1024 + 1);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('word/document.xml');
+        $this->expectExceptionMessage('4194304 bytes');
+
+        (new DocxDocumentParser())->parse($path);
     }
 }

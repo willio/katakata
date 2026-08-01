@@ -17,7 +17,7 @@ final class DocxFixture
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <w:body>
-    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>Section heading</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t xml:space="preserve">Section </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>heading</w:t></w:r></w:p>
     <w:p>
       <w:r><w:t xml:space="preserve">This is </w:t></w:r>
       <w:r><w:rPr><w:b/></w:rPr><w:t>bold</w:t></w:r>
@@ -25,8 +25,8 @@ final class DocxFixture
       <w:r><w:rPr><w:i/></w:rPr><w:t>italic</w:t></w:r>
       <w:r><w:t>.</w:t></w:r>
     </w:p>
-    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>List item</w:t></w:r></w:p>
-    <w:p><w:pPr><w:pStyle w:val="Quote"/></w:pPr><w:r><w:t>Quoted line</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>List item</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Quote"/></w:pPr><w:r><w:rPr><w:i/></w:rPr><w:t>Quoted line</w:t></w:r></w:p>
     <w:p>
       <w:r><w:t xml:space="preserve">Before </w:t></w:r>
       <w:hyperlink r:id="rId1"><w:r><w:t>linked text</w:t></w:r></w:hyperlink>
@@ -72,6 +72,45 @@ XML,
 XML,
             self::core('Invalid date example', 'Real author', null),
         );
+    }
+
+    public static function undated(string $path, string $title = 'Undated document'): string
+    {
+        return self::create(
+            $path,
+            <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body><w:p><w:r><w:t>Imported body.</w:t></w:r></w:p></w:body>
+</w:document>
+XML,
+            self::core($title, 'Real author', null),
+        );
+    }
+
+    public static function claimEntrySize(string $path, string $entry, int $size): void
+    {
+        $archive = file_get_contents($path);
+        if (!is_string($archive)) {
+            throw new RuntimeException("Unable to read DOCX fixture [{$path}].");
+        }
+
+        $offset = 0;
+        while (($header = strpos($archive, "PK\x01\x02", $offset)) !== false) {
+            $nameLength = unpack('vlength', substr($archive, $header + 28, 2));
+            $length = (int) ($nameLength['length'] ?? 0);
+            $name = substr($archive, $header + 46, $length);
+            if ($name === $entry) {
+                $archive = substr_replace($archive, pack('V', $size), $header + 24, 4);
+                if (file_put_contents($path, $archive) === false) {
+                    throw new RuntimeException("Unable to update DOCX fixture [{$path}].");
+                }
+                return;
+            }
+            $offset = $header + 46 + $length;
+        }
+
+        throw new RuntimeException("DOCX fixture entry not found [{$entry}].");
     }
 
     private static function create(string $path, string $documentXml, string $coreXml): string
