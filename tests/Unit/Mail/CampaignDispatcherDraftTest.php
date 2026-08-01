@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Katakata\Tests\Unit\Mail;
 
 use DateTimeImmutable;
+use Katakata\Content\Repository;
 use Katakata\Distribution\EmailMessage;
 use Katakata\Distribution\EmailTransport;
 use Katakata\Distribution\MailQueue;
@@ -36,17 +37,35 @@ final class CampaignDispatcherDraftTest extends TestCase
         $queue = new MailQueue(
             $root . '/queue',
             new class implements EmailTransport {
-                /** @return array<string, mixed> */
                 public function send(EmailMessage $message, string $idempotencyKey): array
                 {
-                    return ['idempotency_key' => $idempotencyKey];
+                    return [
+                        'provider' => 'test',
+                        'provider_id' => $idempotencyKey,
+                        'accepted' => true,
+                    ];
                 }
             },
             $files,
         );
 
-        $workspace = $this->createMock(MailWorkspace::class);
-        $reviewer = new CampaignDraftReviewer($subscriberStore, new Markdown());
+        foreach (['posts', 'drafts', 'authors', 'assets'] as $directory) {
+            mkdir($root . '/' . $directory, 0775, true);
+        }
+        $repository = new Repository(
+            $root . '/posts',
+            $root . '/drafts',
+            $root . '/authors',
+            $root . '/assets',
+        );
+        $markdown = new Markdown();
+        $workspace = new MailWorkspace(
+            $repository,
+            $subscriberStore,
+            $markdown,
+            'https://example.test',
+        );
+        $reviewer = new CampaignDraftReviewer($subscriberStore, $markdown);
         $dispatcher = new CampaignDispatcher(
             $workspace,
             $subscriberStore,
