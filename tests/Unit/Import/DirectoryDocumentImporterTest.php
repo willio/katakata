@@ -13,6 +13,7 @@ use Katakata\Import\KatakataDocumentWriter;
 use Katakata\Import\LegacyDocConverter;
 use Katakata\Import\LegacyDocumentImporter;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 final class DirectoryDocumentImporterTest extends TestCase
 {
@@ -52,6 +53,42 @@ final class DirectoryDocumentImporterTest extends TestCase
         self::assertSame(0, $result['failed']);
         self::assertFileExists($this->root . '/drafts/direct-document.md');
         self::assertFileDoesNotExist($this->root . '/drafts/nested-document.md');
+    }
+
+    public function testMixedBatchContinuesAfterOneDocumentFails(): void
+    {
+        file_put_contents($this->root . '/incoming/broken.docx', 'not a zip archive');
+
+        $result = $this->importer()->import($this->root . '/incoming');
+
+        self::assertSame(1, $result['imported']);
+        self::assertSame(0, $result['previewed']);
+        self::assertSame(1, $result['failed']);
+        self::assertSame(['failed', 'imported'], array_column($result['results'], 'status'));
+        self::assertSame('broken.docx', basename($result['results'][0]['source']));
+        self::assertNotNull($result['results'][0]['error']);
+        self::assertFileExists($this->root . '/drafts/direct-document.md');
+    }
+
+    public function testUnreadableNonRecursiveDirectoryFailsExplicitly(): void
+    {
+        $directory = $this->root . '/unreadable';
+        mkdir($directory, 0700, true);
+        chmod($directory, 0000);
+        clearstatcache(true, $directory);
+
+        if (is_readable($directory)) {
+            chmod($directory, 0700);
+            self::markTestSkipped('Current process can bypass directory permissions.');
+        }
+
+        try {
+            $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessage('Import directory is not readable');
+            $this->importer()->import($directory);
+        } finally {
+            chmod($directory, 0700);
+        }
     }
 
     private function importer(): DirectoryDocumentImporter
