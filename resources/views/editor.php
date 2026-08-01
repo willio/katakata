@@ -1,12 +1,12 @@
 <?php
-/** @var array<string, mixed> $user */
 /** @var iterable<\Katakata\Content\Draft> $drafts */
 /** @var \Katakata\Content\Draft|null $draft */
 /** @var string $csrf */
-/** @var bool $canInvite */
 /** @var string|null $notice */
 /** @var string $draftVersion */
 $hasDraft = $draft !== null;
+$publishAsNewsletter = filter_var($draft?->meta['publish_as_newsletter'] ?? false, FILTER_VALIDATE_BOOL);
+$discussionEnabled = filter_var($draft?->meta['discussion_enabled'] ?? false, FILTER_VALIDATE_BOOL);
 ?>
 <!doctype html>
 <html lang="en">
@@ -41,7 +41,7 @@ $hasDraft = $draft !== null;
 
         <aside class="editor-panel" id="editor-panel" data-editor-panel hidden>
             <header class="editor-panel-header">
-                <h1>Settings</h1>
+                <h1>Post settings</h1>
                 <button class="editor-panel-close" type="button" data-settings-close aria-label="Close settings">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M18 6 6 18M6 6l12 12"/>
@@ -53,11 +53,13 @@ $hasDraft = $draft !== null;
                 <label>Title <input name="title" value="<?= e($draft?->title ?? '') ?>" data-derived-title readonly></label>
                 <label>Slug <input name="slug" value="<?= e($draft?->slug ?? '') ?>" data-derived-slug readonly></label>
                 <p class="editor-notice">Title follows the first line. Slug follows the title.</p>
+                <label><input type="checkbox" name="publish_as_newsletter" value="1"<?= $publishAsNewsletter ? ' checked' : '' ?>> Include this post in the newsletter</label>
+                <label><input type="checkbox" name="discussion_enabled" value="1"<?= $discussionEnabled ? ' checked' : '' ?>> Enable discussion for this post</label>
+                <p class="editor-notice"><a href="/dashboard/settings">Global publication settings</a></p>
             </div>
             <div class="editor-panel-actions">
                 <button type="submit"><?= $hasDraft ? 'Save now' : 'Create draft' ?></button>
                 <?php if ($hasDraft): ?><button type="submit" form="publish-form">Publish now</button><?php endif; ?>
-                <button type="submit" form="logout-form">Sign out</button>
             </div>
 
             <h2>Drafts</h2>
@@ -68,21 +70,6 @@ $hasDraft = $draft !== null;
                 <?php endforeach; ?>
             </ul>
 
-            <h2>Account</h2>
-            <p class="editor-notice"><?= e((string) $user['email']) ?></p>
-            <div class="editor-panel-actions">
-                <button type="button" data-passkey-register>Add a passkey</button>
-                <span data-passkey-status aria-live="polite"></span>
-            </div>
-
-            <?php if ($canInvite): ?>
-                <h2>Invite writer</h2>
-                <div class="editor-fields">
-                    <label>Email <input name="email" type="email" form="invite-form"></label>
-                    <label>Role <select name="role" form="invite-form"><option value="editor">Editor</option><option value="admin">Admin</option></select></label>
-                </div>
-                <button type="submit" form="invite-form">Create invitation</button>
-            <?php endif; ?>
         </aside>
     </form>
 
@@ -91,16 +78,7 @@ $hasDraft = $draft !== null;
             <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
         </form>
     <?php endif; ?>
-    <?php if ($canInvite): ?>
-        <form id="invite-form" method="post" action="/editor/invitations">
-            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-        </form>
-    <?php endif; ?>
-    <form id="logout-form" method="post" action="/logout">
-        <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-    </form>
 </main>
 <script src="/assets/js/editor.js" defer></script>
-<script src="/assets/js/passkeys.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Katakata\Import;
+
+final class ImportedDocument
+{
+    /**
+     * @param array<string, string> $confidence
+     * @param array<string, mixed> $metadata
+     */
+    public function __construct(
+        public readonly string $title,
+        public readonly string $author,
+        public readonly string $date,
+        public readonly string $body,
+        public readonly string $sourceFile,
+        public readonly array $confidence = [],
+        public readonly array $metadata = [],
+    ) {
+    }
+}

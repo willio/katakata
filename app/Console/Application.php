@@ -19,7 +19,6 @@ use Katakata\Distribution\MailQueue;
 use Katakata\Distribution\NewsletterDispatcher;
 use Katakata\Distribution\ThreadsEngagementSync;
 use Katakata\Distribution\ThreadsReplySync;
-use Katakata\Http\Router;
 use Katakata\Seo\SeoChecker;
 
 /**
@@ -32,6 +31,8 @@ use Katakata\Seo\SeoChecker;
  */
 final class Application
 {
+    use ImportCommands;
+
     /** @var array<string, callable(array<int, string>): int> */
     private array $commands = [];
 
@@ -44,6 +45,8 @@ final class Application
         $this->commands['serve'] = fn (array $args): int => $this->serve($args);
         $this->commands['content:list'] = fn (): int => $this->contentList();
         $this->commands['content:validate'] = fn (): int => $this->contentValidate();
+        $this->commands['import:document'] = fn (array $args): int => $this->importDocument($args);
+        $this->commands['import:directory'] = fn (array $args): int => $this->importDirectory($args);
         $this->commands['draft:create'] = fn (array $args): int => $this->draftCreate($args);
         $this->commands['draft:edit'] = fn (array $args): int => $this->draftEdit($args);
         $this->commands['draft:schedule'] = fn (array $args): int => $this->draftSchedule($args);
@@ -126,9 +129,8 @@ final class Application
 
     private function routesList(): int
     {
-        $router = new Router();
         $app = $this->app;
-        require $this->app->routesPath('web.php');
+        $router = require $this->app->basePath('bootstrap/routes.php');
 
         foreach ($router->all() as $route) {
             fwrite(STDOUT, sprintf("%-6s %s\n", $route['method'], $route['path']));
@@ -266,17 +268,6 @@ final class Application
             return 1;
         }
 
-        $repository = $this->app->make(Repository::class);
-        $repository->refresh();
-        $post = $repository->findPost($draft->slug);
-        if ($post !== null) {
-            try {
-                $queued = $this->app->make(NewsletterDispatcher::class)->dispatch($post)['queued'];
-                fwrite(STDOUT, "Newsletter: {$queued} message(s) queued.\n");
-            } catch (\Throwable $error) {
-                fwrite(STDERR, "Newsletter queue failed: {$error->getMessage()}\n");
-            }
-        }
         fwrite(STDOUT, "Published {$path}\n");
         return 0;
     }
@@ -291,18 +282,6 @@ final class Application
             fwrite(STDOUT, "Published {$path}\n");
         }
 
-        $repository->refresh();
-        foreach ($due as $draft) {
-            $post = $repository->findPost($draft->slug);
-            if ($post === null) {
-                continue;
-            }
-            try {
-                $this->app->make(NewsletterDispatcher::class)->dispatch($post);
-            } catch (\Throwable $error) {
-                fwrite(STDERR, "Newsletter queue failed for {$draft->slug}: {$error->getMessage()}\n");
-            }
-        }
         fwrite(STDOUT, count($due) . " scheduled draft(s) published.\n");
         return 0;
     }

@@ -25,6 +25,13 @@ use Katakata\Distribution\FilesystemEmailTransport;
 use Katakata\Distribution\MailQueue;
 use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Dashboard\DashboardBuzz;
+use Katakata\Dashboard\DashboardSettings;
+use Katakata\Discussion\DiscussionManager;
+use Katakata\Discussion\NativeDiscussionProvider;
+use Katakata\Discussion\NativeDiscussionService;
+use Katakata\Discussion\NativeDiscussionStore;
+use Katakata\Discussion\Providers\NullDiscussionProvider;
+use Katakata\Discussion\Providers\ThreadsDiscussionProvider;
 use Katakata\Distribution\NewsletterAdapter;
 use Katakata\Distribution\NewsletterDispatcher;
 use Katakata\Distribution\MetaThreadsApi;
@@ -38,6 +45,11 @@ use Katakata\Distribution\ThreadsReplySync;
 use Katakata\Distribution\ThreadsStore;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Http\Router;
+use Katakata\Import\DirectoryDocumentImporter;
+use Katakata\Import\DocxDocumentParser;
+use Katakata\Import\KatakataDocumentWriter;
+use Katakata\Import\LegacyDocConverter;
+use Katakata\Import\LegacyDocumentImporter;
 use Katakata\Rendering\Markdown;
 use Katakata\Seo\SeoChecker;
 use Katakata\Support\DotEnv;
@@ -94,10 +106,14 @@ $app->singleton(
 );
 $app->singleton(
     DashboardBuzz::class,
-    static fn (Application $container): DashboardBuzz => new DashboardBuzz(
-        $container->make(ThreadsStore::class),
-        (bool) $container->config()->get('threads.enabled', false),
-    ),
+    static function (Application $container): DashboardBuzz {
+        $discussion = $container->make(DashboardSettings::class)->section('discussion');
+
+        return new DashboardBuzz(
+            $container->make(DiscussionManager::class),
+            (string) ($discussion['provider'] ?? 'none'),
+        );
+    },
 );
 $app->singleton(
     SeoChecker::class,
@@ -158,6 +174,37 @@ $app->singleton(
         $container->basePath((string) $container->config()->get('content.drafts_path', 'content/drafts')),
         $container->make(AtomicFile::class),
         $container->make(RevisionStore::class),
+    ),
+);
+$app->singleton(
+    DocxDocumentParser::class,
+    static fn (): DocxDocumentParser => new DocxDocumentParser(),
+);
+$app->singleton(
+    KatakataDocumentWriter::class,
+    static fn (Application $container): KatakataDocumentWriter => new KatakataDocumentWriter(
+        $container->make(DraftEditor::class),
+        $container->basePath((string) $container->config()->get('content.drafts_path', 'content/drafts')),
+    ),
+);
+$app->singleton(
+    LegacyDocConverter::class,
+    static fn (Application $container): LegacyDocConverter => new LegacyDocConverter(
+        $container->storagePath('tmp/import'),
+    ),
+);
+$app->singleton(
+    LegacyDocumentImporter::class,
+    static fn (Application $container): LegacyDocumentImporter => new LegacyDocumentImporter(
+        $container->make(DocxDocumentParser::class),
+        $container->make(KatakataDocumentWriter::class),
+        $container->make(LegacyDocConverter::class),
+    ),
+);
+$app->singleton(
+    DirectoryDocumentImporter::class,
+    static fn (Application $container): DirectoryDocumentImporter => new DirectoryDocumentImporter(
+        $container->make(LegacyDocumentImporter::class),
     ),
 );
 $app->singleton(
@@ -272,6 +319,48 @@ $app->singleton(
     static fn (Application $container): ThreadsInsightsApi => $container->make(ThreadsApi::class),
 );
 $app->singleton(
+    ThreadsDiscussionProvider::class,
+    static fn (Application $container): ThreadsDiscussionProvider => new ThreadsDiscussionProvider(
+        $container->make(ThreadsApi::class),
+        $container->make(ThreadsStore::class),
+        (bool) $container->config()->get('threads.enabled', false),
+    ),
+);
+$app->singleton(
+    NativeDiscussionStore::class,
+    static fn (Application $container): NativeDiscussionStore => new NativeDiscussionStore(
+        $container->storagePath('discussion/native'),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    NativeDiscussionProvider::class,
+    static fn (Application $container): NativeDiscussionProvider => new NativeDiscussionProvider(
+        $container->make(NativeDiscussionStore::class),
+    ),
+);
+$app->singleton(
+    NativeDiscussionService::class,
+    static fn (Application $container): NativeDiscussionService => new NativeDiscussionService(
+        $container->make(NativeDiscussionProvider::class),
+        $container->make(NativeDiscussionStore::class),
+    ),
+);
+$app->singleton(
+    DiscussionManager::class,
+    static function (Application $container): DiscussionManager {
+        $providers = [$container->make(NativeDiscussionProvider::class)];
+        $threadsAvailable = (bool) $container->config()->get('threads.enabled', false)
+            && trim((string) $container->config()->get('threads.user_id', '')) !== ''
+            && trim((string) $container->config()->get('threads.access_token', '')) !== '';
+        if ($threadsAvailable) {
+            $providers[] = $container->make(ThreadsDiscussionProvider::class);
+        }
+
+        return new DiscussionManager(new NullDiscussionProvider(), ...$providers);
+    },
+);
+$app->singleton(
     ThreadsAdapter::class,
     static fn (Application $container): ThreadsAdapter => new ThreadsAdapter(
         $container->make(ThreadsApi::class),
@@ -308,9 +397,5 @@ $app->singleton(
     View::class,
     static fn (Application $container): View => View::forApplication($container),
 );
-
-(static function () use ($router, $app): void {
-    require $app->routesPath('web.php');
-})();
 
 return $app;

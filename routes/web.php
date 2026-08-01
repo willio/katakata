@@ -200,34 +200,6 @@ $router->post('/newsletter/unsubscribe', function (Request $request) use ($app, 
     }
 });
 
-$router->get('/{year}/{month}/{slug}', function (
-    Request $request,
-    string $year,
-    string $month,
-    string $slug,
-) use ($app, $recordVisit): Response {
-    if (!preg_match('/^\d{4}$/', $year) || !preg_match('/^(0[1-9]|1[0-2])$/', $month)) {
-        return Response::notFound();
-    }
-
-    $post = $app->make(Repository::class)->findPost($slug);
-
-    if ($post === null || !$post->isPublished() || $post->url() !== "/{$year}/{$month}/{$slug}") {
-        return Response::notFound();
-    }
-
-    $author = $post->author === null ? null : $app->make(Repository::class)->findAuthor($post->author);
-    $recordVisit($request);
-
-    return Response::html($app->make(View::class)->render('article', [
-        'post' => $post,
-        'author' => $author,
-        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
-        'bodyHtml' => $app->make(Markdown::class)->render($post->body),
-        'authorBioHtml' => $author?->bio === null ? null : $app->make(Markdown::class)->render($author->bio),
-    ]));
-});
-
 $renderAuth = static function (string $mode, ?string $error = null, ?string $token = null) use ($app): Response {
     $session = $app->make(Session::class);
 
@@ -307,19 +279,24 @@ $router->get('/dashboard', function (Request $request) use ($app, $requireUser):
     $repository = $app->make(Repository::class);
     $posts = $repository->posts()->all();
     $drafts = $repository->drafts()->all();
-    $dashboardAnalytics = $app->make(DashboardAnalytics::class);
-    $analytics = $dashboardAnalytics->summary();
     usort($drafts, static function ($left, $right): int {
         return ($right->updatedAt?->getTimestamp() ?? 0) <=> ($left->updatedAt?->getTimestamp() ?? 0);
     });
 
+    $dashboardAnalytics = $app->make(DashboardAnalytics::class);
+    $analytics = $dashboardAnalytics->summary();
+
     return Response::html($app->make(View::class)->render('dashboard', [
         'user' => $user,
-        'posts' => $posts,
-        'drafts' => $drafts,
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'recentDrafts' => array_slice($drafts, 0, 5),
+        'latestPosts' => array_slice($posts, 0, 5),
+        'publishedCount' => count($posts),
+        'draftCount' => count($drafts),
         'analytics' => $analytics,
-        'buzz' => $app->make(DashboardBuzz::class)->latest(),
-        'seo' => $app->make(SeoChecker::class)->review($repository->posts()),
+        'recentVisits' => $dashboardAnalytics->recent($analytics),
+        'buzz' => $app->make(DashboardBuzz::class)->recent(),
+        'seo' => $app->make(SeoChecker::class)->check(),
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });

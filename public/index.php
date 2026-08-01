@@ -8,7 +8,7 @@ use Katakata\Http\Router;
 /** @var \Katakata\Application $app */
 $app = require dirname(__DIR__) . '/bootstrap/app.php';
 
-$router = $app->make(Router::class);
+$router = require dirname(__DIR__) . '/bootstrap/routes.php';
 $response = $router->dispatch(Request::fromGlobals());
 
 $response->send();
