@@ -16,7 +16,7 @@ final class CampaignDraftSecurityContractTest extends TestCase
         self::assertIsString($editorRoutes);
         self::assertIsString($campaignRoutes);
 
-        self::assertStringContainsString("/editor/posts/{slug}/campaign-drafts", $editorRoutes);
+        self::assertStringContainsString('/editor/posts/{slug}/campaign-drafts', $editorRoutes);
         self::assertStringContainsString('!$session->canManageMail()', $editorRoutes);
         self::assertStringContainsString("Response::html('Forbidden.', 403)", $editorRoutes);
 
@@ -47,7 +47,7 @@ final class CampaignDraftSecurityContractTest extends TestCase
         self::assertStringContainsString('$this->subscribers->deliverable()', $reviewer);
         self::assertStringNotContainsString('MailQueue', $reviewer);
         self::assertStringContainsString('confirmDraftAndQueue', $dispatcher);
-        self::assertStringContainsString("recipients: $proof['recipients']", $dispatcher);
+        self::assertStringContainsString("recipients: \$proof['recipients']", $dispatcher);
     }
 
     public function testFullscreenComposeRemainsPresentationOnly(): void
