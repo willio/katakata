@@ -2,7 +2,7 @@
 /** @var \Katakata\Mail\CampaignDraft $draft */
 /** @var string $siteName */
 /** @var string $csrf */
-/** @var ?array{count:int,recipients:list<array{email:string,confirmed_at:?string}>} $review */
+/** @var ?array{draft:\Katakata\Mail\CampaignDraft,recipient_count:int,recipients:list<array{email:string,unsubscribe_token:string}>,html:string,text:string,warnings:list<string>} $review */
 ?>
 <!doctype html>
 <html lang="en">
@@ -61,8 +61,20 @@
     <?php if ($review !== null): ?>
         <section class="mail-readiness" aria-labelledby="campaign-review-title">
             <h2 id="campaign-review-title">Review campaign</h2>
-            <p><strong><?= $review['count'] ?></strong> currently eligible confirmed <?= $review['count'] === 1 ? 'subscriber' : 'subscribers' ?>.</p>
+            <p><strong><?= $review['recipient_count'] ?></strong> currently eligible confirmed <?= $review['recipient_count'] === 1 ? 'subscriber' : 'subscribers' ?>.</p>
             <p class="quiet">Audience is calculated now and will be snapshotted only when delivery is confirmed and queued.</p>
+            <?php if ($review['warnings'] !== []): ?>
+                <ul>
+                    <?php foreach ($review['warnings'] as $warning): ?><li><?= e($warning) ?></li><?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+            <?php if ($review['recipient_count'] > 0 && $draft->subject !== '' && trim($draft->body) !== ''): ?>
+                <form method="post" action="/mail/campaign-drafts/<?= e($draft->id) ?>/confirm">
+                    <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                    <input type="hidden" name="expected_version" value="<?= $draft->version ?>">
+                    <button type="submit">Confirm and queue</button>
+                </form>
+            <?php endif; ?>
         </section>
     <?php endif; ?>
 </main>
