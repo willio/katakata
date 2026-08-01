@@ -91,6 +91,7 @@ $router->get('/mail/campaign-drafts/{id}', function (Request $request, string $i
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'csrf' => $app->make(Session::class)->csrf(),
         'review' => $review,
+        'error' => trim((string) ($request->query['error'] ?? '')),
     ]));
 });
 
@@ -206,7 +207,15 @@ $router->post('/mail/campaign-drafts/{id}', function (Request $request, string $
     return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . $query, 303);
 });
 
-$router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+$dispatchClaimedCampaign = static function (CampaignDraft $claimed) use ($app): \Katakata\Mail\Campaign {
+    return $app->make(CampaignDispatcher::class)->confirmDraftAndQueue(
+        $claimed,
+        $app->make(CampaignDraftReviewer::class),
+        $claimed->confirmedAt,
+    );
+};
+
+$router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, string $id) use ($app, $authorizeMail, $dispatchClaimedCampaign): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) {
         return $user;
@@ -226,7 +235,7 @@ $router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, 
     $expectedVersion = max(1, (int) ($request->body['expected_version'] ?? 0));
     try {
         $claim = $store->claimConfirmation($id, $expectedVersion);
-    } catch (CampaignDraftConflict $conflict) {
+    } catch (CampaignDraftConflict) {
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?conflict=1', 303);
     } catch (\Throwable) {
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=confirm', 303);
@@ -243,11 +252,41 @@ $router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, 
     }
 
     try {
-        $campaign = $app->make(CampaignDispatcher::class)->confirmDraftAndQueue(
-            $claimed,
-            $app->make(CampaignDraftReviewer::class),
-            $claimed->confirmedAt,
-        );
+        $campaign = $dispatchClaimedCampaign($claimed);
+    } catch (\Throwable) {
+        return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=queue', 303);
+    }
+
+    return Response::redirect('/mail/campaign/' . rawurlencode($campaign->id), 303);
+});
+
+$router->post('/mail/campaign-drafts/{id}/resume', function (Request $request, string $id) use ($app, $authorizeMail, $dispatchClaimedCampaign): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
+    }
+
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::html('Invalid CSRF token.', 419);
+    }
+
+    $draft = $app->make(CampaignDraftStore::class)->find($id);
+    if ($draft === null) {
+        return Response::notFound();
+    }
+    if (!$draft->isConfirmed()) {
+        return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=not-pending', 303);
+    }
+
+    $campaignId = (string) $draft->confirmedCampaignId;
+    $campaign = $app->make(CampaignStore::class)->find($campaignId);
+    if ($campaign !== null) {
+        return Response::redirect('/mail/campaign/' . rawurlencode($campaign->id), 303);
+    }
+
+    try {
+        $campaign = $dispatchClaimedCampaign($draft);
     } catch (\Throwable) {
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=queue', 303);
     }
