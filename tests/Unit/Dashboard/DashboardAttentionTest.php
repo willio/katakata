@@ -8,6 +8,12 @@ use Katakata\Analytics\AnalyticsStore;
 use Katakata\Content\Repository;
 use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Dashboard\DashboardAttention;
+use Katakata\Editorial\AtomicFile;
+use Katakata\Email\Mailbox;
+use Katakata\Email\Providers\UnavailableMailboxProvider;
+use Katakata\Mail\CampaignStatus;
+use Katakata\Mail\CampaignStore;
+use Katakata\Mail\MailAttention;
 use PHPUnit\Framework\TestCase;
 
 final class DashboardAttentionTest extends TestCase
@@ -20,6 +26,8 @@ final class DashboardAttentionTest extends TestCase
         mkdir($root . '/authors', 0775, true);
         mkdir($root . '/assets', 0775, true);
         mkdir($root . '/analytics', 0775, true);
+        mkdir($root . '/campaigns', 0775, true);
+        mkdir($root . '/queue', 0775, true);
 
         file_put_contents($root . '/drafts/draft-one.md', "---\ntitle: Draft one\n---\nBody\n");
         mkdir($root . '/posts/2026/08', 0775, true);
@@ -35,12 +43,19 @@ final class DashboardAttentionTest extends TestCase
             new AnalyticsStore($root . '/analytics/analytics.sqlite'),
             $repository,
         );
+        $mail = new MailAttention(
+            new Mailbox(new UnavailableMailboxProvider()),
+            new CampaignStore($root . '/campaigns', new AtomicFile()),
+            new CampaignStatus($root . '/queue'),
+        );
 
-        $cards = (new DashboardAttention($repository, $analytics))->cards();
+        $cards = (new DashboardAttention($repository, $analytics, $mail))->cards();
 
         self::assertSame(['Visits', 'Posts', 'Drafts', 'Inbox'], array_column($cards, 'label'));
         self::assertSame(['/analytics', '/posts', '/posts?status=drafts', '/mail'], array_column($cards, 'href'));
         self::assertSame(1, $cards[1]['count']);
         self::assertSame(1, $cards[2]['count']);
+        self::assertSame(0, $cards[3]['count']);
+        self::assertSame('No mail needs attention', $cards[3]['detail']);
     }
 }
