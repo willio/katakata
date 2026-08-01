@@ -43,7 +43,9 @@ final class MailAuthorizationTest extends TestCase
         ] as $path) {
             self::assertStringContainsString($path, $routes);
         }
-        self::assertGreaterThanOrEqual(8, substr_count($routes, '$authorizeMail()'));
+
+        self::assertGreaterThanOrEqual(8, substr_count($routes, '$authorizeMail();'));
+        self::assertGreaterThanOrEqual(8, substr_count($routes, 'if ($user instanceof Response)'));
     }
 
     public function testAttachmentResponsesDisableContentSniffing(): void
