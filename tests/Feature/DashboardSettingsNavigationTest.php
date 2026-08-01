@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Katakata\Tests\Feature;
 
-use DateTimeImmutable;
-use Katakata\Seo\SeoCheckSummary;
 use Katakata\View;
 use PHPUnit\Framework\TestCase;
 
@@ -18,9 +16,12 @@ final class DashboardSettingsNavigationTest extends TestCase
             'siteName' => 'Katakata',
             'recentDrafts' => [],
             'latestPosts' => [],
-            'publishedCount' => 0,
-            'draftCount' => 0,
-            'seo' => new SeoCheckSummary(new DateTimeImmutable('2026-08-01T00:00:00+00:00'), []),
+            'cards' => [
+                ['label' => 'Visits', 'count' => '—', 'detail' => 'Analytics unavailable', 'href' => '/analytics'],
+                ['label' => 'Posts', 'count' => 0, 'detail' => 'Published content', 'href' => '/posts'],
+                ['label' => 'Drafts', 'count' => 0, 'detail' => 'Work in progress', 'href' => '/posts?status=drafts'],
+                ['label' => 'Inbox', 'count' => 0, 'detail' => 'No mail needs attention', 'href' => '/mail'],
+            ],
             'analytics' => null,
             'recentVisits' => [],
             'buzz' => null,
@@ -30,5 +31,4 @@ final class DashboardSettingsNavigationTest extends TestCase
         self::assertStringContainsString('<a href="/dashboard/settings">Settings</a>', $html);
         self::assertStringNotContainsString('<a href="/editor">Settings</a>', $html);
     }
-
 }
