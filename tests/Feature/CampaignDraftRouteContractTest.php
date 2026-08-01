@@ -17,7 +17,7 @@ final class CampaignDraftRouteContractTest extends TestCase
         self::assertStringContainsString('!$session->canManageMail()', $routes);
         self::assertStringContainsString("hash('sha256', \$before)", $routes);
         self::assertStringContainsString("hash('sha256', \$after)", $routes);
-        self::assertStringContainsString("Response::html('Source post changed while creating the campaign draft.', 409)", $routes);
+        self::assertStringContainsString("Response::html('Source post changed while creating campaign draft.', 500)", $routes);
         self::assertStringContainsString("CampaignDraftStore::class)->create", $routes);
         self::assertStringContainsString("'/mail/campaign-drafts/'", $routes);
     }
