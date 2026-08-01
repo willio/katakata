@@ -22,7 +22,14 @@ final readonly class CampaignDraft
         public ?string $sourceRevision,
         public ?string $sourceHash,
         public ?DateTimeImmutable $sourceCreatedAt,
+        public ?string $confirmedCampaignId = null,
+        public ?DateTimeImmutable $confirmedAt = null,
     ) {
+    }
+
+    public function isConfirmed(): bool
+    {
+        return $this->confirmedCampaignId !== null;
     }
 
     /** @return array<string, mixed> */
@@ -42,6 +49,8 @@ final readonly class CampaignDraft
             'source_revision' => $this->sourceRevision,
             'source_hash' => $this->sourceHash,
             'source_created_at' => $this->sourceCreatedAt?->format(DATE_ATOM),
+            'confirmed_campaign_id' => $this->confirmedCampaignId,
+            'confirmed_at' => $this->confirmedAt?->format(DATE_ATOM),
         ];
     }
 }
