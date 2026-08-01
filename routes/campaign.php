@@ -53,6 +53,12 @@ $router->get('/mail', function (Request $request) use ($app, $authorizeMail): Re
         $area = $attention->landing();
     }
 
+    $selectedDraft = null;
+    $draftId = trim((string) ($request->query['draft'] ?? ''));
+    if ($area === 'inbox' && $draftId !== '') {
+        $selectedDraft = $app->make(DraftStore::class)->find($draftId);
+    }
+
     return Response::html($app->make(View::class)->render('mail', [
         'user' => $user,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
@@ -61,6 +67,7 @@ $router->get('/mail', function (Request $request) use ($app, $authorizeMail): Re
         'mailboxReadiness' => $mailbox->readiness(),
         'messages' => $mailbox->inbox(),
         'drafts' => $app->make(DraftStore::class)->recent(),
+        'selectedDraft' => $selectedDraft,
         'campaignDrafts' => $app->make(CampaignDraftStore::class)->recent(),
         'queue' => $workspace->reviewQueue(),
         'audience' => $workspace->recipientPreview(),
@@ -207,15 +214,7 @@ $router->post('/mail/campaign-drafts/{id}', function (Request $request, string $
     return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . $query, 303);
 });
 
-$dispatchClaimedCampaign = static function (CampaignDraft $claimed) use ($app): \Katakata\Mail\Campaign {
-    return $app->make(CampaignDispatcher::class)->confirmDraftAndQueue(
-        $claimed,
-        $app->make(CampaignDraftReviewer::class),
-        $claimed->confirmedAt,
-    );
-};
-
-$router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, string $id) use ($app, $authorizeMail, $dispatchClaimedCampaign): Response {
+$router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, string $id) use ($app, $authorizeMail): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) {
         return $user;
@@ -235,7 +234,7 @@ $router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, 
     $expectedVersion = max(1, (int) ($request->body['expected_version'] ?? 0));
     try {
         $claim = $store->claimConfirmation($id, $expectedVersion);
-    } catch (CampaignDraftConflict) {
+    } catch (CampaignDraftConflict $conflict) {
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?conflict=1', 303);
     } catch (\Throwable) {
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=confirm', 303);
@@ -252,7 +251,11 @@ $router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, 
     }
 
     try {
-        $campaign = $dispatchClaimedCampaign($claimed);
+        $campaign = $app->make(CampaignDispatcher::class)->confirmDraftAndQueue(
+            $claimed,
+            $app->make(CampaignDraftReviewer::class),
+            $claimed->confirmedAt,
+        );
     } catch (\Throwable) {
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=queue', 303);
     }
@@ -260,7 +263,7 @@ $router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, 
     return Response::redirect('/mail/campaign/' . rawurlencode($campaign->id), 303);
 });
 
-$router->post('/mail/campaign-drafts/{id}/resume', function (Request $request, string $id) use ($app, $authorizeMail, $dispatchClaimedCampaign): Response {
+$router->post('/mail/campaign-drafts/{id}/resume', function (Request $request, string $id) use ($app, $authorizeMail): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) {
         return $user;
@@ -275,18 +278,21 @@ $router->post('/mail/campaign-drafts/{id}/resume', function (Request $request, s
     if ($draft === null) {
         return Response::notFound();
     }
-    if (!$draft->isConfirmed()) {
-        return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=not-pending', 303);
+    if (!$draft->isConfirmed() || $draft->confirmedCampaignId === null || $draft->confirmedAt === null) {
+        return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=resume', 303);
     }
 
-    $campaignId = (string) $draft->confirmedCampaignId;
-    $campaign = $app->make(CampaignStore::class)->find($campaignId);
-    if ($campaign !== null) {
-        return Response::redirect('/mail/campaign/' . rawurlencode($campaign->id), 303);
+    $existing = $app->make(CampaignStore::class)->find($draft->confirmedCampaignId);
+    if ($existing !== null) {
+        return Response::redirect('/mail/campaign/' . rawurlencode($existing->id), 303);
     }
 
     try {
-        $campaign = $dispatchClaimedCampaign($draft);
+        $campaign = $app->make(CampaignDispatcher::class)->confirmDraftAndQueue(
+            $draft,
+            $app->make(CampaignDraftReviewer::class),
+            $draft->confirmedAt,
+        );
     } catch (\Throwable) {
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=queue', 303);
     }
