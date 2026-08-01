@@ -222,20 +222,24 @@ $router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, 
     if ($draft === null) {
         return Response::notFound();
     }
-    if ($draft->isConfirmed()) {
-        return Response::redirect('/mail/campaign/' . rawurlencode((string) $draft->confirmedCampaignId), 303);
-    }
 
     $expectedVersion = max(1, (int) ($request->body['expected_version'] ?? 0));
     try {
-        $claimed = $store->claimConfirmation($id, $expectedVersion);
+        $claim = $store->claimConfirmation($id, $expectedVersion);
     } catch (CampaignDraftConflict $conflict) {
-        if ($conflict->current->isConfirmed()) {
-            return Response::redirect('/mail/campaign/' . rawurlencode((string) $conflict->current->confirmedCampaignId), 303);
-        }
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?conflict=1', 303);
     } catch (\Throwable) {
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=confirm', 303);
+    }
+
+    $claimed = $claim['draft'];
+    $campaignId = (string) $claimed->confirmedCampaignId;
+    if (!$claim['acquired']) {
+        $campaign = $app->make(CampaignStore::class)->find($campaignId);
+        if ($campaign !== null) {
+            return Response::redirect('/mail/campaign/' . rawurlencode($campaign->id), 303);
+        }
+        return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=pending', 303);
     }
 
     try {
