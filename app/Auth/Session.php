@@ -104,6 +104,16 @@ final class Session
 
     public function canInvite(): bool
     {
-        return in_array($this->user()['role'] ?? null, ['owner', 'admin'], true);
+        return $this->hasRole('owner', 'admin');
+    }
+
+    public function canManageSettings(): bool
+    {
+        return $this->hasRole('owner', 'admin');
+    }
+
+    private function hasRole(string ...$roles): bool
+    {
+        return in_array($this->user()['role'] ?? null, $roles, true);
     }
 }
