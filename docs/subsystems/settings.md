@@ -51,8 +51,11 @@ UI. It is distinct from editable global preferences and must never turn the
 settings page into an infrastructure console.
 
 For the Mail workspace, this readiness state covers an IMAP inbox adapter as
-defined by [ADR 0010](../adr/0010-imap-inbox-adapter.md). It names the missing
-or stale capability but never renders credentials.
+defined by [ADR 0010](../adr/0010-imap-inbox-adapter.md). Settings may provide
+a concise self-hosting setup checklist and identify a missing, stale, or
+unreachable connection, but it never renders or accepts credentials. IMAP
+usernames, passwords, and OAuth tokens are supplied through `.env` or the
+host's secret manager.
 
 ### Account and security management
 

@@ -16,7 +16,8 @@ objects already depend on a provider-neutral `MailboxProvider` boundary.
 
 Use IMAP as the first inbound adapter behind `MailboxProvider`.
 
-- IMAP credentials remain deployment-only configuration.
+- IMAP credentials remain deployment-only configuration: environment variables
+  or the host's secret manager. They are never persisted by Katakata.
 - A scheduled worker synchronizes IMAP into private operational state.
 - Dashboard and Mail requests read that synchronized state; they never make
   network IMAP calls during page rendering.
@@ -49,3 +50,9 @@ IMAP support introduces protocol and synchronization complexity, but keeps
 inbound correspondence portable and separates real-time page performance from
 network reliability. Webhook-based inbound mail is not a competing canonical
 inbox path.
+
+The Settings surface may guide connection setup and report non-secret
+readiness (for example, configured, stale, or unreachable). It may not accept,
+store, or reveal IMAP usernames, passwords, OAuth refresh tokens, or other
+mail credentials. This keeps local self-hosting testable through `.env` or the
+host secret manager without creating an application-managed secret store.

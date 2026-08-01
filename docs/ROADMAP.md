@@ -80,8 +80,8 @@ See [`docs/subsystems/dashboard.md`](./subsystems/dashboard.md),
 - [x] `/dashboard/mail` compatibility redirect to `/mail`
 - [ ] Scheduled IMAP synchronization adapter and cached operational inbox
 - [ ] Guided Mail connection setup in `/dashboard/settings`, including safe
-  non-secret connection readiness and an explicit credential-provisioning
-  boundary for self-hosted testing
+  non-secret connection readiness; IMAP credentials are provisioned only via
+  environment variables or the host secret manager for self-hosted testing
 - [ ] Correspondence storage, retention, deletion/export, and attachment-limit
   policy before synchronizing real reader mail
 - [ ] Replace Mail authorization source-contract assertions with owner/admin/editor
