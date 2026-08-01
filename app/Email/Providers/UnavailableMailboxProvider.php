@@ -10,7 +10,6 @@ use Katakata\Email\Message;
 
 final class UnavailableMailboxProvider implements MailboxProvider
 {
-    /** @return list<\Katakata\Email\MessageSummary> */
     public function inbox(int $limit = 50): array
     {
         return [];
@@ -31,7 +30,14 @@ final class UnavailableMailboxProvider implements MailboxProvider
         return null;
     }
 
-    /** @return array{status:string,reason:?string,last_synced_at:?string} */
+    public function markRead(string $id, bool $read): void
+    {
+    }
+
+    public function archive(string $id): void
+    {
+    }
+
     public function readiness(): array
     {
         return [
