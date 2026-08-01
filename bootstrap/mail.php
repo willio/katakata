@@ -7,6 +7,12 @@ use Katakata\Content\Repository;
 use Katakata\Distribution\MailQueue;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Editorial\AtomicFile;
+use Katakata\Email\DraftComposer;
+use Katakata\Email\DraftStore;
+use Katakata\Email\FileDraftStore;
+use Katakata\Email\Mailbox;
+use Katakata\Email\MailboxProvider;
+use Katakata\Email\Providers\UnavailableMailboxProvider;
 use Katakata\Mail\CampaignDispatcher;
 use Katakata\Mail\CampaignRetryService;
 use Katakata\Mail\CampaignStatus;
@@ -16,6 +22,29 @@ use Katakata\Rendering\Markdown;
 
 /** @var Application $app */
 
+$app->singleton(
+    MailboxProvider::class,
+    static fn (): MailboxProvider => new UnavailableMailboxProvider(),
+);
+$app->singleton(
+    Mailbox::class,
+    static fn (Application $container): Mailbox => new Mailbox(
+        $container->make(MailboxProvider::class),
+    ),
+);
+$app->singleton(
+    DraftStore::class,
+    static fn (Application $container): DraftStore => new FileDraftStore(
+        $container->storagePath('mail/drafts'),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    DraftComposer::class,
+    static fn (Application $container): DraftComposer => new DraftComposer(
+        $container->make(DraftStore::class),
+    ),
+);
 $app->singleton(
     MailWorkspace::class,
     static fn (Application $container): MailWorkspace => new MailWorkspace(
