@@ -8,6 +8,7 @@
     const version = form.querySelector('input[name="expected_version"]');
     const clientVersion = form.querySelector('input[name="client_version"]');
     const fields = Array.from(form.querySelectorAll('input[name="subject"], input[name="preheader"], textarea[name="body"]'));
+    const fullscreen = document.getElementById('campaign-fullscreen-toggle');
     let timer = null;
     let sequence = 0;
 
@@ -68,7 +69,16 @@
         timer = window.setTimeout(save, 7000);
     };
 
+    const toggleFullscreen = () => {
+        const active = document.body.classList.toggle('campaign-compose-fullscreen');
+        if (fullscreen instanceof HTMLButtonElement) {
+            fullscreen.setAttribute('aria-pressed', active ? 'true' : 'false');
+            fullscreen.textContent = active ? 'Exit fullscreen' : 'Fullscreen';
+        }
+    };
+
     fields.forEach((field) => field.addEventListener('input', schedule));
+    if (fullscreen instanceof HTMLButtonElement) fullscreen.addEventListener('click', toggleFullscreen);
     window.addEventListener('blur', () => { if (timer !== null) save(); });
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden' && timer !== null) save();
