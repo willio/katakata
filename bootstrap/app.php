@@ -38,6 +38,11 @@ use Katakata\Distribution\ThreadsReplySync;
 use Katakata\Distribution\ThreadsStore;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Http\Router;
+use Katakata\Import\DirectoryDocumentImporter;
+use Katakata\Import\DocxDocumentParser;
+use Katakata\Import\KatakataDocumentWriter;
+use Katakata\Import\LegacyDocConverter;
+use Katakata\Import\LegacyDocumentImporter;
 use Katakata\Rendering\Markdown;
 use Katakata\Seo\SeoChecker;
 use Katakata\Support\DotEnv;
@@ -158,6 +163,37 @@ $app->singleton(
         $container->basePath((string) $container->config()->get('content.drafts_path', 'content/drafts')),
         $container->make(AtomicFile::class),
         $container->make(RevisionStore::class),
+    ),
+);
+$app->singleton(
+    DocxDocumentParser::class,
+    static fn (): DocxDocumentParser => new DocxDocumentParser(),
+);
+$app->singleton(
+    KatakataDocumentWriter::class,
+    static fn (Application $container): KatakataDocumentWriter => new KatakataDocumentWriter(
+        $container->make(DraftEditor::class),
+        $container->basePath((string) $container->config()->get('content.drafts_path', 'content/drafts')),
+    ),
+);
+$app->singleton(
+    LegacyDocConverter::class,
+    static fn (Application $container): LegacyDocConverter => new LegacyDocConverter(
+        $container->storagePath('tmp/import'),
+    ),
+);
+$app->singleton(
+    LegacyDocumentImporter::class,
+    static fn (Application $container): LegacyDocumentImporter => new LegacyDocumentImporter(
+        $container->make(DocxDocumentParser::class),
+        $container->make(KatakataDocumentWriter::class),
+        $container->make(LegacyDocConverter::class),
+    ),
+);
+$app->singleton(
+    DirectoryDocumentImporter::class,
+    static fn (Application $container): DirectoryDocumentImporter => new DirectoryDocumentImporter(
+        $container->make(LegacyDocumentImporter::class),
     ),
 );
 $app->singleton(

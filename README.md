@@ -46,6 +46,8 @@ php bin/katakata routes:list
 php bin/katakata serve [host]
 php bin/katakata content:list
 php bin/katakata content:validate
+php bin/katakata import:document <path> [--author=name] [--dry-run]
+php bin/katakata import:directory <path> [--recursive] [--author=name] [--dry-run]
 php bin/katakata draft:create <slug> <title>
 php bin/katakata draft:edit <slug>
 php bin/katakata draft:schedule <slug> <ISO-8601>
@@ -77,6 +79,11 @@ Set `ANALYTICS_SECRET` (or `APP_KEY`) in `.env`, then run
 failure-isolated and never stores raw IP addresses.
 
 The application itself never requires Composer's autoloader to run.
+
+Document import requires PHP's DOM and ZIP extensions. Importing legacy `.doc`
+files additionally requires LibreOffice (`soffice` or `libreoffice`) on `PATH`.
+See [`docs/subsystems/import.md`](docs/subsystems/import.md) for reconciliation,
+metadata, dry-run, and collision behavior.
 
 ## Production identity and email
 

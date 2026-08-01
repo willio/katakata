@@ -31,6 +31,8 @@ use Katakata\Seo\SeoChecker;
  */
 final class Application
 {
+    use ImportCommands;
+
     /** @var array<string, callable(array<int, string>): int> */
     private array $commands = [];
 
@@ -43,6 +45,8 @@ final class Application
         $this->commands['serve'] = fn (array $args): int => $this->serve($args);
         $this->commands['content:list'] = fn (): int => $this->contentList();
         $this->commands['content:validate'] = fn (): int => $this->contentValidate();
+        $this->commands['import:document'] = fn (array $args): int => $this->importDocument($args);
+        $this->commands['import:directory'] = fn (array $args): int => $this->importDirectory($args);
         $this->commands['draft:create'] = fn (array $args): int => $this->draftCreate($args);
         $this->commands['draft:edit'] = fn (array $args): int => $this->draftEdit($args);
         $this->commands['draft:schedule'] = fn (array $args): int => $this->draftSchedule($args);
