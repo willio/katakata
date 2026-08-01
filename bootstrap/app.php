@@ -44,6 +44,7 @@ use Katakata\Distribution\ThreadsInsightsApi;
 use Katakata\Distribution\ThreadsReplySync;
 use Katakata\Distribution\ThreadsStore;
 use Katakata\Distribution\SubscriberStore;
+use Katakata\Distribution\UnavailableSubscriberStore;
 use Katakata\Http\Router;
 use Katakata\Import\DirectoryDocumentImporter;
 use Katakata\Import\DocxDocumentParser;
@@ -58,8 +59,6 @@ use Katakata\View;
 require_once __DIR__ . '/autoload.php';
 require_once __DIR__ . '/helpers.php';
 
-// Composer's autoloader is optional: only developer tooling such as
-// PHPUnit needs it. The application runs without `composer install`.
 if (is_file(dirname(__DIR__) . '/vendor/autoload.php')) {
     require_once dirname(__DIR__) . '/vendor/autoload.php';
 }
@@ -91,12 +90,10 @@ $app->singleton(
         $container->make(VisitorHasher::class),
     ),
 );
-
 $app->singleton(
     Repository::class,
     static fn (Application $container): Repository => Repository::forApplication($container),
 );
-
 $app->singleton(
     DashboardAnalytics::class,
     static fn (Application $container): DashboardAnalytics => new DashboardAnalytics(
@@ -122,7 +119,6 @@ $app->singleton(
         $container->basePath('public'),
     ),
 );
-
 $app->singleton(AtomicFile::class, static fn (): AtomicFile => new AtomicFile());
 $app->singleton(
     AccountStore::class,
@@ -176,10 +172,7 @@ $app->singleton(
         $container->make(RevisionStore::class),
     ),
 );
-$app->singleton(
-    DocxDocumentParser::class,
-    static fn (): DocxDocumentParser => new DocxDocumentParser(),
-);
+$app->singleton(DocxDocumentParser::class, static fn (): DocxDocumentParser => new DocxDocumentParser());
 $app->singleton(
     KatakataDocumentWriter::class,
     static fn (Application $container): KatakataDocumentWriter => new KatakataDocumentWriter(
@@ -275,20 +268,27 @@ $app->singleton(
     ),
 );
 $app->singleton(
+    SubscriberStore::class,
+    static function (Application $container): SubscriberStore {
+        $secret = trim((string) $container->config()->get('newsletter.secret', ''));
+        if ($secret === '') {
+            return new UnavailableSubscriberStore();
+        }
+
+        return new SubscriberStore(
+            $container->storagePath('distribution/subscribers.json'),
+            $secret,
+            $container->make(AtomicFile::class),
+        );
+    },
+);
+$app->singleton(
     NewsletterDispatcher::class,
     static fn (Application $container): NewsletterDispatcher => new NewsletterDispatcher(
         $container->make(NewsletterAdapter::class),
         $container->make(SubscriberStore::class),
         $container->make(MailQueue::class),
         (string) $container->config()->get('app.url', 'http://localhost:8000'),
-    ),
-);
-$app->singleton(
-    SubscriberStore::class,
-    static fn (Application $container): SubscriberStore => new SubscriberStore(
-        $container->storagePath('distribution/subscribers.json'),
-        (string) $container->config()->get('newsletter.secret', ''),
-        $container->make(AtomicFile::class),
     ),
 );
 $app->singleton(
@@ -392,7 +392,6 @@ $app->singleton(
         return new Distributor($adapters);
     },
 );
-
 $app->singleton(
     View::class,
     static fn (Application $container): View => View::forApplication($container),
