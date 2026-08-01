@@ -24,10 +24,10 @@ $router->post('/{year}/{month}/{slug}/discussion', function (
         return Response::notFound();
     }
 
-    $location = $post->url() . '#discussion';
+    $location = $post->url();
     $session = $app->make(\Katakata\Auth\Session::class);
     if (!$session->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::redirect($location . '?comment=expired', 303);
+        return Response::redirect($location . '?comment=expired#discussion', 303);
     }
 
     try {

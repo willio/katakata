@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Katakata\Tests\Feature;
 
+use Katakata\Http\Request;
 use PHPUnit\Framework\TestCase;
 
 final class RouteCompositionTest extends TestCase
@@ -41,5 +42,20 @@ final class RouteCompositionTest extends TestCase
         );
 
         $this->assertCount(1, $articleRoutes);
+    }
+
+    public function test_invalid_discussion_csrf_redirect_keeps_the_status_in_the_query_string(): void
+    {
+        $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
+        $router = require dirname(__DIR__, 2) . '/bootstrap/routes.php';
+
+        $response = $router->dispatch(new Request(
+            'POST',
+            '/2026/01/hello-world/discussion',
+            body: ['csrf' => 'invalid'],
+        ));
+
+        $this->assertSame(303, $response->status);
+        $this->assertSame('/2026/01/hello-world?comment=expired#discussion', $response->headers['Location']);
     }
 }
