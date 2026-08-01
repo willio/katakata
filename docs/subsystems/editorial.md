@@ -57,4 +57,10 @@ Production passkeys require HTTPS. `http://localhost` remains valid for local We
 
 The browser editor implements `docs/design_specification.md` as a fullscreen 68ch monospace writing surface. Draft navigation, publishing, and current-post metadata remain in a hidden settings panel toggled by its quiet affordance or `Cmd/Ctrl+,`. The panel preserves per-post newsletter and discussion flags and links to `/dashboard/settings` instead of duplicating publication-wide or account controls.
 
+The editor may offer **Create campaign** for the current post. This is a
+handoff to the Mail workspace: it creates a separate campaign draft from the
+post without sending, queuing, or mutating canonical Markdown. The detailed
+compose/autosave contract is in
+[`docs/superpowers/specs/2026-08-01-mail-workspace-compose-design.md`](../superpowers/specs/2026-08-01-mail-workspace-compose-design.md).
+
 For existing drafts, `public/assets/js/editor.js` writes a debounced draft-specific local recovery buffer, synchronizes after seven seconds and on focus/visibility changes, and reports honest textual save state. `POST /editor/drafts/{slug}/autosave` reuses `DraftEditor`, returns the canonical content version, and confirms the client version. The buffer is cleared only when that exact version is acknowledged. A newer local buffer prompts before restoration. Multi-tab and multi-device editing remains documented last-write-wins behavior.
