@@ -12,6 +12,7 @@ $router = $app->make(Router::class);
 require $app->routesPath('web.php');
 require $app->routesPath('editor.php');
 require $app->routesPath('mail.php');
+require $app->routesPath('campaign.php');
 require $app->routesPath('article.php');
 
 return $router;
