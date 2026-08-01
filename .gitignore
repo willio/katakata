@@ -36,6 +36,12 @@
 .env.*
 !.env.example
 
+# Per-machine local TLS material for config/nginx/katakata.conf.
+config/nginx/ssl/*
+!config/nginx/ssl/.gitkeep
+.env.*
+!.env.example
+
 # --------------------------------------------------
 # Runtime
 # --------------------------------------------------

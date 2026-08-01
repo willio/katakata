@@ -38,6 +38,16 @@ canonical `/{year}/{month}/{slug}` URL. The complete published archive is
 available at `/archive`; the authenticated owner dashboard is at `/dashboard`; feeds are available at `/feed.xml` and `/feed.json`,
 and author archives at `/authors/{slug}`.
 
+### Local nginx HTTPS
+
+`config/nginx/katakata.conf` serves `katakata.local` over HTTPS and redirects
+HTTP to HTTPS. Create the certificate and private key locally at
+`config/nginx/ssl/katakata.local.crt` and
+`config/nginx/ssl/katakata.local.key`; they are deliberately ignored and must
+never be committed. When testing an isolated worktree, use a local vhost copy
+whose `root` points at that worktree's `public/` directory rather than editing
+the tracked configuration.
+
 ## CLI
 
 ```bash
