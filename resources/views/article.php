@@ -39,6 +39,56 @@
                 </nav>
             </footer>
         </article>
+        <section id="discussion" class="article-discussion" aria-labelledby="discussion-heading">
+            <header>
+                <p class="eyebrow">Discussion</p>
+                <h2 id="discussion-heading">Comments</h2>
+                <p>Comments are reviewed before they appear publicly.</p>
+            </header>
+            <?php if ($commentState === 'pending'): ?>
+                <p role="status">Your comment was submitted for review.</p>
+            <?php elseif ($commentState === 'expired'): ?>
+                <p role="alert">The comment form expired. Please try again.</p>
+            <?php elseif ($commentState === 'invalid'): ?>
+                <p role="alert">The comment could not be submitted. Check the required fields and try again.</p>
+            <?php endif; ?>
+            <?php if ($discussion['thread']->entries === []): ?>
+                <p class="quiet">No approved comments yet.</p>
+            <?php else: ?>
+                <ol class="discussion-list">
+                    <?php foreach ($discussion['thread']->entries as $entry): ?>
+                        <li id="comment-<?= e($entry->id) ?>"<?= $entry->parentId !== null ? ' class="discussion-reply"' : '' ?>>
+                            <article>
+                                <header>
+                                    <strong><?= e($entry->authorName) ?></strong>
+                                    <time datetime="<?= e($entry->publishedAt->format(DATE_ATOM)) ?>"><?= e($entry->publishedAt->format('M j, Y H:i')) ?></time>
+                                </header>
+                                <p><?= nl2br(e($entry->body)) ?></p>
+                                <a href="#comment-form" data-reply-to="<?= e($entry->id) ?>">Reply</a>
+                            </article>
+                        </li>
+                    <?php endforeach; ?>
+                </ol>
+            <?php endif; ?>
+            <form id="comment-form" method="post" action="<?= e($post->url()) ?>/discussion">
+                <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                <input type="hidden" name="parent_id" value="">
+                <div hidden aria-hidden="true">
+                    <label>Leave this field blank <input type="text" name="honeypot" tabindex="-1" autocomplete="off"></label>
+                </div>
+                <label>Name <input type="text" name="author_name" maxlength="120" required autocomplete="name"></label>
+                <label>Comment <textarea name="body" rows="6" maxlength="5000" required></textarea></label>
+                <button type="submit">Submit for review</button>
+            </form>
+        </section>
     </main>
+    <script>
+        document.querySelectorAll('[data-reply-to]').forEach((link) => {
+            link.addEventListener('click', () => {
+                const input = document.querySelector('#comment-form [name="parent_id"]');
+                if (input) input.value = link.dataset.replyTo || '';
+            });
+        });
+    </script>
 </body>
 </html>

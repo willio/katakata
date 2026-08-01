@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Katakata\Dashboard;
 
-use Katakata\Distribution\ThreadsStore;
+use Katakata\Discussion\DiscussionEntry;
+use Katakata\Discussion\DiscussionManager;
 use Throwable;
 
 final class DashboardBuzz
 {
     public function __construct(
-        private readonly ThreadsStore $store,
-        private readonly bool $enabled,
+        private readonly DiscussionManager $discussions,
+        private readonly string $provider = 'none',
     ) {
     }
 
@@ -22,12 +23,24 @@ final class DashboardBuzz
      */
     public function recent(int $limit = 8): ?array
     {
-        if (!$this->enabled) {
-            return null;
-        }
-
         try {
-            return $this->store->recentReplies($limit);
+            $provider = $this->discussions->resolve($this->provider);
+            if ($provider->key() === 'none') {
+                return null;
+            }
+
+            return array_map(
+                static fn (DiscussionEntry $entry): array => [
+                    'id' => $entry->id,
+                    'post_slug' => (string) ($entry->metadata['post_slug'] ?? ''),
+                    'text' => $entry->body,
+                    'username' => $entry->authorName,
+                    'timestamp' => $entry->publishedAt->format(DATE_ATOM),
+                    'permalink' => (string) ($entry->metadata['permalink'] ?? $entry->authorUrl ?? ''),
+                    'avatar_url' => isset($entry->metadata['avatar_url']) ? (string) $entry->metadata['avatar_url'] : null,
+                ],
+                $provider->recent($limit),
+            );
         } catch (Throwable) {
             return null;
         }

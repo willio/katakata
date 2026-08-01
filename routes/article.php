@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Katakata\Content\Repository;
+use Katakata\Discussion\NativeDiscussionService;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\Rendering\Markdown;
@@ -36,6 +37,7 @@ $router->post('/{year}/{month}/{slug}/discussion', function (
             $request->body['author_name'] ?? '',
             $request->body['body'] ?? '',
             $request->body['parent_id'] ?? null,
+            spam: ['honeypot' => $request->body['honeypot'] ?? null],
         );
 
         return Response::redirect($post->url() . '?comment=pending#discussion', 303);
@@ -61,6 +63,7 @@ $router->get('/{year}/{month}/{slug}', function (
     }
 
     $author = $post->author === null ? null : $app->make(Repository::class)->findAuthor($post->author);
+    $discussion = $app->make(NativeDiscussionService::class)->forPost($post);
     $app->make(\Katakata\Analytics\VisitRecorder::class)->record($request);
 
     return Response::html($app->make(View::class)->render('article', [
@@ -69,5 +72,8 @@ $router->get('/{year}/{month}/{slug}', function (
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'bodyHtml' => $app->make(Markdown::class)->render($post->body),
         'authorBioHtml' => $author?->bio === null ? null : $app->make(Markdown::class)->render($author->bio),
+        'discussion' => $discussion,
+        'commentState' => (string) ($request->query['comment'] ?? ''),
+        'csrf' => $app->make(\Katakata\Auth\Session::class)->csrf(),
     ]));
 });

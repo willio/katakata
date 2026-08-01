@@ -25,6 +25,12 @@ use Katakata\Distribution\FilesystemEmailTransport;
 use Katakata\Distribution\MailQueue;
 use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Dashboard\DashboardBuzz;
+use Katakata\Discussion\DiscussionManager;
+use Katakata\Discussion\NativeDiscussionProvider;
+use Katakata\Discussion\NativeDiscussionService;
+use Katakata\Discussion\NativeDiscussionStore;
+use Katakata\Discussion\Providers\NullDiscussionProvider;
+use Katakata\Discussion\Providers\ThreadsDiscussionProvider;
 use Katakata\Distribution\NewsletterAdapter;
 use Katakata\Distribution\NewsletterDispatcher;
 use Katakata\Distribution\MetaThreadsApi;
@@ -100,8 +106,8 @@ $app->singleton(
 $app->singleton(
     DashboardBuzz::class,
     static fn (Application $container): DashboardBuzz => new DashboardBuzz(
-        $container->make(ThreadsStore::class),
-        (bool) $container->config()->get('threads.enabled', false),
+        $container->make(DiscussionManager::class),
+        (bool) $container->config()->get('threads.enabled', false) ? 'threads' : 'none',
     ),
 );
 $app->singleton(
@@ -306,6 +312,42 @@ $app->singleton(
 $app->singleton(
     ThreadsInsightsApi::class,
     static fn (Application $container): ThreadsInsightsApi => $container->make(ThreadsApi::class),
+);
+$app->singleton(
+    ThreadsDiscussionProvider::class,
+    static fn (Application $container): ThreadsDiscussionProvider => new ThreadsDiscussionProvider(
+        $container->make(ThreadsApi::class),
+        $container->make(ThreadsStore::class),
+        (bool) $container->config()->get('threads.enabled', false),
+    ),
+);
+$app->singleton(
+    NativeDiscussionStore::class,
+    static fn (Application $container): NativeDiscussionStore => new NativeDiscussionStore(
+        $container->storagePath('discussion/native'),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    NativeDiscussionProvider::class,
+    static fn (Application $container): NativeDiscussionProvider => new NativeDiscussionProvider(
+        $container->make(NativeDiscussionStore::class),
+    ),
+);
+$app->singleton(
+    NativeDiscussionService::class,
+    static fn (Application $container): NativeDiscussionService => new NativeDiscussionService(
+        $container->make(NativeDiscussionProvider::class),
+        $container->make(NativeDiscussionStore::class),
+    ),
+);
+$app->singleton(
+    DiscussionManager::class,
+    static fn (Application $container): DiscussionManager => new DiscussionManager(
+        new NullDiscussionProvider(),
+        $container->make(ThreadsDiscussionProvider::class),
+        $container->make(NativeDiscussionProvider::class),
+    ),
 );
 $app->singleton(
     ThreadsAdapter::class,
