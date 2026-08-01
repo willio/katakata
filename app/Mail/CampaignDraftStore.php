@@ -38,6 +38,111 @@ final class CampaignDraftStore
             return null;
         }
 
+        return $this->decode($target, $id);
+    }
+
+    public function save(CampaignDraft $draft, int $expectedVersion): CampaignDraft
+    {
+        return $this->locked($draft->id, function (CampaignDraft $current) use ($draft, $expectedVersion): CampaignDraft {
+            if ($current->isConfirmed()) {
+                throw new RuntimeException('Confirmed campaign drafts are immutable.');
+            }
+            if ($current->version !== $expectedVersion) {
+                throw new CampaignDraftConflict($current);
+            }
+
+            $next = new CampaignDraft(
+                id: $current->id,
+                subject: $draft->subject,
+                preheader: $draft->preheader,
+                body: $draft->body,
+                version: $current->version + 1,
+                createdAt: $current->createdAt,
+                updatedAt: $draft->updatedAt,
+                createdBy: $current->createdBy,
+                sourceType: $current->sourceType,
+                sourceId: $current->sourceId,
+                sourceRevision: $current->sourceRevision,
+                sourceHash: $current->sourceHash,
+                sourceCreatedAt: $current->sourceCreatedAt,
+            );
+
+            $this->write($this->target($next->id), $next);
+            return $next;
+        });
+    }
+
+    public function claimConfirmation(string $id, int $expectedVersion, ?DateTimeImmutable $now = null): CampaignDraft
+    {
+        return $this->locked($id, function (CampaignDraft $current) use ($expectedVersion, $now): CampaignDraft {
+            if ($current->isConfirmed()) {
+                return $current;
+            }
+            if ($current->version !== $expectedVersion) {
+                throw new CampaignDraftConflict($current);
+            }
+
+            $now ??= new DateTimeImmutable();
+            $campaignId = hash('md5', 'campaign-draft:' . $current->id);
+            $claimed = new CampaignDraft(
+                id: $current->id,
+                subject: $current->subject,
+                preheader: $current->preheader,
+                body: $current->body,
+                version: $current->version + 1,
+                createdAt: $current->createdAt,
+                updatedAt: $now,
+                createdBy: $current->createdBy,
+                sourceType: $current->sourceType,
+                sourceId: $current->sourceId,
+                sourceRevision: $current->sourceRevision,
+                sourceHash: $current->sourceHash,
+                sourceCreatedAt: $current->sourceCreatedAt,
+                confirmedCampaignId: $campaignId,
+                confirmedAt: $now,
+            );
+
+            $this->write($this->target($claimed->id), $claimed);
+            return $claimed;
+        });
+    }
+
+    /** @return list<CampaignDraft> */
+    public function recent(int $limit = 20): array
+    {
+        $drafts = [];
+        foreach (glob(rtrim($this->path, '/') . '/*.json') ?: [] as $path) {
+            $id = pathinfo($path, PATHINFO_FILENAME);
+            try {
+                $draft = $this->find($id);
+                if ($draft !== null) {
+                    $drafts[] = $draft;
+                }
+            } catch (RuntimeException) {
+                continue;
+            }
+        }
+
+        usort($drafts, static fn (CampaignDraft $a, CampaignDraft $b): int => $b->updatedAt <=> $a->updatedAt);
+        return array_slice($drafts, 0, max(1, $limit));
+    }
+
+    private function target(string $id): string
+    {
+        if (!preg_match('/^[a-f0-9]{32}$/', $id)) {
+            throw new RuntimeException('Campaign draft ID is invalid.');
+        }
+
+        return rtrim($this->path, '/') . '/' . $id . '.json';
+    }
+
+    private function lockTarget(string $id): string
+    {
+        return rtrim($this->path, '/') . '/.' . $id . '.lock';
+    }
+
+    private function decode(string $target, string $id): CampaignDraft
+    {
         $data = json_decode((string) file_get_contents($target), true);
         if (!is_array($data)) {
             throw new RuntimeException('Campaign draft storage is invalid.');
@@ -68,102 +173,31 @@ final class CampaignDraftStore
         );
     }
 
-    public function save(CampaignDraft $draft, int $expectedVersion): CampaignDraft
+    /** @template T @param callable(CampaignDraft):T $operation @return T */
+    private function locked(string $id, callable $operation): mixed
     {
-        $current = $this->find($draft->id);
-        if ($current === null) {
-            throw new RuntimeException('Campaign draft not found.');
-        }
-        if ($current->isConfirmed()) {
-            throw new RuntimeException('Confirmed campaign drafts are immutable.');
-        }
-        if ($current->version !== $expectedVersion) {
-            throw new CampaignDraftConflict($current);
+        if (!is_dir($this->path) && !mkdir($this->path, 0700, true) && !is_dir($this->path)) {
+            throw new RuntimeException('Unable to create campaign draft storage.');
         }
 
-        $next = new CampaignDraft(
-            id: $current->id,
-            subject: $draft->subject,
-            preheader: $draft->preheader,
-            body: $draft->body,
-            version: $current->version + 1,
-            createdAt: $current->createdAt,
-            updatedAt: $draft->updatedAt,
-            createdBy: $current->createdBy,
-            sourceType: $current->sourceType,
-            sourceId: $current->sourceId,
-            sourceRevision: $current->sourceRevision,
-            sourceHash: $current->sourceHash,
-            sourceCreatedAt: $current->sourceCreatedAt,
-        );
-
-        $this->write($this->target($next->id), $next);
-        return $next;
-    }
-
-    public function confirm(string $id, int $expectedVersion, string $campaignId, ?DateTimeImmutable $now = null): CampaignDraft
-    {
-        $current = $this->find($id);
-        if ($current === null) {
-            throw new RuntimeException('Campaign draft not found.');
-        }
-        if ($current->isConfirmed()) {
-            return $current;
-        }
-        if ($current->version !== $expectedVersion) {
-            throw new CampaignDraftConflict($current);
-        }
-
-        $now ??= new DateTimeImmutable();
-        $confirmed = new CampaignDraft(
-            id: $current->id,
-            subject: $current->subject,
-            preheader: $current->preheader,
-            body: $current->body,
-            version: $current->version + 1,
-            createdAt: $current->createdAt,
-            updatedAt: $now,
-            createdBy: $current->createdBy,
-            sourceType: $current->sourceType,
-            sourceId: $current->sourceId,
-            sourceRevision: $current->sourceRevision,
-            sourceHash: $current->sourceHash,
-            sourceCreatedAt: $current->sourceCreatedAt,
-            confirmedCampaignId: $campaignId,
-            confirmedAt: $now,
-        );
-
-        $this->write($this->target($confirmed->id), $confirmed);
-        return $confirmed;
-    }
-
-    /** @return list<CampaignDraft> */
-    public function recent(int $limit = 20): array
-    {
-        $drafts = [];
-        foreach (glob(rtrim($this->path, '/') . '/*.json') ?: [] as $path) {
-            $id = pathinfo($path, PATHINFO_FILENAME);
-            try {
-                $draft = $this->find($id);
-                if ($draft !== null) {
-                    $drafts[] = $draft;
-                }
-            } catch (RuntimeException) {
-                continue;
+        $lock = fopen($this->lockTarget($id), 'c+');
+        if ($lock === false || !flock($lock, LOCK_EX)) {
+            if (is_resource($lock)) {
+                fclose($lock);
             }
+            throw new RuntimeException('Unable to lock campaign draft.');
         }
 
-        usort($drafts, static fn (CampaignDraft $a, CampaignDraft $b): int => $b->updatedAt <=> $a->updatedAt);
-        return array_slice($drafts, 0, max(1, $limit));
-    }
-
-    private function target(string $id): string
-    {
-        if (!preg_match('/^[a-f0-9]{32}$/', $id)) {
-            throw new RuntimeException('Campaign draft ID is invalid.');
+        try {
+            $target = $this->target($id);
+            if (!is_file($target)) {
+                throw new RuntimeException('Campaign draft not found.');
+            }
+            return $operation($this->decode($target, $id));
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
         }
-
-        return rtrim($this->path, '/') . '/' . $id . '.json';
     }
 
     private function write(string $target, CampaignDraft $draft): void
