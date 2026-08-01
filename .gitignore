@@ -36,6 +36,15 @@
 .env.*
 !.env.example
 
+# Local working artifacts that are not repository content.
+/content/drafts/hello-hello.md
+/content/drafts/hello.md
+/content/drafts/this-is-a-title.md
+/content/drafts/wolves-and-bears.md
+/content/revisions/
+/storage/backups/
+/graphify-out/
+
 # Per-machine local TLS material for config/nginx/katakata.conf.
 config/nginx/ssl/*
 !config/nginx/ssl/.gitkeep
