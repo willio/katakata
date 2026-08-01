@@ -13,15 +13,31 @@ use Katakata\View;
  * @var \Katakata\Application $app
  */
 
-$router->get('/dashboard/settings', function (Request $request) use ($app): Response {
+$authorizeSettings = static function () use ($app): array|Response {
     $session = $app->make(Session::class);
     $user = $session->user();
+
     if ($user === null) {
         return Response::redirect('/login', 302);
     }
 
+    if (!$session->canManageSettings()) {
+        return Response::html('Forbidden.', 403);
+    }
+
+    return $user;
+};
+
+$router->get('/dashboard/settings', function (Request $request) use ($app, $authorizeSettings): Response {
+    $authorization = $authorizeSettings();
+    if ($authorization instanceof Response) {
+        return $authorization;
+    }
+
+    $session = $app->make(Session::class);
+
     return Response::html($app->make(View::class)->render('dashboard-settings', [
-        'user' => $user,
+        'user' => $authorization,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'settings' => $app->make(DashboardSettings::class)->all(),
         'saved' => ($request->query['saved'] ?? '') === '1',
@@ -30,12 +46,13 @@ $router->get('/dashboard/settings', function (Request $request) use ($app): Resp
     ]));
 });
 
-$router->post('/dashboard/settings', function (Request $request) use ($app): Response {
-    $session = $app->make(Session::class);
-    $user = $session->user();
-    if ($user === null) {
-        return Response::redirect('/login', 302);
+$router->post('/dashboard/settings', function (Request $request) use ($app, $authorizeSettings): Response {
+    $authorization = $authorizeSettings();
+    if ($authorization instanceof Response) {
+        return $authorization;
     }
+
+    $session = $app->make(Session::class);
     if (!$session->validCsrf($request->body['csrf'] ?? null)) {
         return Response::html('Invalid CSRF token.', 419);
     }
@@ -45,7 +62,7 @@ $router->post('/dashboard/settings', function (Request $request) use ($app): Res
         $app->make(DashboardSettings::class)->update($section, $request->body);
     } catch (\Throwable $error) {
         return Response::html($app->make(View::class)->render('dashboard-settings', [
-            'user' => $user,
+            'user' => $authorization,
             'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
             'settings' => $app->make(DashboardSettings::class)->all(),
             'saved' => false,
