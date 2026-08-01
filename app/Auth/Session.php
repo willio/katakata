@@ -112,6 +112,11 @@ final class Session
         return $this->hasRole('owner', 'admin');
     }
 
+    public function canManageMail(): bool
+    {
+        return $this->hasRole('owner', 'admin');
+    }
+
     private function hasRole(string ...$roles): bool
     {
         return in_array($this->user()['role'] ?? null, $roles, true);

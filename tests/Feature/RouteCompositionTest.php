@@ -69,6 +69,7 @@ final class RouteCompositionTest extends TestCase
         $this->assertStringContainsString("'latestPosts' =>", $routes);
         $this->assertStringContainsString("'recentVisits' => \$dashboardAnalytics->recent(\$analytics)", $routes);
         $this->assertStringContainsString('DashboardBuzz::class)->recent()', $routes);
-        $this->assertStringContainsString('SeoChecker::class)->check()', $routes);
+        $this->assertStringContainsString("'cards' => \$app->make(DashboardAttention::class)->cards()", $routes);
+        $this->assertStringNotContainsString('SeoChecker::class)->check()', $routes);
     }
 }

@@ -3,9 +3,7 @@
 /** @var string $siteName */
 /** @var array<int, \Katakata\Content\Draft> $recentDrafts */
 /** @var array<int, \Katakata\Content\Post> $latestPosts */
-/** @var int $publishedCount */
-/** @var int $draftCount */
-/** @var \Katakata\Seo\SeoCheckSummary $seo */
+/** @var list<array{label:string,count:int|string,detail:?string,href:string}> $cards */
 /** @var \Katakata\Analytics\AnalyticsSummary|null $analytics */
 /** @var array<int, array{at: \DateTimeImmutable, page: string, referrer: ?string, region: ?string}> $recentVisits */
 /** @var list<array{id: string, post_slug: string, text: string, username: string, timestamp: string, permalink: string, avatar_url: ?string}>|null $buzz */
@@ -22,7 +20,7 @@
 <body class="dashboard-page">
 <header class="dashboard-header">
     <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
-    <nav aria-label="Dashboard">
+    <nav aria-label="Dashboard actions">
         <a class="button" href="/editor/new">New post</a>
         <a href="/dashboard/settings">Settings</a>
     </nav>
@@ -35,24 +33,13 @@
     </header>
 
     <section class="dashboard-stats" aria-label="Site summary">
-        <article>
-            <strong><?= $analytics?->visits7d ?? '—' ?></strong>
-            <span>Visits (7d)</span>
-            <?php if ($analytics !== null): ?>
-                <small class="<?= $analytics->visits7dTrendPct < 0 ? 'trend-down' : 'trend-up' ?>">
-                    <?= $analytics->visits7dTrendPct > 0 ? '↑' : ($analytics->visits7dTrendPct < 0 ? '↓' : '→') ?>
-                    <?= e((string) abs($analytics->visits7dTrendPct)) ?>% vs prior 7d
-                </small>
-            <?php else: ?>
-                <small>Analytics unavailable</small>
-            <?php endif; ?>
-        </article>
-        <article><strong><?= $publishedCount ?></strong><span>Published posts</span></article>
-        <article><strong><?= $draftCount ?></strong><span>Drafts in progress</span></article>
-        <article>
-            <strong><?= count($seo->issues) ?></strong>
-            <span><?= $seo->passed() ? 'SEO checks clear' : 'SEO issues' ?></span>
-        </article>
+        <?php foreach ($cards as $card): ?>
+            <a class="dashboard-stat-card" href="<?= e($card['href']) ?>">
+                <strong><?= e((string) $card['count']) ?></strong>
+                <span><?= e($card['label']) ?></span>
+                <?php if ($card['detail'] !== null): ?><small><?= e($card['detail']) ?></small><?php endif; ?>
+            </a>
+        <?php endforeach; ?>
     </section>
 
     <div class="dashboard-columns">
@@ -111,7 +98,7 @@
     <section class="dashboard-buzz" aria-labelledby="dashboard-buzz">
         <h2 id="dashboard-buzz">The Buzz</h2>
         <?php if ($buzz === null): ?>
-            <p class="quiet">Threads replies are unavailable. Enable Threads and run <code>php bin/katakata threads:sync</code>.</p>
+            <p class="quiet">Discussion replies are unavailable.</p>
         <?php elseif ($buzz === []): ?>
             <p class="quiet">No synced replies yet.</p>
         <?php else: ?>
@@ -129,17 +116,6 @@
             </ol>
         <?php endif; ?>
     </section>
-
-    <?php if (!$seo->passed()): ?>
-        <section class="dashboard-seo" aria-labelledby="seo-issues">
-            <h2 id="seo-issues">SEO checks</h2>
-            <ul>
-                <?php foreach ($seo->issues as $issue): ?>
-                    <li><strong><?= e($issue->slug) ?></strong> — <?= e($issue->message) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </section>
-    <?php endif; ?>
 
     <form class="form-actions" method="post" action="/logout">
         <input type="hidden" name="csrf" value="<?= e($csrf) ?>">

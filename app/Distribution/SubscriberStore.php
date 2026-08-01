@@ -10,7 +10,7 @@ use InvalidArgumentException;
 use Katakata\Editorial\AtomicFile;
 use RuntimeException;
 
-final class SubscriberStore
+class SubscriberStore
 {
     public function __construct(
         private readonly string $path,
@@ -22,7 +22,6 @@ final class SubscriberStore
         }
     }
 
-    /** @return array{email: string, confirmation_token: string, expires_at: string} */
     public function request(string $email, ?DateTimeImmutable $now = null): array
     {
         $email = $this->email($email);
@@ -57,7 +56,6 @@ final class SubscriberStore
         ];
     }
 
-    /** @return array{email: string, status: string, unsubscribe_token: string} */
     public function confirm(string $token, ?DateTimeImmutable $now = null): array
     {
         $now ??= new DateTimeImmutable();
@@ -65,10 +63,7 @@ final class SubscriberStore
         $key = hash('sha256', $token);
         $confirmation = $data['confirmations'][$key] ?? null;
 
-        if (
-            !is_array($confirmation)
-            || new DateTimeImmutable((string) ($confirmation['expires_at'] ?? 'now')) < $now
-        ) {
+        if (!is_array($confirmation) || new DateTimeImmutable((string) ($confirmation['expires_at'] ?? 'now')) < $now) {
             throw new RuntimeException('Newsletter confirmation is invalid or expired.');
         }
 
@@ -92,17 +87,13 @@ final class SubscriberStore
         ];
     }
 
-    /** @return array{email: string, status: string} */
     public function unsubscribe(string $token, ?DateTimeImmutable $now = null): array
     {
         $now ??= new DateTimeImmutable();
         $data = $this->read();
 
         foreach ($data['subscribers'] as $id => $subscriber) {
-            if (
-                is_array($subscriber)
-                && hash_equals($this->unsubscribeToken((string) $id, (string) ($subscriber['email'] ?? '')), $token)
-            ) {
+            if (is_array($subscriber) && hash_equals($this->unsubscribeToken((string) $id, (string) ($subscriber['email'] ?? '')), $token)) {
                 if (($subscriber['status'] ?? null) !== 'suppressed') {
                     $subscriber['status'] = 'unsubscribed';
                     $subscriber['unsubscribed_at'] = $now->format(DateTimeImmutable::ATOM);
@@ -125,10 +116,7 @@ final class SubscriberStore
         $id = hash('sha256', $email);
         $subscriber = $data['subscribers'][$id] ?? null;
 
-        if (!is_array($subscriber)) {
-            return false;
-        }
-        if (($subscriber['status'] ?? null) === 'suppressed') {
+        if (!is_array($subscriber) || ($subscriber['status'] ?? null) === 'suppressed') {
             return false;
         }
 
@@ -141,7 +129,6 @@ final class SubscriberStore
         return true;
     }
 
-    /** @return list<array{email: string, status: string, requested_at: string, confirmed_at: ?string}> */
     public function active(): array
     {
         $active = [];
@@ -161,7 +148,6 @@ final class SubscriberStore
         return $active;
     }
 
-    /** @return list<array{email: string, unsubscribe_token: string}> */
     public function deliverable(): array
     {
         $subscribers = [];
@@ -195,7 +181,6 @@ final class SubscriberStore
         return rtrim(strtr(base64_encode(hash_hmac('sha256', $id . "\n" . $email, $this->secret, true)), '+/', '-_'), '=');
     }
 
-    /** @return array{subscribers: array<string, mixed>, confirmations: array<string, mixed>} */
     private function read(): array
     {
         if (!is_file($this->path)) {
@@ -213,7 +198,6 @@ final class SubscriberStore
         ];
     }
 
-    /** @param array<string, mixed> $data */
     private function write(array $data): void
     {
         $this->files->write(

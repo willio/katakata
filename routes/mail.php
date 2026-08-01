@@ -6,7 +6,6 @@ use Katakata\Auth\Session;
 use Katakata\Email\DraftComposer;
 use Katakata\Email\DraftSender;
 use Katakata\Email\DraftStore;
-use Katakata\Email\MailComposeViewModel;
 use Katakata\Email\Mailbox;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
@@ -17,113 +16,106 @@ use Katakata\View;
  * @var \Katakata\Application $app
  */
 
-$requireMailUser = static function () use ($app): ?array {
-    return $app->make(Session::class)->user();
+$authorizeMail = $authorizeMail ?? static function () use ($app): array|Response {
+    $session = $app->make(Session::class);
+    $user = $session->user();
+    if ($user === null) {
+        return Response::redirect('/login', 302);
+    }
+    if (!$session->canManageMail()) {
+        return Response::html('Forbidden.', 403);
+    }
+
+    return $user;
 };
 
 $validMailCsrf = static function (Request $request) use ($app): bool {
     return $app->make(Session::class)->validCsrf($request->body['csrf'] ?? null);
 };
 
-$renderCompose = static function (\Katakata\Email\Draft $draft, ?string $notice = null) use ($app): Response {
-    return Response::html($app->make(View::class)->render('mail-compose', [
-        'compose' => MailComposeViewModel::fromDraft($draft),
-        'csrf' => $app->make(Session::class)->csrf(),
-        'notice' => $notice,
-    ]));
-};
-
-$recipients = static function (mixed $value): array {
-    if (!is_string($value)) {
-        return [];
-    }
-
-    return array_values(array_filter(array_map(
-        static fn (string $email): string => trim($email),
-        preg_split('/[,;\n]+/', $value) ?: [],
-    )));
-};
-
-$router->get('/dashboard/mail', function (Request $request) use ($app, $requireMailUser): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
-    }
-
-    $query = trim((string) ($request->query['q'] ?? ''));
-    $mailbox = $app->make(Mailbox::class);
-
-    return Response::html($app->make(View::class)->render('mail-inbox', [
-        'messages' => $query === '' ? $mailbox->inbox() : $mailbox->search($query),
-        'drafts' => $app->make(DraftStore::class)->recent(8),
-        'query' => $query,
-        'csrf' => $app->make(Session::class)->csrf(),
-    ]));
+$router->get('/dashboard/mail', function (Request $request) use ($authorizeMail): Response {
+    $user = $authorizeMail();
+    return $user instanceof Response ? $user : Response::redirect('/mail', 302);
 });
 
-$router->get('/dashboard/mail/search', function (Request $request): Response {
-    $query = trim((string) ($request->query['q'] ?? ''));
-    return Response::redirect('/dashboard/mail' . ($query === '' ? '' : '?q=' . rawurlencode($query)), 302);
-});
-
-$router->get('/dashboard/mail/messages/{id}', function (Request $request, string $id) use ($app, $requireMailUser): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->get('/mail/messages/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
-    $mailbox = $app->make(Mailbox::class);
-    $message = $mailbox->message($id);
+    $message = $app->make(Mailbox::class)->message($id);
     if ($message === null) {
         return Response::notFound();
     }
 
-    if (!$message->isRead) {
-        $mailbox->markRead($id, true);
-        $message = $mailbox->message($id) ?? $message;
-    }
-
     return Response::html($app->make(View::class)->render('mail-message', [
         'message' => $message,
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
 
 foreach (['read' => true, 'unread' => false] as $action => $read) {
-    $router->post('/dashboard/mail/messages/{id}/' . $action, function (Request $request, string $id) use ($app, $requireMailUser, $validMailCsrf, $read): Response {
-        if ($requireMailUser() === null) {
-            return Response::redirect('/login', 302);
+    $router->post('/mail/messages/{id}/' . $action, function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf, $read): Response {
+        $user = $authorizeMail();
+        if ($user instanceof Response) {
+            return $user;
         }
         if (!$validMailCsrf($request)) {
             return Response::html('Invalid CSRF token.', 419);
         }
 
         $app->make(Mailbox::class)->markRead($id, $read);
-        return Response::redirect('/dashboard/mail/messages/' . rawurlencode($id), 302);
+        return Response::redirect('/mail/messages/' . rawurlencode($id), 303);
     });
 }
 
-$router->post('/dashboard/mail/messages/{id}/archive', function (Request $request, string $id) use ($app, $requireMailUser, $validMailCsrf): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->post('/mail/messages/{id}/archive', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
     if (!$validMailCsrf($request)) {
         return Response::html('Invalid CSRF token.', 419);
     }
 
     $app->make(Mailbox::class)->archive($id);
-    return Response::redirect('/dashboard/mail', 302);
+    return Response::redirect('/mail?area=inbox', 303);
 });
 
-$router->get('/dashboard/mail/compose', function (Request $request) use ($app, $requireMailUser, $renderCompose): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->get('/mail/messages/{messageId}/attachments/{attachmentId}', function (Request $request, string $messageId, string $attachmentId) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
-    return $renderCompose($app->make(DraftComposer::class)->compose());
+    $download = $app->make(Mailbox::class)->attachment($messageId, $attachmentId);
+    if ($download === null) {
+        return Response::notFound();
+    }
+
+    return new Response($download->content, 200, [
+        'Content-Type' => $download->mediaType,
+        'Content-Disposition' => 'attachment; filename="' . addcslashes($download->name, "\\\"") . '"',
+        'X-Content-Type-Options' => 'nosniff',
+    ]);
 });
 
-$router->post('/dashboard/mail/messages/{id}/reply', function (Request $request, string $id) use ($app, $requireMailUser, $validMailCsrf): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->get('/mail/compose', function (Request $request) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
+    }
+
+    $draft = $app->make(DraftComposer::class)->compose('', '', '');
+    return Response::redirect('/mail/drafts/' . rawurlencode($draft->id), 302);
+});
+
+$router->post('/mail/messages/{id}/reply', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
     if (!$validMailCsrf($request)) {
         return Response::html('Invalid CSRF token.', 419);
@@ -134,73 +126,72 @@ $router->post('/dashboard/mail/messages/{id}/reply', function (Request $request,
         return Response::notFound();
     }
 
-    $draft = $app->make(DraftComposer::class)->reply($message);
-    return Response::redirect('/dashboard/mail/drafts/' . rawurlencode($draft->id), 302);
+    $draft = $app->make(DraftComposer::class)->compose(
+        $message->from,
+        str_starts_with($message->subject, 'Re:') ? $message->subject : 'Re: ' . $message->subject,
+        "\n\nOn " . $message->receivedAt->format('M j, Y') . ', ' . $message->from . " wrote:\n> " . str_replace("\n", "\n> ", trim($message->text)),
+        $message->id,
+    );
+
+    return Response::redirect('/mail/drafts/' . rawurlencode($draft->id), 303);
 });
 
-$router->get('/dashboard/mail/drafts/{id}', function (Request $request, string $id) use ($app, $requireMailUser, $renderCompose): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->get('/mail/drafts/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
 
     $draft = $app->make(DraftStore::class)->find($id);
-    return $draft === null ? Response::notFound() : $renderCompose($draft);
+    if ($draft === null) {
+        return Response::notFound();
+    }
+
+    return Response::html($app->make(View::class)->render('mail-compose', [
+        'draft' => $draft,
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'csrf' => $app->make(Session::class)->csrf(),
+        'error' => null,
+    ]));
 });
 
-$router->post('/dashboard/mail/drafts/{id}', function (Request $request, string $id) use ($app, $requireMailUser, $validMailCsrf, $recipients): Response {
-    if ($requireMailUser() === null) {
-        return Response::json(['error' => 'Authentication required.'], 401);
-    }
-    if (!$validMailCsrf($request)) {
-        return Response::json(['error' => 'The editor session expired.'], 419);
-    }
-
-    try {
-        $draft = $app->make(DraftComposer::class)->update(
-            $id,
-            $recipients($request->body['recipients'] ?? ''),
-            (string) ($request->body['subject'] ?? ''),
-            (string) ($request->body['body'] ?? ''),
-        );
-
-        if (($request->body['intent'] ?? '') === 'send') {
-            $app->make(DraftSender::class)->send($draft->id);
-            return Response::redirect('/dashboard/mail?sent=1', 302);
-        }
-
-        if (($request->header('accept') ?? '') === 'application/json') {
-            return Response::json([
-                'saved' => true,
-                'updated_at' => $draft->updatedAt->format(DATE_ATOM),
-                'client_version' => $request->body['client_version'] ?? '',
-            ]);
-        }
-
-        return Response::redirect('/dashboard/mail/drafts/' . rawurlencode($draft->id), 302);
-    } catch (\Throwable $error) {
-        return Response::json(['error' => $error->getMessage()], 422);
-    }
-});
-
-$router->post('/dashboard/mail/send', function (Request $request) use ($app, $requireMailUser, $validMailCsrf, $recipients): Response {
-    if ($requireMailUser() === null) {
-        return Response::redirect('/login', 302);
+$router->post('/mail/drafts/{id}', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
     }
     if (!$validMailCsrf($request)) {
         return Response::html('Invalid CSRF token.', 419);
     }
 
-    try {
-        $id = (string) ($request->body['draft_id'] ?? '');
-        $app->make(DraftComposer::class)->update(
-            $id,
-            $recipients($request->body['recipients'] ?? ''),
-            (string) ($request->body['subject'] ?? ''),
-            (string) ($request->body['body'] ?? ''),
-        );
-        $app->make(DraftSender::class)->send($id);
-        return Response::redirect('/dashboard/mail?sent=1', 302);
-    } catch (\Throwable $error) {
-        return Response::html($error->getMessage(), 422);
+    $existing = $app->make(DraftStore::class)->find($id);
+    if ($existing === null) {
+        return Response::notFound();
     }
+
+    $draft = new \Katakata\Email\Draft(
+        id: $existing->id,
+        to: trim((string) ($request->body['to'] ?? '')),
+        subject: trim((string) ($request->body['subject'] ?? '')),
+        text: (string) ($request->body['text'] ?? ''),
+        inReplyTo: $existing->inReplyTo,
+        updatedAt: new DateTimeImmutable(),
+    );
+    $app->make(DraftStore::class)->save($draft);
+
+    if (($request->body['intent'] ?? '') === 'send') {
+        try {
+            $app->make(DraftSender::class)->send($draft->id);
+            return Response::redirect('/mail?area=inbox&sent=1', 303);
+        } catch (\Throwable $error) {
+            return Response::html($app->make(View::class)->render('mail-compose', [
+                'draft' => $draft,
+                'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+                'csrf' => $app->make(Session::class)->csrf(),
+                'error' => $error->getMessage(),
+            ]), 422);
+        }
+    }
+
+    return Response::redirect('/mail/drafts/' . rawurlencode($draft->id) . '?saved=1', 303);
 });

@@ -1,10 +1,11 @@
 # Katakata
 
-A calm, typography-first publishing platform built around plain
-Markdown files.
+A calm, typography-first publication powered by Katakata, a Markdown-first
+publishing platform for the web and inbox.
 
 Markdown is canonical. Everything else — HTML, RSS, JSON Feed, search
-indexes, newsletters, Threads posts — is generated and disposable.
+indexes, newsletters, and provider adapters — is generated or operational
+state.
 
 > **Write once. Own forever. Publish anywhere.**
 
@@ -12,12 +13,21 @@ See [`docs/MASTER_SPECIFICATION.md`](docs/MASTER_SPECIFICATION.md) for
 the full vision, philosophy, and architecture. This README covers only
 what's needed to run what exists today.
 
-## Status: Phase 4 — Dashboard and Analytics in progress
+## Status: Dashboard, settings, and Mail workspace implemented
 
-Phases 0–3 are complete. Phase 4 now prioritizes the owner dashboard, privacy-bounded SQLite analytics, and reproducible SEO checks. The distribution adapter boundary and provider-neutral newsletter outbox already exist as the Phase 5 foundation. Katakata also has a protected browser editor,
-invite-only email/password accounts, WebAuthn passkeys, a local filesystem
-editor, canonical revision history, scheduled drafts, and an atomic publishing pipeline. See [`docs/ROADMAP.md`](docs/ROADMAP.md)
-and [`docs/subsystems/editorial.md`](docs/subsystems/editorial.md).
+The authenticated owner experience now includes:
+
+- a sparse dashboard with linked Visits, Posts, Drafts, and Inbox cards;
+- a filtered content index at `/posts`;
+- analytics at `/analytics`;
+- a global settings control desk at `/dashboard/settings`;
+- one `/mail` workspace for reader correspondence readiness and newsletter
+  campaign work.
+
+The inbox boundary is provider-neutral. IMAP is the first planned adapter, but
+request-time IMAP access is prohibited. Until a scheduled sync adapter is
+configured, Inbox shows a non-secret setup state while campaign work remains
+available.
 
 ## Requirements
 
@@ -35,8 +45,10 @@ php bin/katakata serve
 Visit `http://127.0.0.1:8000/` for the homepage,
 `http://127.0.0.1:8000/healthz` for the health check, or a post's
 canonical `/{year}/{month}/{slug}` URL. The complete published archive is
-available at `/archive`; the authenticated owner dashboard is at `/dashboard`; feeds are available at `/feed.xml` and `/feed.json`,
-and author archives at `/authors/{slug}`.
+available at `/archive`; the authenticated owner dashboard is at `/dashboard`;
+content management is at `/posts`; analytics is at `/analytics`; global
+settings are at `/dashboard/settings`; Mail is at `/mail`; feeds are available
+at `/feed.xml` and `/feed.json`; and author archives are at `/authors/{slug}`.
 
 ### Local nginx HTTPS
 
@@ -81,7 +93,7 @@ php bin/katakata seo:check
 ```bash
 composer install
 composer test
-# or: vendor/bin/phpunit
+# or: phpunit
 ```
 
 Set `ANALYTICS_SECRET` (or `APP_KEY`) in `.env`, then run
@@ -103,6 +115,11 @@ uses a named transport selected by `MAIL_TRANSPORT`, with Resend as the initial
 provider and the filesystem driver retained for development.
 
 See the complete [mail transport and Resend setup guide](docs/subsystems/distribution.md#resend-production-setup-for-katakatacom).
+
+Reader correspondence is separate from campaign delivery. It is private
+operational data, never canonical content, and remains outside Git, public
+roots, analytics, and diagnostic logs. See
+[`docs/subsystems/email-client.md`](docs/subsystems/email-client.md).
 
 ## Repository Structure
 

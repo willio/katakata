@@ -8,12 +8,9 @@ use Katakata\Auth\Session;
 use Katakata\Auth\WebAuthn;
 use Katakata\Content\Repository;
 use Katakata\Dashboard\DashboardAnalytics;
+use Katakata\Dashboard\DashboardAttention;
 use Katakata\Dashboard\DashboardBuzz;
-use Katakata\Editorial\DraftEditor;
-use Katakata\Editorial\DraftVersion;
-use Katakata\Editorial\Publisher;
 use Katakata\Distribution\ConfirmationMailer;
-use Katakata\Distribution\NewsletterDispatcher;
 use Katakata\Distribution\ResendWebhook;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Http\Request;
@@ -23,7 +20,6 @@ use Katakata\Rendering\AuthorArchive;
 use Katakata\Rendering\Feed;
 use Katakata\Rendering\Home;
 use Katakata\Rendering\Markdown;
-use Katakata\Seo\SeoChecker;
 use Katakata\View;
 
 /**
@@ -131,10 +127,7 @@ $router->post('/webhooks/resend', function (Request $request) use ($app): Respon
             'svix-signature' => $request->header('svix-signature') ?? '',
         ]);
 
-        return Response::json([
-            'received' => true,
-            'duplicate' => $result['duplicate'],
-        ]);
+        return Response::json(['received' => true, 'duplicate' => $result['duplicate']]);
     } catch (\InvalidArgumentException) {
         return Response::json(['error' => 'Invalid webhook.'], 400);
     } catch (\Throwable) {
@@ -143,7 +136,6 @@ $router->post('/webhooks/resend', function (Request $request) use ($app): Respon
 });
 
 $router->get('/newsletter', fn (Request $request): Response => $renderNewsletter());
-
 $router->post('/newsletter/subscribe', function (Request $request) use ($app, $renderNewsletter): Response {
     $session = $app->make(Session::class);
     if (!$session->validCsrf($request->body['csrf'] ?? null)) {
@@ -156,40 +148,29 @@ $router->post('/newsletter/subscribe', function (Request $request) use ($app, $r
     } catch (\InvalidArgumentException) {
         return $renderNewsletter('subscribe', null, 'Email is invalid. Please enter a valid address.');
     } catch (\Throwable) {
-        // Deliberately hide whether the address already exists.
+        return $renderNewsletter('subscribe', null, 'Newsletter is not configured.');
     }
 
-    return $renderNewsletter(
-        'pending',
-        'Check your email for a confirmation link. Your subscription is not active until you confirm it.',
-    );
+    return $renderNewsletter('pending', 'Check your email for a confirmation link. Your subscription is not active until you confirm it.');
 });
-
 $router->get('/newsletter/confirm', function (Request $request) use ($app, $renderNewsletter): Response {
     try {
         $app->make(SubscriberStore::class)->confirm($request->query['token'] ?? '');
         return $renderNewsletter('confirmed', 'You are subscribed.');
     } catch (\Throwable) {
-        return $renderNewsletter('confirmed', null, 'Confirmation link is invalid or expired.');
+        return $renderNewsletter('confirmed', null, 'Confirmation link is invalid, expired, or newsletter delivery is not configured.');
     }
 });
-
 $router->get('/newsletter/unsubscribe', function (Request $request) use ($renderNewsletter): Response {
     $token = $request->query['token'] ?? '';
     return $token === ''
         ? $renderNewsletter('unsubscribe', null, 'Unsubscribe link is invalid.')
         : $renderNewsletter('unsubscribe', null, null, $token);
 });
-
 $router->post('/newsletter/unsubscribe', function (Request $request) use ($app, $renderNewsletter): Response {
     $session = $app->make(Session::class);
     if (!$session->validCsrf($request->body['csrf'] ?? null)) {
-        return $renderNewsletter(
-            'unsubscribe',
-            null,
-            'Unsubscribe form expired. Please try again.',
-            $request->body['token'] ?? '',
-        );
+        return $renderNewsletter('unsubscribe', null, 'Unsubscribe form expired. Please try again.', $request->body['token'] ?? '');
     }
 
     try {
@@ -218,7 +199,6 @@ $requireUser = static function () use ($app): ?array {
 $router->get('/login', function (Request $request) use ($renderAuth, $requireUser): Response {
     return $requireUser() === null ? $renderAuth('login') : Response::redirect('/dashboard');
 });
-
 $router->post('/login', function (Request $request) use ($app, $renderAuth): Response {
     $session = $app->make(Session::class);
     if (!$session->validCsrf($request->body['csrf'] ?? null)) {
@@ -236,7 +216,6 @@ $router->post('/login', function (Request $request) use ($app, $renderAuth): Res
     $session->login($account);
     return Response::redirect('/dashboard');
 });
-
 $router->post('/logout', function (Request $request) use ($app): Response {
     $session = $app->make(Session::class);
     if ($session->validCsrf($request->body['csrf'] ?? null)) {
@@ -245,11 +224,9 @@ $router->post('/logout', function (Request $request) use ($app): Response {
 
     return Response::redirect('/login');
 });
-
 $router->get('/register', function (Request $request) use ($renderAuth): Response {
     return $renderAuth('register', null, $request->query['token'] ?? '');
 });
-
 $router->post('/register', function (Request $request) use ($app, $renderAuth): Response {
     $session = $app->make(Session::class);
     $token = $request->body['token'] ?? '';
@@ -291,84 +268,33 @@ $router->get('/dashboard', function (Request $request) use ($app, $requireUser):
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'recentDrafts' => array_slice($drafts, 0, 5),
         'latestPosts' => array_slice($posts, 0, 5),
-        'publishedCount' => count($posts),
-        'draftCount' => count($drafts),
+        'cards' => $app->make(DashboardAttention::class)->cards(),
         'analytics' => $analytics,
         'recentVisits' => $dashboardAnalytics->recent($analytics),
         'buzz' => $app->make(DashboardBuzz::class)->recent(),
-        'seo' => $app->make(SeoChecker::class)->check(),
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
 
-$router->get('/dashboard/editor', function (Request $request) use ($app, $requireUser): Response {
+$router->get('/analytics', function (Request $request) use ($app, $requireUser): Response {
     if ($requireUser() === null) {
         return Response::redirect('/login', 302);
     }
 
-    return Response::html($app->make(View::class)->render('editor', [
-        'draft' => $app->make(DraftEditor::class)->open($request->query['slug'] ?? null),
-        'csrf' => $app->make(Session::class)->csrf(),
+    $dashboardAnalytics = $app->make(DashboardAnalytics::class);
+    $analytics = $dashboardAnalytics->summary();
+
+    return Response::html($app->make(View::class)->render('analytics', [
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'analytics' => $analytics,
+        'recentVisits' => $dashboardAnalytics->recent($analytics),
     ]));
 });
 
-$router->post('/dashboard/editor/save', function (Request $request) use ($app, $requireUser): Response {
-    if ($requireUser() === null) {
-        return Response::json(['error' => 'Unauthorised.'], 401);
-    }
-
-    $session = $app->make(Session::class);
-    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::json(['error' => 'The editor session expired.'], 422);
-    }
-
-    try {
-        $draft = $app->make(DraftEditor::class)->save($request->body);
-        return Response::json([
-            'saved' => true,
-            'slug' => $draft->slug,
-            'updated_at' => $draft->updatedAt?->format(DATE_ATOM),
-        ]);
-    } catch (\Throwable $error) {
-        return Response::json(['error' => $error->getMessage()], 422);
-    }
-});
-
-$router->post('/dashboard/editor/publish', function (Request $request) use ($app, $requireUser): Response {
-    if ($requireUser() === null) {
-        return Response::redirect('/login', 302);
-    }
-
-    $session = $app->make(Session::class);
-    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::redirect('/dashboard/editor?error=expired', 302);
-    }
-
-    try {
-        $post = $app->make(Publisher::class)->publish($request->body['slug'] ?? '');
-        $app->make(NewsletterDispatcher::class)->queue($post);
-        return Response::redirect($post->url(), 302);
-    } catch (\Throwable $error) {
-        return Response::redirect('/dashboard/editor?error=' . rawurlencode($error->getMessage()), 302);
-    }
-});
-
-$router->get('/dashboard/editor/version', function (Request $request) use ($app, $requireUser): Response {
-    if ($requireUser() === null) {
-        return Response::json(['error' => 'Unauthorised.'], 401);
-    }
-
-    try {
-        return Response::json([
-            'body' => $app->make(DraftVersion::class)->read(
-                $request->query['slug'] ?? '',
-                $request->query['version'] ?? '',
-            ),
-        ]);
-    } catch (\Throwable $error) {
-        return Response::json(['error' => $error->getMessage()], 404);
-    }
-});
+$router->get('/dashboard/editor', fn (Request $request): Response => Response::redirect('/posts', 302));
+$router->post('/dashboard/editor/save', fn (Request $request): Response => Response::json(['error' => 'Legacy editor endpoint retired.'], 410));
+$router->post('/dashboard/editor/publish', fn (Request $request): Response => Response::json(['error' => 'Legacy editor endpoint retired.'], 410));
+$router->get('/dashboard/editor/version', fn (Request $request): Response => Response::json(['error' => 'Legacy editor endpoint retired.'], 410));
 
 $router->post('/dashboard/passkeys/options', function (Request $request) use ($app, $requireUser): Response {
     $user = $requireUser();
@@ -378,20 +304,6 @@ $router->post('/dashboard/passkeys/options', function (Request $request) use ($a
 
     try {
         return Response::json($app->make(WebAuthn::class)->registrationOptions($user));
-    } catch (\Throwable $error) {
-        return Response::json(['error' => $error->getMessage()], 422);
-    }
-});
-
-$router->post('/dashboard/passkeys/register', function (Request $request) use ($app, $requireUser): Response {
-    $user = $requireUser();
-    if ($user === null) {
-        return Response::json(['error' => 'Unauthorised.'], 401);
-    }
-
-    try {
-        $app->make(WebAuthn::class)->register($user, $request->rawBody);
-        return Response::json(['registered' => true]);
     } catch (\Throwable $error) {
         return Response::json(['error' => $error->getMessage()], 422);
     }

@@ -1,8 +1,7 @@
 # Roadmap
 
-The build proceeds in eight phases. Each phase produces a working,
-independently useful increment. The repository is the source of truth; phase
-status reflects merged implementation contracts rather than aspiration.
+The build proceeds in independently useful increments. The repository is the
+source of truth; status reflects implemented contracts rather than aspiration.
 
 ## Phase 0 — Foundation ✅
 
@@ -47,100 +46,121 @@ See [`docs/subsystems/rendering.md`](./subsystems/rendering.md).
 See [`docs/subsystems/editorial.md`](./subsystems/editorial.md) and
 [`docs/design_specification.md`](./design_specification.md).
 
-## Phase 4 — Dashboard and Analytics 🚧
+## Phase 4 — Dashboard and Analytics ✅
 
-This is the immediate build priority. It gives the owner a useful home view
-and establishes privacy-bounded operational insight before more downstream
-distribution providers increase system activity.
-
-1. [x] Add the SQLite analytics store, schema boot, and deployment check.
-2. [x] Record privacy-bounded visits without persisting raw IP addresses.
-3. [x] Add summary queries and the 400-day prune command.
-4. [x] Add reproducible SEO checks and `seo:check`.
-5. [x] Build the content-backed dashboard shell: published count, draft count,
-   recent drafts, and latest posts.
-6. [x] Add visits, trends, and recent visits with failure-isolated analytics loading.
-7. [ ] Add regional aggregates and the visitor map only after region derivation and disclosure copy are
-   verified.
-8. [x] Add the failure-isolated, read-only The Buzz from the Threads reply cache.
+- [x] SQLite analytics store, schema boot, and deployment check
+- [x] Privacy-bounded visit recording without raw IP persistence
+- [x] Summary queries and 400-day prune command
+- [x] Reproducible SEO checks and `seo:check`
+- [x] Sparse owner dashboard with linked Visits, Posts, Drafts, and Inbox cards
+- [x] Canonical `/analytics` route
+- [x] Filtered `/posts?status=all|drafts|scheduled|published` workspace
+- [x] Failure-isolated visit summaries and recent visits
+- [x] Failure-isolated, read-only discussion activity
+- [ ] Regional aggregates and visitor map after derivation and disclosure review
 
 See [`docs/subsystems/dashboard.md`](./subsystems/dashboard.md),
 [`docs/subsystems/analytics.md`](./subsystems/analytics.md), and
 [ADR 0009](./adr/0009-sqlite-analytics-seo.md).
 
-## Phase 5 — Distribution 🚧
-
-Work has resumed on the provider-independent distribution stack while Phase 4's regional and Threads-dependent dashboard items remain deliberately deferred.
+## Phase 5 — Distribution and Mail ✅
 
 - [x] Adapter boundary and per-channel failure isolation
 - [x] Provider-neutral newsletter payload/outbox
-- [x] Filesystem-backed newsletter subscriber consent and storage
+- [x] Filesystem-backed subscriber consent and storage
 - [x] Public subscribe, confirm, and unsubscribe routes
 - [x] Provider-independent email transport, durable attempts, idempotency, and retries
 - [x] Automatic idempotent post-publication newsletter dispatch
-- [x] Production email provider (Resend)
-- [x] Threads publish/read adapters
-- [x] Explicit reply synchronization and Dashboard The Buzz presentation
-- [x] Authenticated Resend webhooks and delivery-state reconciliation
-- [x] Engagement metadata synchronization
+- [x] Production email provider integration
+- [x] Authenticated delivery webhooks and delivery-state reconciliation
+- [x] Provider-neutral mailbox boundary
+- [x] Safe unavailable mailbox provider with non-secret readiness state
+- [x] Unified `/mail` workspace for Inbox readiness and campaign work
+- [x] Combined Mail attention model surfaced on the dashboard
+- [x] `/dashboard/mail` compatibility redirect to `/mail`
+- [ ] Scheduled IMAP synchronization adapter and cached operational inbox
+- [ ] MIME parsing, attachments, spam handling, and correspondence delivery policy
 
-See [`docs/subsystems/distribution.md`](./subsystems/distribution.md).
+See [`docs/subsystems/distribution.md`](./subsystems/distribution.md),
+[`docs/subsystems/email-client.md`](./subsystems/email-client.md), and
+[ADR 0010](./adr/0010-imap-inbox-adapter.md).
 
-## Phase 6 — Extensibility
+## Global Settings ✅
 
-- [ ] Plugins
-- [ ] Themes
-- [ ] Public APIs
-- [ ] Additional publisher adapters
+- [x] Canonical `/dashboard/settings` surface
+- [x] Settings-only section folio
+- [x] Publication, newsletter, discussion, analytics, and appearance defaults
+- [x] Section-local status and error feedback
+- [x] Non-secret Ready / Disabled / Needs setup states
+- [x] Explicit Account and System availability boundaries
 
-## Phase 6 — Operational Index (SQLite)
+See [`docs/subsystems/settings.md`](./subsystems/settings.md).
+
+## Katakata 1.0 — Open-source readiness
+
+- [ ] Separate publication-specific assumptions from reusable platform behavior
+- [ ] Define product naming and namespace migration strategy
+- [ ] Add installation and first-run publication setup
+- [ ] Stabilize unified web and email publishing contracts
+- [ ] Define theme and plugin extension APIs
+- [ ] Add import/export portability and backup/restore guidance
+- [ ] Publish self-hosting and security documentation
+- [ ] Stabilize public APIs and 1.0 compatibility guarantees
+
+## Katakata 1.x — Publishing platform
+
+- [ ] Multiple publications
+- [ ] Richer author and team model
+- [ ] Tags, collections, and series
+- [ ] Media library
+- [ ] FTS5 search
+- [ ] Subscriber segmentation
+- [ ] Newsletter templates and web/email preview parity
+- [ ] Additional mail and discussion adapters
+
+## Katakata Cloud
+
+- [ ] Managed hosting
+- [ ] Domains and TLS
+- [ ] Managed email delivery and deliverability
+- [ ] Scheduled workers
+- [ ] Managed backups
+- [ ] Media CDN and optimization
+- [ ] Advanced analytics
+- [ ] Teams and permissions
+- [ ] Hosted integrations
+
+## Operational Index (SQLite)
 
 Goal: accelerate a substantial article corpus without moving canonical content out of Markdown.
 
-- [ ] Define SQLite schema and migration policy
+- [ ] Define schema and migration policy
 - [ ] Add deterministic index build and rebuild commands
 - [ ] Add FTS5 full-text search
 - [ ] Index article, tag, author, collection, and archive metadata
 - [ ] Track incremental build state and source fingerprints
 - [ ] Add related-content and backlink indexes
-- [ ] Define optional operational state for sessions and queues
 - [ ] Verify that deleting the database loses no canonical content
-
-Planned structure:
-
-```text
-app/Index/
-storage/index/katakata.sqlite
-```
 
 SQLite is an operational index and cache. It is never the source of truth.
 
-## Phase 7 — Analytics Platform (DuckDB)
+## Analytics Platform (DuckDB)
 
 Goal: support reporting and insights across publication, readership, newsletter, and social engagement data.
 
 - [ ] Define append-only analytics event schema
 - [ ] Record publication and readership events
-- [ ] Integrate newsletter and Threads engagement events
+- [ ] Integrate newsletter and discussion engagement events
 - [ ] Build Parquet export and compaction pipeline
 - [ ] Add DuckDB query service
 - [ ] Produce article, author, tag, cadence, and engagement reports
-- [ ] Add dashboard-ready datasets
 - [ ] Define retention, privacy, and aggregation rules
-- [ ] Verify that analytics failure never blocks publishing
-
-Planned structure:
-
-```text
-app/Analytics/
-storage/analytics/events/
-storage/analytics/parquet/
-```
+- [ ] Verify analytics failure never blocks publishing
 
 DuckDB queries analytical datasets. It is never canonical storage and is never required to publish.
 
 ---
 
-Each active phase has a subsystem document under
+Each active area has a subsystem document under
 [`docs/subsystems/`](./subsystems). Architectural exceptions require an ADR
 before implementation.

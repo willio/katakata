@@ -35,6 +35,24 @@ $renderEditor = static function (?\Katakata\Content\Draft $draft = null, ?string
     ]));
 };
 
+$renderPosts = static function (Request $request) use ($app, $requireEditorUser): Response {
+    if ($requireEditorUser() === null) {
+        return Response::redirect('/login', 302);
+    }
+
+    $status = trim((string) ($request->query['status'] ?? 'all'));
+    if (!in_array($status, ['all', 'drafts', 'scheduled', 'published'], true)) {
+        $status = 'all';
+    }
+
+    return Response::html($app->make(View::class)->render('posts', [
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'status' => $status,
+        'drafts' => $app->make(Repository::class)->drafts()->all(),
+        'posts' => $app->make(Repository::class)->posts()->all(),
+    ]));
+};
+
 $slugifyDraftTitle = static function (string $title): string {
     $title = trim($title);
     $ascii = function_exists('transliterator_transliterate')
@@ -71,7 +89,8 @@ $draftMeta = static function (array $source, ?\Katakata\Content\Draft $existing 
     return $meta;
 };
 
-$router->get('/editor', fn (Request $request): Response => $renderEditor());
+$router->get('/posts', $renderPosts);
+$router->get('/editor', fn (Request $request): Response => Response::redirect('/posts', 302));
 $router->get('/editor/new', fn (Request $request): Response => $renderEditor());
 $router->get('/editor/drafts/{slug}', function (Request $request, string $slug) use ($app, $renderEditor): Response {
     $draft = $app->make(Repository::class)->findDraft($slug);
@@ -79,7 +98,7 @@ $router->get('/editor/drafts/{slug}', function (Request $request, string $slug) 
 });
 
 // Compatibility redirects for links and browser history from the earlier draft surface.
-$router->get('/drafts', fn (Request $request): Response => Response::redirect('/editor', 302));
+$router->get('/drafts', fn (Request $request): Response => Response::redirect('/posts?status=drafts', 302));
 $router->get('/drafts/{slug}', fn (Request $request, string $slug): Response => Response::redirect('/editor/drafts/' . rawurlencode($slug), 302));
 
 $router->post('/editor/drafts', function (Request $request) use ($app, $requireEditorUser, $slugifyDraftTitle, $uniqueDraftSlug, $draftMeta): Response {
