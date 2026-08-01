@@ -109,7 +109,7 @@ $router->get('/mail/compose', function (Request $request) use ($app, $authorizeM
     }
 
     $draft = $app->make(DraftComposer::class)->compose('', '', '');
-    return Response::redirect('/mail/drafts/' . rawurlencode($draft->id), 302);
+    return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id), 302);
 });
 
 $router->post('/mail/messages/{id}/reply', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
@@ -133,7 +133,7 @@ $router->post('/mail/messages/{id}/reply', function (Request $request, string $i
         $message->id,
     );
 
-    return Response::redirect('/mail/drafts/' . rawurlencode($draft->id), 303);
+    return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id), 303);
 });
 
 $router->get('/mail/drafts/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
@@ -147,12 +147,7 @@ $router->get('/mail/drafts/{id}', function (Request $request, string $id) use ($
         return Response::notFound();
     }
 
-    return Response::html($app->make(View::class)->render('mail-compose', [
-        'draft' => $draft,
-        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
-        'csrf' => $app->make(Session::class)->csrf(),
-        'error' => null,
-    ]));
+    return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id), 302);
 });
 
 $router->post('/mail/drafts/{id}', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
@@ -184,14 +179,9 @@ $router->post('/mail/drafts/{id}', function (Request $request, string $id) use (
             $app->make(DraftSender::class)->send($draft->id);
             return Response::redirect('/mail?area=inbox&sent=1', 303);
         } catch (\Throwable $error) {
-            return Response::html($app->make(View::class)->render('mail-compose', [
-                'draft' => $draft,
-                'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
-                'csrf' => $app->make(Session::class)->csrf(),
-                'error' => $error->getMessage(),
-            ]), 422);
+            return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id) . '&error=' . rawurlencode($error->getMessage()), 303);
         }
     }
 
-    return Response::redirect('/mail/drafts/' . rawurlencode($draft->id) . '?saved=1', 303);
+    return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id) . '&saved=1', 303);
 });
