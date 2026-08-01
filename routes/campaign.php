@@ -80,9 +80,6 @@ $router->get('/mail/campaign-drafts/{id}', function (Request $request, string $i
     if ($draft === null) {
         return Response::notFound();
     }
-    if ($draft->isConfirmed()) {
-        return Response::redirect('/mail/campaign/' . rawurlencode((string) $draft->confirmedCampaignId), 302);
-    }
 
     $review = null;
     if (($request->query['review'] ?? '') === '1') {
@@ -230,16 +227,8 @@ $router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, 
     }
 
     $expectedVersion = max(1, (int) ($request->body['expected_version'] ?? 0));
-    if ($draft->version !== $expectedVersion) {
-        return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?conflict=1', 303);
-    }
-
     try {
-        $campaign = $app->make(CampaignDispatcher::class)->confirmDraftAndQueue(
-            $draft,
-            $app->make(CampaignDraftReviewer::class),
-        );
-        $store->confirm($id, $expectedVersion, $campaign->id, $campaign->confirmedAt);
+        $claimed = $store->claimConfirmation($id, $expectedVersion);
     } catch (CampaignDraftConflict $conflict) {
         if ($conflict->current->isConfirmed()) {
             return Response::redirect('/mail/campaign/' . rawurlencode((string) $conflict->current->confirmedCampaignId), 303);
@@ -247,6 +236,16 @@ $router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, 
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?conflict=1', 303);
     } catch (\Throwable) {
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=confirm', 303);
+    }
+
+    try {
+        $campaign = $app->make(CampaignDispatcher::class)->confirmDraftAndQueue(
+            $claimed,
+            $app->make(CampaignDraftReviewer::class),
+            $claimed->confirmedAt,
+        );
+    } catch (\Throwable) {
+        return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=queue', 303);
     }
 
     return Response::redirect('/mail/campaign/' . rawurlencode($campaign->id), 303);
