@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Katakata\Dashboard;
 
 use Katakata\Content\Repository;
+use Katakata\Mail\MailAttention;
 
 final class DashboardAttention
 {
     public function __construct(
         private readonly Repository $repository,
         private readonly DashboardAnalytics $analytics,
+        private readonly MailAttention $mail,
     ) {
     }
 
@@ -20,6 +22,7 @@ final class DashboardAttention
     public function cards(): array
     {
         $summary = $this->analytics->summary();
+        $mail = $this->mail->summary();
 
         return [
             [
@@ -42,8 +45,8 @@ final class DashboardAttention
             ],
             [
                 'label' => 'Inbox',
-                'count' => '—',
-                'detail' => 'Mail workspace',
+                'count' => $mail['total'],
+                'detail' => $mail['detail'],
                 'href' => '/mail',
             ],
         ];
