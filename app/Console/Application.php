@@ -264,17 +264,6 @@ final class Application
             return 1;
         }
 
-        $repository = $this->app->make(Repository::class);
-        $repository->refresh();
-        $post = $repository->findPost($draft->slug);
-        if ($post !== null) {
-            try {
-                $queued = $this->app->make(NewsletterDispatcher::class)->dispatch($post)['queued'];
-                fwrite(STDOUT, "Newsletter: {$queued} message(s) queued.\n");
-            } catch (\Throwable $error) {
-                fwrite(STDERR, "Newsletter queue failed: {$error->getMessage()}\n");
-            }
-        }
         fwrite(STDOUT, "Published {$path}\n");
         return 0;
     }
@@ -289,18 +278,6 @@ final class Application
             fwrite(STDOUT, "Published {$path}\n");
         }
 
-        $repository->refresh();
-        foreach ($due as $draft) {
-            $post = $repository->findPost($draft->slug);
-            if ($post === null) {
-                continue;
-            }
-            try {
-                $this->app->make(NewsletterDispatcher::class)->dispatch($post);
-            } catch (\Throwable $error) {
-                fwrite(STDERR, "Newsletter queue failed for {$draft->slug}: {$error->getMessage()}\n");
-            }
-        }
         fwrite(STDOUT, count($due) . " scheduled draft(s) published.\n");
         return 0;
     }

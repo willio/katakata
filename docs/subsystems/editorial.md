@@ -21,6 +21,8 @@ php bin/katakata revisions:list <slug>
 
 `draft:edit` uses `$EDITOR`, captures the previous file as a revision, and installs the edited file atomically only when the editor exits successfully.
 
+`draft:publish` and `publish:due` only create canonical posts. Newsletter delivery remains an explicit `newsletter:dispatch <post-slug>` operation, so distribution failures and queue work never affect publication.
+
 ## Safety
 
 Slugs are restricted to lowercase URL-safe words. Existing publication targets are never overwritten. Invalid or missing drafts fail before mutation. Every destructive draft transition first captures a revision.
