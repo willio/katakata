@@ -6,6 +6,7 @@ use Katakata\Http\Router;
 
 /** @var \Katakata\Application $app */
 require __DIR__ . '/mail.php';
+require __DIR__ . '/settings.php';
 
 $router = $app->make(Router::class);
 
@@ -13,6 +14,7 @@ require $app->routesPath('web.php');
 require $app->routesPath('editor.php');
 require $app->routesPath('mail.php');
 require $app->routesPath('campaign.php');
+require $app->routesPath('settings.php');
 require $app->routesPath('article.php');
 
 return $router;
