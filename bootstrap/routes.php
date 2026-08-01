@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Katakata\Http\Router;
 
 /** @var \Katakata\Application $app */
+require __DIR__ . '/mail.php';
+
 $router = $app->make(Router::class);
 
 require $app->routesPath('web.php');
