@@ -31,4 +31,26 @@ final class CampaignDraftFactory
             sourceCreatedAt: $post->date,
         );
     }
+
+    public function fromCampaign(Campaign $campaign, string $actor, ?DateTimeImmutable $now = null): CampaignDraft
+    {
+        $now ??= new DateTimeImmutable();
+        $sourceSnapshot = json_encode($campaign->toArray(), JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+        return new CampaignDraft(
+            id: bin2hex(random_bytes(16)),
+            subject: $campaign->subject,
+            preheader: '',
+            body: $campaign->text,
+            version: 1,
+            createdAt: $now,
+            updatedAt: $now,
+            createdBy: $actor,
+            sourceType: 'campaign',
+            sourceId: $campaign->id,
+            sourceRevision: $campaign->confirmedAt->format(DATE_ATOM),
+            sourceHash: hash('sha256', $sourceSnapshot),
+            sourceCreatedAt: $campaign->confirmedAt,
+        );
+    }
 }
