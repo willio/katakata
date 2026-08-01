@@ -29,6 +29,7 @@ final class CampaignDispatcher
         }
 
         return $this->queueCampaign(
+            id: bin2hex(random_bytes(16)),
             postSlug: $slug,
             subject: $proof['subject'],
             canonicalUrl: $proof['canonical_url'],
@@ -46,11 +47,18 @@ final class CampaignDispatcher
             throw new RuntimeException('Campaign draft is not eligible for dispatch.');
         }
 
+        $campaignId = $draft->confirmedCampaignId ?? hash('md5', 'campaign-draft:' . $draft->id);
+        $existing = $this->campaigns->find($campaignId);
+        if ($existing !== null) {
+            return $existing;
+        }
+
         $canonicalUrl = $draft->sourceType === 'post' && $draft->sourceId !== null
             ? rtrim($this->appUrl, '/') . '/posts/' . rawurlencode($draft->sourceId)
             : rtrim($this->appUrl, '/') . '/mail/campaign-drafts/' . rawurlencode($draft->id);
 
         return $this->queueCampaign(
+            id: $campaignId,
             postSlug: $draft->sourceId ?? '',
             subject: $draft->subject,
             canonicalUrl: $canonicalUrl,
@@ -63,6 +71,7 @@ final class CampaignDispatcher
 
     /** @param list<array{email:string,unsubscribe_token:string}> $recipients */
     private function queueCampaign(
+        string $id,
         string $postSlug,
         string $subject,
         string $canonicalUrl,
@@ -73,7 +82,7 @@ final class CampaignDispatcher
     ): Campaign {
         $now ??= new DateTimeImmutable();
         $campaign = new Campaign(
-            id: bin2hex(random_bytes(16)),
+            id: $id,
             postSlug: $postSlug,
             subject: $subject,
             canonicalUrl: $canonicalUrl,
@@ -85,6 +94,10 @@ final class CampaignDispatcher
             confirmedAt: $now,
         );
 
+        $existing = $this->campaigns->find($campaign->id);
+        if ($existing !== null) {
+            return $existing;
+        }
         $this->campaigns->create($campaign);
 
         foreach ($recipients as $recipient) {
