@@ -58,6 +58,25 @@ final class FileDraftStore implements DraftStore
         );
     }
 
+    public function recent(int $limit = 8): array
+    {
+        $drafts = [];
+        foreach (glob(rtrim($this->path, '/') . '/*.json') ?: [] as $path) {
+            $id = rawurldecode(pathinfo($path, PATHINFO_FILENAME));
+            try {
+                $draft = $this->find($id);
+                if ($draft !== null) {
+                    $drafts[] = $draft;
+                }
+            } catch (RuntimeException) {
+                continue;
+            }
+        }
+
+        usort($drafts, static fn (Draft $left, Draft $right): int => $right->updatedAt <=> $left->updatedAt);
+        return array_slice($drafts, 0, max(1, $limit));
+    }
+
     public function delete(string $id): void
     {
         @unlink($this->path . '/' . rawurlencode($id) . '.json');
