@@ -72,11 +72,12 @@ final class CampaignDraftStore
         });
     }
 
-    public function claimConfirmation(string $id, int $expectedVersion, ?DateTimeImmutable $now = null): CampaignDraft
+    /** @return array{acquired:bool,draft:CampaignDraft} */
+    public function claimConfirmation(string $id, int $expectedVersion, ?DateTimeImmutable $now = null): array
     {
-        return $this->locked($id, function (CampaignDraft $current) use ($expectedVersion, $now): CampaignDraft {
+        return $this->locked($id, function (CampaignDraft $current) use ($expectedVersion, $now): array {
             if ($current->isConfirmed()) {
-                return $current;
+                return ['acquired' => false, 'draft' => $current];
             }
             if ($current->version !== $expectedVersion) {
                 throw new CampaignDraftConflict($current);
@@ -103,7 +104,7 @@ final class CampaignDraftStore
             );
 
             $this->write($this->target($claimed->id), $claimed);
-            return $claimed;
+            return ['acquired' => true, 'draft' => $claimed];
         });
     }
 
