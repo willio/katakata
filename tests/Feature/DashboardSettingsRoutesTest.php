@@ -42,6 +42,19 @@ final class DashboardSettingsRoutesTest extends TestCase
         }
     }
 
+    public function testSettingsRoutesRequireOwnerOrAdminPermission(): void
+    {
+        $session = file_get_contents(dirname(__DIR__, 2) . '/app/Auth/Session.php');
+        $routes = file_get_contents(dirname(__DIR__, 2) . '/routes/settings.php');
+
+        self::assertIsString($session);
+        self::assertIsString($routes);
+        self::assertStringContainsString('public function canManageSettings(): bool', $session);
+        self::assertStringContainsString("return \$this->hasRole('owner', 'admin');", $session);
+        self::assertStringContainsString('!$session->canManageSettings()', $routes);
+        self::assertStringContainsString("Response::html('Forbidden.', 403)", $routes);
+    }
+
     public function testSettingsRouteIsBeforeTheGreedyArticleRoute(): void
     {
         $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
