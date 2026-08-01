@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use DateTimeImmutable;
 use Katakata\Auth\Session;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Email\DraftStore;
@@ -81,6 +80,9 @@ $router->get('/mail/campaign-drafts/{id}', function (Request $request, string $i
     if ($draft === null) {
         return Response::notFound();
     }
+    if ($draft->isConfirmed()) {
+        return Response::redirect('/mail/campaign/' . rawurlencode((string) $draft->confirmedCampaignId), 302);
+    }
 
     $review = null;
     if (($request->query['review'] ?? '') === '1') {
@@ -110,6 +112,12 @@ $router->post('/mail/campaign-drafts/{id}/autosave', function (Request $request,
     if ($current === null) {
         return Response::json(['error' => 'Campaign draft not found.'], 404);
     }
+    if ($current->isConfirmed()) {
+        return Response::json([
+            'error' => 'Campaign draft is already confirmed.',
+            'campaign_id' => $current->confirmedCampaignId,
+        ], 409);
+    }
 
     $incoming = new CampaignDraft(
         id: $current->id,
@@ -118,7 +126,7 @@ $router->post('/mail/campaign-drafts/{id}/autosave', function (Request $request,
         body: (string) ($request->body['body'] ?? $current->body),
         version: $current->version,
         createdAt: $current->createdAt,
-        updatedAt: new DateTimeImmutable(),
+        updatedAt: new \DateTimeImmutable(),
         createdBy: $current->createdBy,
         sourceType: $current->sourceType,
         sourceId: $current->sourceId,
@@ -166,6 +174,9 @@ $router->post('/mail/campaign-drafts/{id}', function (Request $request, string $
     if ($current === null) {
         return Response::notFound();
     }
+    if ($current->isConfirmed()) {
+        return Response::redirect('/mail/campaign/' . rawurlencode((string) $current->confirmedCampaignId), 303);
+    }
 
     $incoming = new CampaignDraft(
         id: $current->id,
@@ -174,7 +185,7 @@ $router->post('/mail/campaign-drafts/{id}', function (Request $request, string $
         body: (string) ($request->body['body'] ?? $current->body),
         version: $current->version,
         createdAt: $current->createdAt,
-        updatedAt: new DateTimeImmutable(),
+        updatedAt: new \DateTimeImmutable(),
         createdBy: $current->createdBy,
         sourceType: $current->sourceType,
         sourceId: $current->sourceId,
@@ -209,11 +220,17 @@ $router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, 
         return Response::html('Invalid CSRF token.', 419);
     }
 
-    $draft = $app->make(CampaignDraftStore::class)->find($id);
+    $store = $app->make(CampaignDraftStore::class);
+    $draft = $store->find($id);
     if ($draft === null) {
         return Response::notFound();
     }
-    if ($draft->version !== max(1, (int) ($request->body['expected_version'] ?? 0))) {
+    if ($draft->isConfirmed()) {
+        return Response::redirect('/mail/campaign/' . rawurlencode((string) $draft->confirmedCampaignId), 303);
+    }
+
+    $expectedVersion = max(1, (int) ($request->body['expected_version'] ?? 0));
+    if ($draft->version !== $expectedVersion) {
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?conflict=1', 303);
     }
 
@@ -222,6 +239,12 @@ $router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, 
             $draft,
             $app->make(CampaignDraftReviewer::class),
         );
+        $store->confirm($id, $expectedVersion, $campaign->id, $campaign->confirmedAt);
+    } catch (CampaignDraftConflict $conflict) {
+        if ($conflict->current->isConfirmed()) {
+            return Response::redirect('/mail/campaign/' . rawurlencode((string) $conflict->current->confirmedCampaignId), 303);
+        }
+        return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?conflict=1', 303);
     } catch (\Throwable) {
         return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=confirm', 303);
     }
