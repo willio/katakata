@@ -79,6 +79,13 @@ See [`docs/subsystems/dashboard.md`](./subsystems/dashboard.md),
 - [x] Combined Mail attention model surfaced on the dashboard
 - [x] `/dashboard/mail` compatibility redirect to `/mail`
 - [ ] Scheduled IMAP synchronization adapter and cached operational inbox
+- [ ] Guided Mail connection setup in `/dashboard/settings`, including safe
+  non-secret connection readiness and an explicit credential-provisioning
+  boundary for self-hosted testing
+- [ ] Correspondence storage, retention, deletion/export, and attachment-limit
+  policy before synchronizing real reader mail
+- [ ] Replace Mail authorization source-contract assertions with owner/admin/editor
+  request-dispatch coverage
 - [ ] MIME parsing, attachments, spam handling, and correspondence delivery policy
 
 See [`docs/subsystems/distribution.md`](./subsystems/distribution.md),
