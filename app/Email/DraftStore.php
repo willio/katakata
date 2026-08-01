@@ -10,5 +10,8 @@ interface DraftStore
 
     public function find(string $id): ?Draft;
 
+    /** @return list<Draft> */
+    public function recent(int $limit = 8): array;
+
     public function delete(string $id): void;
 }
