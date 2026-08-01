@@ -13,6 +13,7 @@ not ahead of time.
 |---|---|---|
 | Content Engine (Repository, Discovery, Front Matter) | Phase 1 | [content-engine.md](./content-engine.md) |
 | Legacy Document Import | Phase 3 | [import.md](./import.md) |
+| Operational Backups | Phase 4 | [backups.md](./backups.md) |
 | Renderer (Website, Archives, Feeds, Typography) | Phase 2 | — |
 | Editorial (Editor, Revisions, Scheduling, Publishing) | Phase 3 | — |
 | Distribution (Newsletter, Threads Adapter, Webhooks) | Phase 4 | — |
