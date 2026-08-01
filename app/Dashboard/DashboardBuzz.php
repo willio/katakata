@@ -45,4 +45,14 @@ final class DashboardBuzz
             return null;
         }
     }
+
+    /**
+     * Backwards-compatible alias for dashboard callers.
+     *
+     * @return list<array{id: string, post_slug: string, text: string, username: string, timestamp: string, permalink: string, avatar_url: ?string}>|null
+     */
+    public function latest(int $limit = 8): ?array
+    {
+        return $this->recent($limit);
+    }
 }
