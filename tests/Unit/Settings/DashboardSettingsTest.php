@@ -85,7 +85,32 @@ final class DashboardSettingsTest extends TestCase
         $settings->update('appearance', ['theme' => 'neon']);
     }
 
-    private function settings(): DashboardSettings
+    public function testThreadsCannotBeEnabledWithoutDeploymentCredentials(): void
+    {
+        $settings = $this->settings();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Threads requires THREADS_USER_ID and THREADS_ACCESS_TOKEN.');
+        $settings->update('discussion', [
+            'provider' => 'threads',
+            'enabled_by_default' => true,
+        ]);
+    }
+
+    public function testThreadsCanBeSelectedWhenDeploymentCredentialsAreAvailable(): void
+    {
+        $settings = $this->settings(threadsConfigured: true);
+
+        self::assertSame([
+            'provider' => 'threads',
+            'enabled_by_default' => true,
+        ], $settings->update('discussion', [
+            'provider' => 'threads',
+            'enabled_by_default' => '1',
+        ]));
+    }
+
+    private function settings(bool $threadsConfigured = false): DashboardSettings
     {
         return new DashboardSettings(
             new SettingsStore($this->root . '/application.json', new AtomicFile()),
@@ -106,6 +131,7 @@ final class DashboardSettingsTest extends TestCase
                 'analytics' => ['dashboard_period' => '30d'],
                 'appearance' => ['theme' => 'default'],
             ],
+            $threadsConfigured,
         );
     }
 }

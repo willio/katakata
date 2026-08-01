@@ -24,7 +24,7 @@
     <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
     <nav aria-label="Dashboard">
         <a class="button" href="/editor/new">New post</a>
-        <a href="/editor">Settings</a>
+        <a href="/dashboard/settings">Settings</a>
     </nav>
 </header>
 <main class="dashboard-shell">

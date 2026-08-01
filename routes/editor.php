@@ -27,11 +27,9 @@ $renderEditor = static function (?\Katakata\Content\Draft $draft = null, ?string
     }
 
     return Response::html($app->make(View::class)->render('editor', [
-        'user' => $user,
         'drafts' => $app->make(Repository::class)->drafts(),
         'draft' => $draft,
         'csrf' => $app->make(Session::class)->csrf(),
-        'canInvite' => $app->make(Session::class)->canInvite(),
         'notice' => $notice,
         'draftVersion' => $draft === null ? '' : DraftVersion::of($draft),
     ]));
@@ -68,6 +66,7 @@ $draftMeta = static function (array $source, ?\Katakata\Content\Draft $existing 
     $meta = $existing?->meta ?? [];
     unset($meta['title'], $meta['updated_at']);
     $meta['publish_as_newsletter'] = isset($source['publish_as_newsletter']) ? 'true' : 'false';
+    $meta['discussion_enabled'] = isset($source['discussion_enabled']) ? 'true' : 'false';
 
     return $meta;
 };

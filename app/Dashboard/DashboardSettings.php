@@ -16,6 +16,7 @@ final class DashboardSettings
     public function __construct(
         private readonly SettingsStore $store,
         array $defaults = [],
+        private readonly bool $threadsConfigured = false,
     ) {
         $this->defaults = $defaults;
     }
@@ -95,6 +96,9 @@ final class DashboardSettings
         $provider = trim((string) ($input['provider'] ?? 'none'));
         if (!in_array($provider, ['none', 'native', 'threads'], true)) {
             throw new RuntimeException('Discussion provider is invalid.');
+        }
+        if ($provider === 'threads' && !$this->threadsConfigured) {
+            throw new RuntimeException('Threads requires THREADS_USER_ID and THREADS_ACCESS_TOKEN.');
         }
 
         return [

@@ -25,6 +25,7 @@ use Katakata\Distribution\FilesystemEmailTransport;
 use Katakata\Distribution\MailQueue;
 use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Dashboard\DashboardBuzz;
+use Katakata\Dashboard\DashboardSettings;
 use Katakata\Discussion\DiscussionManager;
 use Katakata\Discussion\NativeDiscussionProvider;
 use Katakata\Discussion\NativeDiscussionService;
@@ -105,10 +106,14 @@ $app->singleton(
 );
 $app->singleton(
     DashboardBuzz::class,
-    static fn (Application $container): DashboardBuzz => new DashboardBuzz(
-        $container->make(DiscussionManager::class),
-        (bool) $container->config()->get('threads.enabled', false) ? 'threads' : 'none',
-    ),
+    static function (Application $container): DashboardBuzz {
+        $discussion = $container->make(DashboardSettings::class)->section('discussion');
+
+        return new DashboardBuzz(
+            $container->make(DiscussionManager::class),
+            (string) ($discussion['provider'] ?? 'none'),
+        );
+    },
 );
 $app->singleton(
     SeoChecker::class,
@@ -343,11 +348,17 @@ $app->singleton(
 );
 $app->singleton(
     DiscussionManager::class,
-    static fn (Application $container): DiscussionManager => new DiscussionManager(
-        new NullDiscussionProvider(),
-        $container->make(ThreadsDiscussionProvider::class),
-        $container->make(NativeDiscussionProvider::class),
-    ),
+    static function (Application $container): DiscussionManager {
+        $providers = [$container->make(NativeDiscussionProvider::class)];
+        $threadsAvailable = (bool) $container->config()->get('threads.enabled', false)
+            && trim((string) $container->config()->get('threads.user_id', '')) !== ''
+            && trim((string) $container->config()->get('threads.access_token', '')) !== '';
+        if ($threadsAvailable) {
+            $providers[] = $container->make(ThreadsDiscussionProvider::class);
+        }
+
+        return new DiscussionManager(new NullDiscussionProvider(), ...$providers);
+    },
 );
 $app->singleton(
     ThreadsAdapter::class,

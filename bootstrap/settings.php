@@ -9,6 +9,9 @@ use Katakata\Settings\SettingsStore;
 
 /** @var Application $app */
 
+$threadsConfigured = trim((string) $app->config()->get('threads.user_id', '')) !== ''
+    && trim((string) $app->config()->get('threads.access_token', '')) !== '';
+
 $app->singleton(
     SettingsStore::class,
     static fn (Application $container): SettingsStore => new SettingsStore(
@@ -32,11 +35,14 @@ $app->singleton(
                 'publish_by_default' => false,
             ],
             'discussion' => [
-                'provider' => (bool) $container->config()->get('threads.enabled', false) ? 'threads' : 'none',
+                'provider' => (bool) $container->config()->get('threads.enabled', false) && $threadsConfigured
+                    ? 'threads'
+                    : 'none',
                 'enabled_by_default' => false,
             ],
             'analytics' => ['dashboard_period' => '30d'],
             'appearance' => ['theme' => 'default'],
         ],
+        $threadsConfigured,
     ),
 );

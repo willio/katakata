@@ -70,6 +70,26 @@ Optional services must remain inert when disabled.
 - Filesystem mail transport does not require Resend credentials.
 - Opening `/dashboard/settings` or the editor must not instantiate external provider clients.
 
+The discussion manager registers the Threads provider only when Threads is
+enabled and both `THREADS_USER_ID` and `THREADS_ACCESS_TOKEN` are present.
+Otherwise a request for Threads resolves the null provider. The settings
+boundary performs the same credential-presence check before accepting Threads
+as the selected provider; credential values remain opaque deployment state and
+are never copied into application settings. Dashboard discussion summaries read
+the selected provider through this boundary rather than consulting deployment
+configuration directly.
+
 ## Editor boundary
 
-The editor settings panel is limited to post-scoped controls. It includes a restrained link to `/dashboard/settings` for application-wide configuration. Opening the editor settings panel must not resolve mail transports, analytics stores, discussion API clients, or other unrelated global services.
+The editor settings panel is limited to post-scoped controls. The current
+surface retains title and slug derivation plus the current post's
+`publish_as_newsletter` and `discussion_enabled` flags. Existing front matter
+outside those submitted controls survives autosave unchanged. Account and
+passkey controls do not live in the post settings panel, which includes a
+restrained link to `/dashboard/settings` for application-wide configuration.
+Opening the editor settings panel does not resolve mail transports, analytics
+stores, discussion API clients, or other unrelated global services.
+
+No settings migration is required for this reconciliation: global runtime
+preferences had no earlier canonical store. Post metadata remains in Markdown
+and is deliberately excluded from migration.
