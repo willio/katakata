@@ -10,7 +10,6 @@ final class Mailbox
     {
     }
 
-    /** @return list<MessageSummary> */
     public function inbox(int $limit = 50): array
     {
         return $this->provider->inbox(max(1, $limit));
@@ -31,7 +30,16 @@ final class Mailbox
         return $this->provider->attachment($messageId, $attachmentId);
     }
 
-    /** @return array{status:string,reason:?string,last_synced_at:?string} */
+    public function markRead(string $id, bool $read): void
+    {
+        $this->provider->markRead($id, $read);
+    }
+
+    public function archive(string $id): void
+    {
+        $this->provider->archive($id);
+    }
+
     public function readiness(): array
     {
         return $this->provider->readiness();
