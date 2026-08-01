@@ -16,6 +16,7 @@
 <header class="dashboard-header">
     <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
     <nav aria-label="Campaign draft actions">
+        <button type="button" id="campaign-fullscreen-toggle" aria-pressed="false">Fullscreen</button>
         <a href="/mail?area=campaigns">Mail</a>
         <a href="/dashboard/settings">Settings</a>
     </nav>
