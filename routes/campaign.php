@@ -12,6 +12,7 @@ use Katakata\Http\Response;
 use Katakata\Mail\CampaignDispatcher;
 use Katakata\Mail\CampaignDraft;
 use Katakata\Mail\CampaignDraftConflict;
+use Katakata\Mail\CampaignDraftReviewer;
 use Katakata\Mail\CampaignDraftStore;
 use Katakata\Mail\CampaignRetryService;
 use Katakata\Mail\CampaignStatus;
@@ -82,7 +83,7 @@ $router->get('/mail/campaign-drafts/{id}', function (Request $request, string $i
 
     $review = null;
     if (($request->query['review'] ?? '') === '1') {
-        $review = $app->make(MailWorkspace::class)->recipientPreview();
+        $review = $app->make(CampaignDraftReviewer::class)->review($draft);
     }
 
     return Response::html($app->make(View::class)->render('mail-campaign-draft', [
@@ -194,6 +195,37 @@ $router->post('/mail/campaign-drafts/{id}', function (Request $request, string $
 
     $query = ($request->body['intent'] ?? '') === 'review' ? '?review=1' : '?saved=1';
     return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . $query, 303);
+});
+
+$router->post('/mail/campaign-drafts/{id}/confirm', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
+    }
+
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::html('Invalid CSRF token.', 419);
+    }
+
+    $draft = $app->make(CampaignDraftStore::class)->find($id);
+    if ($draft === null) {
+        return Response::notFound();
+    }
+    if ($draft->version !== max(1, (int) ($request->body['expected_version'] ?? 0))) {
+        return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?conflict=1', 303);
+    }
+
+    try {
+        $campaign = $app->make(CampaignDispatcher::class)->confirmDraftAndQueue(
+            $draft,
+            $app->make(CampaignDraftReviewer::class),
+        );
+    } catch (\Throwable) {
+        return Response::redirect('/mail/campaign-drafts/' . rawurlencode($id) . '?review=1&error=confirm', 303);
+    }
+
+    return Response::redirect('/mail/campaign/' . rawurlencode($campaign->id), 303);
 });
 
 $router->get('/mail/campaigns', function (Request $request) use ($app, $authorizeMail): Response {
