@@ -8,11 +8,14 @@ use Katakata\Distribution\MailQueue;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Editorial\AtomicFile;
 use Katakata\Email\DraftComposer;
+use Katakata\Email\DraftSender;
 use Katakata\Email\DraftStore;
 use Katakata\Email\FileDraftStore;
 use Katakata\Email\Mailbox;
 use Katakata\Email\MailboxProvider;
+use Katakata\Email\OutboundMailProvider;
 use Katakata\Email\Providers\UnavailableMailboxProvider;
+use Katakata\Email\Providers\UnavailableOutboundMailProvider;
 use Katakata\Mail\CampaignDispatcher;
 use Katakata\Mail\CampaignRetryService;
 use Katakata\Mail\CampaignStatus;
@@ -23,15 +26,10 @@ use Katakata\Rendering\Markdown;
 
 /** @var Application $app */
 
-$app->singleton(
-    MailboxProvider::class,
-    static fn (): MailboxProvider => new UnavailableMailboxProvider(),
-);
+$app->singleton(MailboxProvider::class, static fn (): MailboxProvider => new UnavailableMailboxProvider());
 $app->singleton(
     Mailbox::class,
-    static fn (Application $container): Mailbox => new Mailbox(
-        $container->make(MailboxProvider::class),
-    ),
+    static fn (Application $container): Mailbox => new Mailbox($container->make(MailboxProvider::class)),
 );
 $app->singleton(
     DraftStore::class,
@@ -42,8 +40,17 @@ $app->singleton(
 );
 $app->singleton(
     DraftComposer::class,
-    static fn (Application $container): DraftComposer => new DraftComposer(
+    static fn (Application $container): DraftComposer => new DraftComposer($container->make(DraftStore::class)),
+);
+$app->singleton(
+    OutboundMailProvider::class,
+    static fn (): OutboundMailProvider => new UnavailableOutboundMailProvider(),
+);
+$app->singleton(
+    DraftSender::class,
+    static fn (Application $container): DraftSender => new DraftSender(
         $container->make(DraftStore::class),
+        $container->make(OutboundMailProvider::class),
     ),
 );
 $app->singleton(
