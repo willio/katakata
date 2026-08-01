@@ -33,8 +33,6 @@ final class MailAuthorizationTest extends TestCase
         foreach ([
             '/dashboard/mail',
             '/mail/messages/{id}',
-            '/mail/messages/{id}/read',
-            '/mail/messages/{id}/unread',
             '/mail/messages/{id}/archive',
             '/mail/messages/{messageId}/attachments/{attachmentId}',
             '/mail/compose',
@@ -44,6 +42,8 @@ final class MailAuthorizationTest extends TestCase
             self::assertStringContainsString($path, $routes);
         }
 
+        self::assertStringContainsString("foreach (['read' => true, 'unread' => false] as \$action => \$read)", $routes);
+        self::assertStringContainsString("'/mail/messages/{id}/' . \$action", $routes);
         self::assertGreaterThanOrEqual(8, substr_count($routes, '$authorizeMail();'));
         self::assertGreaterThanOrEqual(8, substr_count($routes, 'if ($user instanceof Response)'));
     }
