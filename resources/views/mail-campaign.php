@@ -33,7 +33,7 @@
         <a href="/dashboard">Dashboard</a>
         <a aria-current="page" href="/mail">Mail</a>
         <a class="button" href="/editor/new">New post</a>
-        <a href="/editor">Settings</a>
+        <a href="/dashboard/settings">Settings</a>
     </nav>
 </header>
 <main class="dashboard-shell">
@@ -41,6 +41,10 @@
         <p class="eyebrow">Campaign <?= e(str_replace('_', ' ', $delivery['status'])) ?></p>
         <h1><?= e($campaign->subject) ?></h1>
         <p>The campaign snapshot is immutable. Delivery status is derived from its queue entries.</p>
+        <form class="form-actions" method="post" action="/mail/campaign/<?= rawurlencode($campaign->id) ?>/drafts">
+            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+            <button type="submit">Create from campaign</button>
+        </form>
     </header>
 
     <section aria-labelledby="campaign-delivery">

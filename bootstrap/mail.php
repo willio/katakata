@@ -17,6 +17,9 @@ use Katakata\Email\OutboundMailProvider;
 use Katakata\Email\Providers\UnavailableMailboxProvider;
 use Katakata\Email\Providers\UnavailableOutboundMailProvider;
 use Katakata\Mail\CampaignDispatcher;
+use Katakata\Mail\CampaignDraftFactory;
+use Katakata\Mail\CampaignDraftReviewer;
+use Katakata\Mail\CampaignDraftStore;
 use Katakata\Mail\CampaignRetryService;
 use Katakata\Mail\CampaignStatus;
 use Katakata\Mail\CampaignStore;
@@ -51,6 +54,21 @@ $app->singleton(
     static fn (Application $container): DraftSender => new DraftSender(
         $container->make(DraftStore::class),
         $container->make(OutboundMailProvider::class),
+    ),
+);
+$app->singleton(
+    CampaignDraftStore::class,
+    static fn (Application $container): CampaignDraftStore => new CampaignDraftStore(
+        $container->storagePath('mail/campaign-drafts'),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(CampaignDraftFactory::class, static fn (): CampaignDraftFactory => new CampaignDraftFactory());
+$app->singleton(
+    CampaignDraftReviewer::class,
+    static fn (Application $container): CampaignDraftReviewer => new CampaignDraftReviewer(
+        $container->make(SubscriberStore::class),
+        $container->make(Markdown::class),
     ),
 );
 $app->singleton(

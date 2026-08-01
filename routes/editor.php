@@ -9,6 +9,8 @@ use Katakata\Editorial\DraftVersion;
 use Katakata\Editorial\Publisher;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
+use Katakata\Mail\CampaignDraftFactory;
+use Katakata\Mail\CampaignDraftStore;
 use Katakata\View;
 
 /**
@@ -50,6 +52,7 @@ $renderPosts = static function (Request $request) use ($app, $requireEditorUser)
         'status' => $status,
         'drafts' => $app->make(Repository::class)->drafts()->all(),
         'posts' => $app->make(Repository::class)->posts()->all(),
+        'csrf' => $app->make(Session::class)->csrf(),
     ]));
 };
 
@@ -95,6 +98,40 @@ $router->get('/editor/new', fn (Request $request): Response => $renderEditor());
 $router->get('/editor/drafts/{slug}', function (Request $request, string $slug) use ($app, $renderEditor): Response {
     $draft = $app->make(Repository::class)->findDraft($slug);
     return $draft === null ? Response::notFound() : $renderEditor($draft);
+});
+
+$router->post('/editor/posts/{slug}/campaign-drafts', function (Request $request, string $slug) use ($app): Response {
+    $session = $app->make(Session::class);
+    $user = $session->user();
+    if ($user === null) {
+        return Response::redirect('/login', 302);
+    }
+    if (!$session->canManageMail()) {
+        return Response::html('Forbidden.', 403);
+    }
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::html('Invalid CSRF token.', 419);
+    }
+
+    $repository = $app->make(Repository::class);
+    $post = $repository->findPost($slug);
+    if ($post === null) {
+        return Response::notFound();
+    }
+
+    $before = (string) file_get_contents($post->path);
+    $draft = $app->make(CampaignDraftFactory::class)->fromPost(
+        $post,
+        (string) ($user['email'] ?? $user['id'] ?? 'unknown'),
+    );
+    $app->make(CampaignDraftStore::class)->create($draft);
+    $after = (string) file_get_contents($post->path);
+
+    if (!hash_equals(hash('sha256', $before), hash('sha256', $after))) {
+        return Response::html('Source post changed while creating campaign draft.', 500);
+    }
+
+    return Response::redirect('/mail/campaign-drafts/' . rawurlencode($draft->id), 303);
 });
 
 // Compatibility redirects for links and browser history from the earlier draft surface.
