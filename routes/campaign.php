@@ -3,12 +3,14 @@
 declare(strict_types=1);
 
 use Katakata\Auth\Session;
+use Katakata\Email\Mailbox;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\Mail\CampaignDispatcher;
 use Katakata\Mail\CampaignRetryService;
 use Katakata\Mail\CampaignStatus;
 use Katakata\Mail\CampaignStore;
+use Katakata\Mail\MailAttention;
 use Katakata\Mail\MailWorkspace;
 use Katakata\View;
 
@@ -25,10 +27,20 @@ $router->get('/mail', function (Request $request) use ($app, $requireUser): Resp
     }
 
     $workspace = $app->make(MailWorkspace::class);
+    $mailbox = $app->make(Mailbox::class);
+    $attention = $app->make(MailAttention::class);
+    $area = trim((string) ($request->query['area'] ?? $attention->landing()));
+    if (!in_array($area, ['inbox', 'campaigns'], true)) {
+        $area = $attention->landing();
+    }
 
     return Response::html($app->make(View::class)->render('mail', [
         'user' => $user,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'area' => $area,
+        'attention' => $attention->summary(),
+        'mailboxReadiness' => $mailbox->readiness(),
+        'messages' => $mailbox->inbox(),
         'queue' => $workspace->reviewQueue(),
         'audience' => $workspace->recipientPreview(),
         'campaign' => $workspace->campaignPreview($request->query['post'] ?? ''),
@@ -67,7 +79,7 @@ $router->get('/mail/confirm', function (Request $request) use ($app, $requireUse
 
     $proof = $app->make(MailWorkspace::class)->dispatchProof($request->query['post'] ?? '');
     if ($proof === null) {
-        return Response::redirect('/mail', 302);
+        return Response::redirect('/mail?area=campaigns', 302);
     }
 
     return Response::html($app->make(View::class)->render('mail-confirm', [
@@ -85,7 +97,7 @@ $router->post('/mail/confirm', function (Request $request) use ($app, $requireUs
 
     $session = $app->make(Session::class);
     if (!$session->validCsrf($request->body['csrf'] ?? null)) {
-        return Response::redirect('/mail', 302);
+        return Response::redirect('/mail?area=campaigns', 302);
     }
 
     try {
@@ -94,7 +106,7 @@ $router->post('/mail/confirm', function (Request $request) use ($app, $requireUs
         );
         return Response::redirect('/mail/campaign/' . rawurlencode($campaign->id), 303);
     } catch (\Throwable) {
-        return Response::redirect('/mail', 302);
+        return Response::redirect('/mail?area=campaigns', 302);
     }
 });
 
