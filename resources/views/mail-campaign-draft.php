@@ -3,6 +3,7 @@
 /** @var string $siteName */
 /** @var string $csrf */
 /** @var ?array{draft:\Katakata\Mail\CampaignDraft,recipient_count:int,recipients:list<array{email:string,unsubscribe_token:string}>,html:string,text:string,warnings:list<string>} $review */
+/** @var string $error */
 ?>
 <!doctype html>
 <html lang="en">
@@ -28,38 +29,60 @@
         <p class="quiet">Separate from the source post. Saving or reviewing this draft never sends mail.</p>
     </header>
 
-    <form id="campaign-draft-form" method="post" action="/mail/campaign-drafts/<?= e($draft->id) ?>" data-autosave-url="/mail/campaign-drafts/<?= e($draft->id) ?>/autosave">
-        <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-        <input type="hidden" name="expected_version" value="<?= $draft->version ?>">
-        <input type="hidden" name="client_version" value="">
+    <?php if ($error === 'pending' || $error === 'queue'): ?>
+        <section class="mail-readiness" role="alert" aria-labelledby="campaign-recovery-title">
+            <h2 id="campaign-recovery-title">Campaign delivery is pending</h2>
+            <p>The draft was claimed, but the campaign was not queued. Retry using the same campaign identity; successful recipients will not be duplicated.</p>
+            <form method="post" action="/mail/campaign-drafts/<?= e($draft->id) ?>/resume">
+                <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                <button type="submit">Resume queueing</button>
+            </form>
+        </section>
+    <?php elseif ($error === 'not-pending'): ?>
+        <p class="form-error" role="alert">This campaign draft has not been claimed for delivery.</p>
+    <?php elseif ($error !== ''): ?>
+        <p class="form-error" role="alert">Campaign delivery could not be completed. Review the draft and try again.</p>
+    <?php endif; ?>
 
-        <div class="campaign-compose-paper">
-            <div class="campaign-compose-field">
-                <label for="campaign-audience">Audience</label>
-                <input id="campaign-audience" value="All confirmed subscribers" readonly>
-            </div>
-            <div class="campaign-compose-field">
-                <label for="campaign-subject">Subject</label>
-                <input id="campaign-subject" name="subject" required value="<?= e($draft->subject) ?>">
-            </div>
-            <div class="campaign-compose-field">
-                <label for="campaign-preheader">Preheader</label>
-                <input id="campaign-preheader" name="preheader" value="<?= e($draft->preheader) ?>">
-            </div>
-            <div class="campaign-compose-body">
-                <label for="campaign-body">Body</label>
-                <textarea id="campaign-body" name="body" rows="22"><?= e($draft->body) ?></textarea>
-            </div>
-        </div>
+    <?php if (!$draft->isConfirmed()): ?>
+        <form id="campaign-draft-form" method="post" action="/mail/campaign-drafts/<?= e($draft->id) ?>" data-autosave-url="/mail/campaign-drafts/<?= e($draft->id) ?>/autosave">
+            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+            <input type="hidden" name="expected_version" value="<?= $draft->version ?>">
+            <input type="hidden" name="client_version" value="">
 
-        <p id="campaign-save-state" class="quiet" role="status">Saved version <?= $draft->version ?>.</p>
-        <div class="form-actions">
-            <button type="submit" name="intent" value="save">Save draft</button>
-            <button type="submit" name="intent" value="review">Review campaign</button>
-        </div>
-    </form>
+            <div class="campaign-compose-paper">
+                <div class="campaign-compose-field">
+                    <label for="campaign-audience">Audience</label>
+                    <input id="campaign-audience" value="All confirmed subscribers" readonly>
+                </div>
+                <div class="campaign-compose-field">
+                    <label for="campaign-subject">Subject</label>
+                    <input id="campaign-subject" name="subject" required value="<?= e($draft->subject) ?>">
+                </div>
+                <div class="campaign-compose-field">
+                    <label for="campaign-preheader">Preheader</label>
+                    <input id="campaign-preheader" name="preheader" value="<?= e($draft->preheader) ?>">
+                </div>
+                <div class="campaign-compose-body">
+                    <label for="campaign-body">Body</label>
+                    <textarea id="campaign-body" name="body" rows="22"><?= e($draft->body) ?></textarea>
+                </div>
+            </div>
 
-    <?php if ($review !== null): ?>
+            <p id="campaign-save-state" class="quiet" role="status">Saved version <?= $draft->version ?>.</p>
+            <div class="form-actions">
+                <button type="submit" name="intent" value="save">Save draft</button>
+                <button type="submit" name="intent" value="review">Review campaign</button>
+            </div>
+        </form>
+    <?php else: ?>
+        <section class="mail-readiness">
+            <h2>Campaign draft claimed</h2>
+            <p class="quiet">Editing is locked after delivery confirmation begins.</p>
+        </section>
+    <?php endif; ?>
+
+    <?php if ($review !== null && !$draft->isConfirmed()): ?>
         <section class="mail-readiness" aria-labelledby="campaign-review-title">
             <h2 id="campaign-review-title">Review campaign</h2>
             <p><strong><?= $review['recipient_count'] ?></strong> currently eligible confirmed <?= $review['recipient_count'] === 1 ? 'subscriber' : 'subscribers' ?>.</p>
