@@ -5,9 +5,11 @@
 /** @var array{reader:int,campaigns:int,total:int,detail:string} $attention */
 /** @var array{status:string,reason:?string,last_synced_at:?string} $mailboxReadiness */
 /** @var list<\Katakata\Email\MessageSummary> $messages */
+/** @var list<\Katakata\Email\Draft> $drafts */
 /** @var list<array{slug: string, title: string, published_at: string, author: ?string, excerpt: ?string, url: string}> $queue */
 /** @var array{count: int, recipients: list<array{email: string, confirmed_at: ?string}>} $audience */
 /** @var array{post: array{slug: string, title: string, published_at: string, author: ?string, excerpt: ?string, url: string}, recipient_count: int}|null $campaign */
+/** @var bool $newsletterReady */
 /** @var string $csrf */
 ?>
 <!doctype html>
@@ -22,7 +24,7 @@
 <header class="dashboard-header">
     <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
     <nav aria-label="Mail actions">
-        <a class="button" href="/editor/new">New post</a>
+        <a class="button" href="/mail/compose">Compose</a>
         <a href="/dashboard/settings">Settings</a>
     </nav>
 </header>
@@ -57,15 +59,39 @@
                 <ol class="dashboard-list">
                     <?php foreach ($messages as $message): ?>
                         <li>
-                            <strong><?= e($message->subject) ?></strong>
-                            <span><?= e($message->from) ?></span>
+                            <a href="/mail/messages/<?= rawurlencode($message->id) ?>"><strong><?= e($message->subject) ?></strong></a>
+                            <span><?= e($message->from) ?><?= $message->unread ? ' · Unread' : '' ?></span>
                             <time datetime="<?= e($message->receivedAt->format(DATE_ATOM)) ?>"><?= e($message->receivedAt->format('M j, H:i')) ?></time>
                         </li>
                     <?php endforeach; ?>
                 </ol>
             <?php endif; ?>
         </section>
+
+        <section aria-labelledby="mail-drafts">
+            <h2 id="mail-drafts">Drafts</h2>
+            <?php if ($drafts === []): ?>
+                <p class="quiet">No saved correspondence drafts.</p>
+            <?php else: ?>
+                <ol class="dashboard-list">
+                    <?php foreach ($drafts as $draft): ?>
+                        <li>
+                            <a href="/mail/drafts/<?= rawurlencode($draft->id) ?>"><strong><?= e($draft->subject !== '' ? $draft->subject : 'Untitled draft') ?></strong></a>
+                            <span><?= e($draft->to !== '' ? $draft->to : 'No recipient') ?></span>
+                            <time datetime="<?= e($draft->updatedAt->format(DATE_ATOM)) ?>"><?= e($draft->updatedAt->format('M j, H:i')) ?></time>
+                        </li>
+                    <?php endforeach; ?>
+                </ol>
+            <?php endif; ?>
+        </section>
     <?php else: ?>
+        <?php if (!$newsletterReady): ?>
+            <section class="mail-readiness" role="status" aria-labelledby="newsletter-readiness-title">
+                <h2 id="newsletter-readiness-title">Newsletter needs setup</h2>
+                <p>Configure NEWSLETTER_SECRET or APP_KEY before subscriptions and campaign dispatch are available.</p>
+            </section>
+        <?php endif; ?>
+
         <section aria-labelledby="mail-audience">
             <h2 id="mail-audience">Audience preview</h2>
             <p><strong><?= $audience['count'] ?></strong> confirmed <?= $audience['count'] === 1 ? 'recipient' : 'recipients' ?></p>
@@ -99,7 +125,7 @@
                     <p class="quiet"><?= $campaign['recipient_count'] ?> confirmed <?= $campaign['recipient_count'] === 1 ? 'recipient' : 'recipients' ?></p>
                     <div class="form-actions">
                         <a href="<?= e($campaign['post']['url']) ?>">View post</a>
-                        <a class="button" href="/mail/confirm?post=<?= rawurlencode($campaign['post']['slug']) ?>">Review dispatch proof</a>
+                        <?php if ($newsletterReady): ?><a class="button" href="/mail/confirm?post=<?= rawurlencode($campaign['post']['slug']) ?>">Review dispatch proof</a><?php endif; ?>
                     </div>
                 </article>
             <?php endif; ?>
