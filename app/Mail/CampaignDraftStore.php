@@ -59,6 +59,12 @@ final class CampaignDraftStore
             sourceCreatedAt: isset($data['source_created_at']) && $data['source_created_at'] !== null
                 ? new DateTimeImmutable((string) $data['source_created_at'])
                 : null,
+            confirmedCampaignId: isset($data['confirmed_campaign_id']) && $data['confirmed_campaign_id'] !== null
+                ? (string) $data['confirmed_campaign_id']
+                : null,
+            confirmedAt: isset($data['confirmed_at']) && $data['confirmed_at'] !== null
+                ? new DateTimeImmutable((string) $data['confirmed_at'])
+                : null,
         );
     }
 
@@ -67,6 +73,9 @@ final class CampaignDraftStore
         $current = $this->find($draft->id);
         if ($current === null) {
             throw new RuntimeException('Campaign draft not found.');
+        }
+        if ($current->isConfirmed()) {
+            throw new RuntimeException('Confirmed campaign drafts are immutable.');
         }
         if ($current->version !== $expectedVersion) {
             throw new CampaignDraftConflict($current);
@@ -90,6 +99,42 @@ final class CampaignDraftStore
 
         $this->write($this->target($next->id), $next);
         return $next;
+    }
+
+    public function confirm(string $id, int $expectedVersion, string $campaignId, ?DateTimeImmutable $now = null): CampaignDraft
+    {
+        $current = $this->find($id);
+        if ($current === null) {
+            throw new RuntimeException('Campaign draft not found.');
+        }
+        if ($current->isConfirmed()) {
+            return $current;
+        }
+        if ($current->version !== $expectedVersion) {
+            throw new CampaignDraftConflict($current);
+        }
+
+        $now ??= new DateTimeImmutable();
+        $confirmed = new CampaignDraft(
+            id: $current->id,
+            subject: $current->subject,
+            preheader: $current->preheader,
+            body: $current->body,
+            version: $current->version + 1,
+            createdAt: $current->createdAt,
+            updatedAt: $now,
+            createdBy: $current->createdBy,
+            sourceType: $current->sourceType,
+            sourceId: $current->sourceId,
+            sourceRevision: $current->sourceRevision,
+            sourceHash: $current->sourceHash,
+            sourceCreatedAt: $current->sourceCreatedAt,
+            confirmedCampaignId: $campaignId,
+            confirmedAt: $now,
+        );
+
+        $this->write($this->target($confirmed->id), $confirmed);
+        return $confirmed;
     }
 
     /** @return list<CampaignDraft> */
