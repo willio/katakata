@@ -7,6 +7,7 @@ namespace Katakata\Import;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
+use UnexpectedValueException;
 
 final class DirectoryDocumentImporter
 {
@@ -25,6 +26,9 @@ final class DirectoryDocumentImporter
     ): array {
         if (!is_dir($directory)) {
             throw new RuntimeException("Import directory not found [{$directory}].");
+        }
+        if (!is_readable($directory)) {
+            throw new RuntimeException("Import directory is not readable [{$directory}].");
         }
 
         $files = $recursive
@@ -73,8 +77,13 @@ final class DirectoryDocumentImporter
     /** @return list<string> */
     private function directFiles(string $directory): array
     {
+        $items = @scandir($directory);
+        if (!is_array($items)) {
+            throw new RuntimeException("Unable to read import directory [{$directory}].");
+        }
+
         $files = [];
-        foreach (scandir($directory) ?: [] as $item) {
+        foreach ($items as $item) {
             if ($item === '.' || $item === '..') {
                 continue;
             }
@@ -90,11 +99,16 @@ final class DirectoryDocumentImporter
     /** @return list<string> */
     private function recursiveFiles(string $directory): array
     {
+        try {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::LEAVES_ONLY,
+            );
+        } catch (UnexpectedValueException $error) {
+            throw new RuntimeException("Unable to read import directory [{$directory}].", 0, $error);
+        }
+
         $files = [];
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::LEAVES_ONLY,
-        );
         foreach ($iterator as $file) {
             if ($file->isFile()) {
                 $files[] = $file->getPathname();
