@@ -16,6 +16,41 @@
     font-weight: 700;
 }
 
+.mail-sidebar .eyebrow {
+    margin: 0 0 .35rem;
+    color: var(--ink-muted);
+    font: 600 .62rem/1.2 var(--font-sans);
+    letter-spacing: .1em;
+    opacity: .72;
+}
+
+.mail-panel-header-title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.mail-panel-header-title-row h1 { margin: 0; }
+
+.mail-refresh-button {
+    padding: .4rem .65rem;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
+    color: var(--ink-muted);
+    font: 600 .7rem/1 var(--font-sans);
+}
+
+.mail-refresh-button:hover,
+.mail-refresh-button:focus-visible { border-color: var(--accent); color: var(--ink); }
+
+.mail-refresh-notice {
+    margin: 0 0 1.25rem;
+    color: var(--ink-muted);
+    font: .76rem/1.45 var(--font-sans);
+}
+
 .mail-compose-shell {
     width: min(100% - 2rem, 58rem);
 }
@@ -122,6 +157,8 @@
 }
 
 @media (max-width: 42rem) {
+    .mail-panel-header-title-row { align-items: flex-start; }
+
     .mail-account-nav {
         margin-left: .4rem;
         padding-left: .6rem;

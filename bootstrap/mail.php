@@ -16,6 +16,7 @@ use Katakata\Email\Mailbox;
 use Katakata\Email\MailboxAccountStore;
 use Katakata\Email\MailboxCredentialResolver;
 use Katakata\Email\MailboxProvider;
+use Katakata\Email\MailboxRefreshRequest;
 use Katakata\Email\MailboxSyncCoordinator;
 use Katakata\Email\OutboundMailProvider;
 use Katakata\Email\Providers\AccountCachedMailboxProvider;
@@ -57,6 +58,13 @@ $app->singleton(
         $container->make(MailboxAccountStore::class),
         $container->make(MailboxCredentialResolver::class),
         $container->storagePath('mail/cache'),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
+    MailboxRefreshRequest::class,
+    static fn (Application $container): MailboxRefreshRequest => new MailboxRefreshRequest(
+        $container->storagePath('mail/refresh-request.json'),
         $container->make(AtomicFile::class),
     ),
 );

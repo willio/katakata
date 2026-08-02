@@ -6,6 +6,7 @@ use Katakata\Auth\Session;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Email\DraftStore;
 use Katakata\Email\Mailbox;
+use Katakata\Email\MailboxRefreshRequest;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\Mail\CampaignDispatcher;
@@ -73,8 +74,22 @@ $router->get('/mail', function (Request $request) use ($app, $authorizeMail): Re
         'audience' => $workspace->recipientPreview(),
         'campaign' => $workspace->campaignPreview($request->query['post'] ?? ''),
         'newsletterReady' => !($app->make(SubscriberStore::class) instanceof \Katakata\Distribution\UnavailableSubscriberStore),
+        'refreshRequested' => $area === 'inbox' && ($request->query['refresh'] ?? '') === 'requested',
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
+});
+
+$router->post('/mail/refresh', function (Request $request) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
+    }
+    if (!$app->make(Session::class)->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::html('Invalid CSRF token.', 419);
+    }
+
+    $app->make(MailboxRefreshRequest::class)->request();
+    return Response::redirect('/mail?area=inbox&refresh=requested', 303);
 });
 
 $router->get('/mail/campaign-drafts/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {

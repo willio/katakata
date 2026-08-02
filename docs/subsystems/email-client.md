@@ -72,6 +72,10 @@ The web request path must never:
 - mutate the remote mailbox;
 - block dashboard, publishing, or campaign work when synchronization is unavailable.
 
+The Inbox **Get new mail** action records one private request for the next
+scheduled worker run. It does not open an IMAP connection itself, and repeated
+requests coalesce into one marker.
+
 ## Cache and MIME policy
 
 The scheduled synchronizer stores only message identity, selected headers, extracted plain text, and receipt time. It deliberately excludes:

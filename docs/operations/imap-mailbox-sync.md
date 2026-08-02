@@ -51,6 +51,14 @@ Run the job outside request handling. A five-minute cron example is:
 
 Use the deployment's actual PHP binary and project path. Ensure the scheduler user can read the secret-manager environment and write `storage/mail/cache`.
 
+## Requested refreshes
+
+The Inbox **Get new mail** action does not connect to IMAP. It writes one
+private, coalesced refresh request for the next scheduled worker run, then
+reports that the refresh was requested. The next run consumes that marker as it
+begins its normal sync. Repeated clicks do not create a queue or extra IMAP
+connections.
+
 ## Readiness states
 
 - `Ready`: TLS transport is available and the private cache has a successful synchronization state.
@@ -87,6 +95,7 @@ Operational files include:
 storage/mail/cache/index.json
 storage/mail/cache/state.json
 storage/mail/cache/messages/*.json
+storage/mail/refresh-request.json
 ```
 
 Files are written with mode `0600` where supported and must remain outside Git and the public document root. Legacy attachment cache directories are removed during synchronization.

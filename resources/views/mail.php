@@ -12,6 +12,7 @@
 /** @var array{count:int,recipients:list<array{email:string,confirmed_at:?string}>} $audience */
 /** @var array{post:array{slug:string,title:string,published_at:string,author:?string,excerpt:?string,url:string},recipient_count:int}|null $campaign */
 /** @var bool $newsletterReady */
+/** @var bool $refreshRequested */
 /** @var string $csrf */
 /** @var string $composeError */
 
@@ -89,9 +90,19 @@ foreach ($accountStates as $accountState) {
     <section class="mail-list-panel" aria-labelledby="mail-list-title">
         <header class="mail-panel-header">
             <p class="eyebrow">Editorial correspondence</p>
-            <h1 id="mail-list-title"><?= $area === 'inbox' ? e($selectedAccount === 'all' ? 'Inbox' : $selectedLabel) : 'Campaigns' ?></h1>
+            <div class="mail-panel-header-title-row">
+                <h1 id="mail-list-title"><?= $area === 'inbox' ? e($selectedAccount === 'all' ? 'Inbox' : $selectedLabel) : 'Campaigns' ?></h1>
+                <?php if ($area === 'inbox'): ?>
+                    <form method="post" action="/mail/refresh">
+                        <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                        <button class="mail-refresh-button" type="submit">Get new mail</button>
+                    </form>
+                <?php endif; ?>
+            </div>
             <p><?= e($attention['detail']) ?></p>
         </header>
+
+        <?php if ($refreshRequested): ?><p class="mail-refresh-notice" role="status">Refresh requested. New mail appears after the server’s next scheduled check.</p><?php endif; ?>
 
         <?php if (!in_array($mailboxReadiness['status'], ['ready', 'disabled'], true)): ?>
             <section class="mail-readiness" role="status" aria-labelledby="mail-readiness-title">

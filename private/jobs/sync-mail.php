@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Katakata\Email\MailboxSyncCoordinator;
+use Katakata\Email\MailboxRefreshRequest;
 
 /** @var \Katakata\Application $app */
 $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
@@ -25,6 +26,7 @@ foreach (array_slice($argv, 1) as $argument) {
 }
 
 $coordinator = $app->make(MailboxSyncCoordinator::class);
+$app->make(MailboxRefreshRequest::class)->consume();
 
 try {
     $results = $accountId === null

@@ -82,6 +82,7 @@ final class MailRoleDispatchAuthorizationTest extends TestCase
         yield 'sent correspondence' => ['GET', '/mail/sent'];
         yield 'archive' => ['GET', '/mail/archive'];
         yield 'compose' => ['GET', '/mail/compose'];
+        yield 'request mailbox refresh' => ['POST', '/mail/refresh'];
         yield 'message detail' => ['GET', '/mail/messages/message-1'];
         yield 'account message detail' => ['GET', '/mail/messages/letters/message-1'];
         yield 'account archive message' => ['POST', '/mail/messages/letters/message-1/archive'];
