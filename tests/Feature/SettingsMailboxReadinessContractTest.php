@@ -54,9 +54,13 @@ final class SettingsMailboxReadinessContractTest extends TestCase
         self::assertStringContainsString('/dashboard/settings/mailboxes', $accountsView);
         self::assertStringContainsString('Username variable name', $accountsView);
         self::assertStringContainsString('Password variable name', $accountsView);
+        self::assertStringContainsString('$account->usernameSecret', $accountsView);
+        self::assertStringContainsString('$account->passwordSecret', $accountsView);
         self::assertStringContainsString('php private/jobs/sync-mail.php', $accountsView);
         self::assertStringContainsString('--account=&lt;id&gt;', $accountsView);
-        self::assertStringNotContainsString("\$account->username", $accountsView);
-        self::assertStringNotContainsString("\$account->password", $accountsView);
+        self::assertStringNotContainsString('name="username"', $accountsView);
+        self::assertStringNotContainsString('name="password"', $accountsView);
+        self::assertStringNotContainsString('$account->usernameValue', $accountsView);
+        self::assertStringNotContainsString('$account->passwordValue', $accountsView);
     }
 }
