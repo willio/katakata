@@ -1,0 +1,115 @@
+.posts-shell {
+    width: min(100% - 2rem, 72rem);
+}
+
+.posts-intro { margin-bottom: 1.5rem; }
+
+.posts-filters {
+    display: flex;
+    gap: .5rem;
+    overflow-x: auto;
+    margin: 0 0 1.75rem;
+    padding: 0 0 .5rem;
+    border-bottom: 1px solid var(--border);
+    scrollbar-width: thin;
+}
+
+.posts-filters a {
+    flex: 0 0 auto;
+    padding: .35rem .7rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: var(--ink-muted);
+    font: 600 .72rem/1.2 var(--font-sans);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.posts-filters a[aria-current="page"] {
+    border-color: var(--border);
+    color: var(--ink);
+}
+
+.posts-index {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.posts-index li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem 2rem;
+    align-items: baseline;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+}
+
+.posts-index-main {
+    display: grid;
+    gap: .2rem;
+    min-width: 0;
+}
+
+.posts-index-title {
+    color: var(--ink);
+    font: 600 1rem/1.3 var(--font-sans);
+    overflow-wrap: anywhere;
+    text-decoration: none;
+}
+
+.posts-index-title:hover,
+.posts-index-title:focus-visible { color: var(--accent); }
+
+.posts-index-meta,
+.posts-index time {
+    color: var(--ink-muted);
+    font: .72rem/1.4 var(--font-sans);
+}
+
+.posts-index time { white-space: nowrap; }
+.posts-empty { margin-top: 2rem; }
+
+@media (max-width: 42rem) {
+    .owner-header {
+        align-items: center;
+        gap: .75rem;
+    }
+
+    .owner-header nav {
+        align-items: center;
+        flex-direction: row;
+        gap: .5rem;
+    }
+
+    .owner-header nav a {
+        flex: 0 0 auto;
+        padding-inline: .75rem;
+        white-space: nowrap;
+    }
+
+    .posts-shell { width: min(100% - 1rem, 72rem); }
+
+    .posts-index li {
+        grid-template-columns: minmax(0, 1fr);
+        gap: .25rem;
+        padding: .9rem 0;
+    }
+
+    .posts-index time {
+        grid-column: 1;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 20rem) {
+    .owner-header {
+        width: calc(100% - .75rem);
+        padding-block: .7rem;
+    }
+
+    .owner-header .site-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .owner-header nav { gap: .35rem; }
+    .owner-header nav a { padding: .45em .6em; font-size: .72rem; }
+    .posts-shell { width: calc(100% - .75rem); }
+}
