@@ -123,7 +123,7 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
         $messages = [];
         foreach ($this->index()['messages'] as $id) {
             $message = $this->message((string) $id);
-            if ($message !== null && $this->archived($message->id) === $archived) {
+            if ($message !== null && $this->isArchived($message->id) === $archived) {
                 $messages[] = $message->summary();
             }
         }
@@ -169,7 +169,7 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
         @chmod($this->path . '/state.json', 0600);
     }
 
-    private function archived(string $id): bool
+    private function isArchived(string $id): bool
     {
         return in_array($id, $this->state()['archived'], true);
     }
