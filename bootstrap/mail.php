@@ -20,6 +20,7 @@ use Katakata\Email\NativeImapMailboxSource;
 use Katakata\Email\OutboundMailProvider;
 use Katakata\Email\Providers\CachedMailboxProvider;
 use Katakata\Email\Providers\UnavailableOutboundMailProvider;
+use Katakata\Email\SentMessageStore;
 use Katakata\Mail\CampaignDispatcher;
 use Katakata\Mail\CampaignDraftFactory;
 use Katakata\Mail\CampaignDraftReviewer;
@@ -71,10 +72,18 @@ $app->singleton(
     static fn (): OutboundMailProvider => new UnavailableOutboundMailProvider(),
 );
 $app->singleton(
+    SentMessageStore::class,
+    static fn (Application $container): SentMessageStore => new SentMessageStore(
+        $container->storagePath('mail/sent'),
+        $container->make(AtomicFile::class),
+    ),
+);
+$app->singleton(
     DraftSender::class,
     static fn (Application $container): DraftSender => new DraftSender(
         $container->make(DraftStore::class),
         $container->make(OutboundMailProvider::class),
+        $container->make(SentMessageStore::class),
     ),
 );
 $app->singleton(
