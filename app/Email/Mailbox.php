@@ -15,6 +15,15 @@ final class Mailbox
         return $this->provider->inbox(max(1, $limit));
     }
 
+    public function archived(int $limit = 50): array
+    {
+        if (!$this->provider instanceof ArchivedMailboxProvider) {
+            return [];
+        }
+
+        return $this->provider->archived(max(1, $limit));
+    }
+
     public function unreadCount(): int
     {
         return $this->provider->unreadCount();
