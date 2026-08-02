@@ -33,12 +33,9 @@
         void select(link);
     }));
 
-    const initial = links.find((link) => link.getAttribute('aria-current') === 'page');
-    if (initial) void select(initial, false);
-
     window.addEventListener('popstate', () => {
         const url = new URL(window.location.href);
-        const account = url.searchParams.get('account');
+        const account = url.searchParams.get('message_account');
         const message = url.searchParams.get('message');
         const match = links.find((link) => link.dataset.account === account && link.dataset.message === message);
         if (match) void select(match, false);
