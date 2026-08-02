@@ -49,17 +49,15 @@ $router->post('/dashboard/settings/mailboxes/import', function (Request $request
         return Response::html('Invalid CSRF token.', 419);
     }
 
-    $upload = $_FILES['profile'] ?? null;
-    if (!is_array($upload) || (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+    $upload = $request->file('profile');
+    if ($upload === null || !$upload->valid()) {
         return $renderMailboxImport($user, error: 'Choose a valid .mobileconfig or XML plist file.');
     }
-    $size = (int) ($upload['size'] ?? 0);
-    if ($size < 1 || $size > 262144) {
+    if ($upload->size > 262144) {
         return $renderMailboxImport($user, error: 'Configuration profile must be 256 KiB or smaller.');
     }
-    $temporary = (string) ($upload['tmp_name'] ?? '');
-    $contents = $temporary !== '' && is_uploaded_file($temporary) ? file_get_contents($temporary) : false;
-    if (!is_string($contents)) {
+    $contents = $upload->contents();
+    if ($contents === null) {
         return $renderMailboxImport($user, error: 'Unable to read the uploaded configuration profile.');
     }
 
