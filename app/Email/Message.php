@@ -36,6 +36,8 @@ final readonly class Message
             sourceAccountId: $this->sourceAccountId,
             sourceLabel: $this->sourceLabel,
             sourceMessageId: $this->sourceMessageId,
+            text: $this->text,
+            to: $this->to,
         );
     }
 }
