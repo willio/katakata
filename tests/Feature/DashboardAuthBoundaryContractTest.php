@@ -16,7 +16,7 @@ final class DashboardAuthBoundaryContractTest extends TestCase
         self::assertStringContainsString('array_slice($recentVisits, 0, 5)', $view);
         self::assertStringContainsString('>View analytics<', $view);
         self::assertStringContainsString('if ($buzz !== null)', $view);
-        self::assertStringNotContainsString("$user['email']", $view);
+        self::assertStringNotContainsString('$user[\'email\']', $view);
         self::assertStringNotContainsString('analytics:check', $view);
         self::assertStringContainsString('/assets/css/boundary.css', $view);
     }
