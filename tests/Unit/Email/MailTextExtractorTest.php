@@ -39,4 +39,19 @@ final class MailTextExtractorTest extends TestCase
         self::assertSame('Visible text', $message['text']);
         self::assertStringNotContainsString('SECRET', $message['text']);
     }
+
+    public function testItRecursesIntoMultipartAlternativeInsideMixedEnvelope(): void
+    {
+        $raw = "From: reader@example.test\r\nSubject: Nested\r\n"
+            . "Content-Type: multipart/mixed; boundary=outer\r\n\r\n"
+            . "--outer\r\nContent-Type: multipart/alternative; boundary=inner\r\n\r\n"
+            . "--inner\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nVisible=20text\r\n"
+            . "--inner\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<p>Visible text</p>\r\n--inner--\r\n"
+            . "--outer\r\nContent-Type: application/pdf\r\nContent-Disposition: attachment; filename=file.pdf\r\n\r\nSECRET\r\n--outer--\r\n";
+
+        $message = (new MailTextExtractor())->extract($raw);
+
+        self::assertSame('Visible text', $message['text']);
+        self::assertStringNotContainsString('SECRET', $message['text']);
+    }
 }
