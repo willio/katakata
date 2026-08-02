@@ -19,6 +19,7 @@ $accountStates = array_values(array_filter(
     static fn (mixed $state): bool => is_array($state) && isset($state['account_id'], $state['label']),
 ));
 $selectedAccount = trim((string) ($_GET['account'] ?? 'all'));
+$selectedMessage = trim((string) ($_GET['message'] ?? ''));
 $knownAccounts = array_column($accountStates, 'account_id');
 if ($selectedAccount !== 'all' && !in_array($selectedAccount, $knownAccounts, true)) {
     $selectedAccount = 'all';
@@ -50,10 +51,7 @@ foreach ($accountStates as $accountState) {
 <body class="dashboard-page mail-page">
 <header class="dashboard-header">
     <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
-    <nav aria-label="Mail actions">
-        <a class="button" href="/mail/compose">Compose</a>
-        <a href="/dashboard/settings">Settings</a>
-    </nav>
+    <nav aria-label="Mail actions"><a class="button" href="/mail/compose">Compose</a><a href="/dashboard/settings">Settings</a></nav>
 </header>
 <main class="mail-workspace-shell">
     <aside class="mail-sidebar" aria-label="Mail destinations">
@@ -65,10 +63,7 @@ foreach ($accountStates as $accountState) {
                     <a href="<?= $inboxQuery('all') ?>"<?= $selectedAccount === 'all' ? ' aria-current="page"' : '' ?>>All accounts</a>
                     <?php foreach ($accountStates as $accountState): ?>
                         <?php $accountStatus = (string) ($accountState['status'] ?? 'needs_setup'); ?>
-                        <a href="<?= $inboxQuery((string) $accountState['account_id']) ?>"<?= $selectedAccount === $accountState['account_id'] ? ' aria-current="page"' : '' ?>>
-                            <?= e((string) $accountState['label']) ?>
-                            <?php if ($accountStatus !== 'ready'): ?><span class="quiet"> · <?= $accountStatus === 'error' ? 'Needs attention' : 'Needs setup' ?></span><?php endif; ?>
-                        </a>
+                        <a href="<?= $inboxQuery((string) $accountState['account_id']) ?>"<?= $selectedAccount === $accountState['account_id'] ? ' aria-current="page"' : '' ?>><?= e((string) $accountState['label']) ?><?php if ($accountStatus !== 'ready'): ?><span class="quiet"> · <?= $accountStatus === 'error' ? 'Needs attention' : 'Needs setup' ?></span><?php endif; ?></a>
                     <?php endforeach; ?>
                 </nav>
             <?php endif; ?>
@@ -89,29 +84,18 @@ foreach ($accountStates as $accountState) {
         <header class="mail-panel-header">
             <div class="mail-panel-header-title-row">
                 <h1 id="mail-list-title"><?= $area === 'inbox' ? e($selectedAccount === 'all' ? 'Inbox' : $selectedLabel) : 'Campaigns' ?></h1>
-                <?php if ($area === 'inbox'): ?>
-                    <form method="post" action="/mail/refresh">
-                        <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                        <button class="mail-refresh-button" type="submit">Get new mail</button>
-                    </form>
-                <?php endif; ?>
+                <?php if ($area === 'inbox'): ?><form method="post" action="/mail/refresh"><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><button class="mail-refresh-button" type="submit">Get new mail</button></form><?php endif; ?>
             </div>
             <p><?= e($attention['detail']) ?></p>
         </header>
 
         <?php if ($refreshRequested): ?><p class="mail-refresh-notice" role="status">Refresh requested. New mail appears after the server’s next scheduled check.</p><?php endif; ?>
-
         <?php if (!in_array($mailboxReadiness['status'], ['ready', 'disabled'], true)): ?>
-            <section class="mail-readiness" role="status" aria-labelledby="mail-readiness-title">
-                <h2 id="mail-readiness-title"><?= $mailboxReadiness['status'] === 'partial' ? 'Inbox partially available' : 'Inbox needs setup' ?></h2>
-                <p><?= e((string) ($mailboxReadiness['reason'] ?? 'Configure at least one deployment mailbox to enable reader correspondence.')) ?></p>
-                <p class="quiet">Healthy account caches remain available. Inbox credentials are deployment-only and are never shown here.</p>
-            </section>
+            <section class="mail-readiness" role="status" aria-labelledby="mail-readiness-title"><h2 id="mail-readiness-title"><?= $mailboxReadiness['status'] === 'partial' ? 'Inbox partially available' : 'Inbox needs setup' ?></h2><p><?= e((string) ($mailboxReadiness['reason'] ?? 'Configure at least one deployment mailbox to enable reader correspondence.')) ?></p><p class="quiet">Healthy account caches remain available. Inbox credentials are deployment-only and are never shown here.</p></section>
         <?php endif; ?>
 
         <?php if ($area === 'inbox'): ?>
-            <section aria-labelledby="mail-inbox">
-                <h2 id="mail-inbox"><?= $selectedAccount === 'all' ? 'All accounts' : e($selectedLabel) ?></h2>
+            <section aria-label="Messages">
                 <?php if ($mailboxReadiness['status'] === 'disabled'): ?>
                     <p class="quiet">No mailbox account is enabled.</p>
                 <?php elseif ($messages === []): ?>
@@ -119,7 +103,12 @@ foreach ($accountStates as $accountState) {
                 <?php else: ?>
                     <ol class="mail-item-list">
                         <?php foreach ($messages as $message): ?>
-                            <li><a href="/mail/messages/<?= rawurlencode($message->sourceAccountId) ?>/<?= rawurlencode($message->sourceMessageId) ?>"><strong><?= e($message->subject) ?></strong><span><?= e($message->from) ?> · <?= e($message->sourceLabel) ?><?= $message->unread ? ' · Unread' : '' ?></span><time datetime="<?= e($message->receivedAt->format(DATE_ATOM)) ?>"><?= e($message->receivedAt->format('M j, H:i')) ?></time></a></li>
+                            <?php
+                            $messageHref = '/mail?area=inbox&account=' . rawurlencode((string) $message->sourceAccountId) . '&message=' . rawurlencode((string) $message->sourceMessageId);
+                            $detailUrl = '/mail/messages/' . rawurlencode((string) $message->sourceAccountId) . '/' . rawurlencode((string) $message->sourceMessageId) . '?fragment=1';
+                            $isSelected = $selectedAccount === $message->sourceAccountId && $selectedMessage === $message->sourceMessageId;
+                            ?>
+                            <li><a href="<?= e($messageHref) ?>" data-mail-message-link data-detail-url="<?= e($detailUrl) ?>" data-account="<?= e((string) $message->sourceAccountId) ?>" data-message="<?= e((string) $message->sourceMessageId) ?>"<?= $isSelected ? ' aria-current="page"' : '' ?>><strong><?= e($message->subject) ?></strong><span><?= e($message->from) ?> · <?= e((string) $message->sourceLabel) ?><?= $message->unread ? ' · Unread' : '' ?></span><time datetime="<?= e($message->receivedAt->format(DATE_ATOM)) ?>"><?= e($message->receivedAt->format('M j, H:i')) ?></time></a></li>
                         <?php endforeach; ?>
                     </ol>
                 <?php endif; ?>
@@ -127,54 +116,31 @@ foreach ($accountStates as $accountState) {
 
             <section id="mail-drafts" aria-labelledby="mail-drafts-title">
                 <h2 id="mail-drafts-title">Draft replies</h2>
-                <?php if ($drafts === []): ?>
-                    <p class="quiet">No saved correspondence drafts.</p>
-                <?php else: ?>
-                    <ol class="mail-item-list">
-                        <?php foreach ($drafts as $draft): ?>
-                            <li><a href="/mail/drafts/<?= rawurlencode($draft->id) ?>/edit"><strong><?= e($draft->subject !== '' ? $draft->subject : 'Untitled draft') ?></strong><span><?= e($draft->to !== '' ? $draft->to : 'No recipient') ?></span><time datetime="<?= e($draft->updatedAt->format(DATE_ATOM)) ?>"><?= e($draft->updatedAt->format('M j, H:i')) ?></time></a></li>
-                        <?php endforeach; ?>
-                    </ol>
+                <?php if ($drafts === []): ?><p class="quiet">No saved correspondence drafts.</p><?php else: ?>
+                    <ol class="mail-item-list"><?php foreach ($drafts as $draft): ?><li><a href="/mail/drafts/<?= rawurlencode($draft->id) ?>/edit"><strong><?= e($draft->subject !== '' ? $draft->subject : 'Untitled draft') ?></strong><span><?= e($draft->to !== '' ? $draft->to : 'No recipient') ?></span><time datetime="<?= e($draft->updatedAt->format(DATE_ATOM)) ?>"><?= e($draft->updatedAt->format('M j, H:i')) ?></time></a></li><?php endforeach; ?></ol>
                 <?php endif; ?>
             </section>
         <?php else: ?>
-            <?php if (!$newsletterReady): ?>
-                <section class="mail-readiness" role="status"><h2>Newsletter needs setup</h2><p>Configure NEWSLETTER_SECRET or APP_KEY before subscriptions and campaign dispatch are available.</p></section>
-            <?php endif; ?>
+            <?php if (!$newsletterReady): ?><section class="mail-readiness" role="status"><h2>Newsletter needs setup</h2><p>Configure NEWSLETTER_SECRET or APP_KEY before subscriptions and campaign dispatch are available.</p></section><?php endif; ?>
             <section id="campaign-drafts" aria-labelledby="campaign-drafts-title">
                 <h2 id="campaign-drafts-title">Draft campaigns</h2>
-                <?php if ($campaignDrafts === []): ?><p class="quiet">No campaign drafts yet.</p><?php else: ?>
-                    <ol class="mail-item-list">
-                        <?php foreach ($campaignDrafts as $draft): ?>
-                            <li><a href="/mail/campaign-drafts/<?= rawurlencode($draft->id) ?>"><strong><?= e($draft->subject !== '' ? $draft->subject : 'Untitled campaign') ?></strong><span><?= e($draft->sourceType === 'post' ? 'From post ' . (string) $draft->sourceId : 'Campaign draft') ?></span><time datetime="<?= e($draft->updatedAt->format(DATE_ATOM)) ?>"><?= e($draft->updatedAt->format('M j, H:i')) ?></time></a></li>
-                        <?php endforeach; ?>
-                    </ol>
-                <?php endif; ?>
+                <?php if ($campaignDrafts === []): ?><p class="quiet">No campaign drafts yet.</p><?php else: ?><ol class="mail-item-list"><?php foreach ($campaignDrafts as $draft): ?><li><a href="/mail/campaign-drafts/<?= rawurlencode($draft->id) ?>"><strong><?= e($draft->subject !== '' ? $draft->subject : 'Untitled campaign') ?></strong><span><?= e($draft->sourceType === 'post' ? 'From post ' . (string) $draft->sourceId : 'Campaign draft') ?></span><time datetime="<?= e($draft->updatedAt->format(DATE_ATOM)) ?>"><?= e($draft->updatedAt->format('M j, H:i')) ?></time></a></li><?php endforeach; ?></ol><?php endif; ?>
             </section>
-            <section aria-labelledby="mail-review-queue"><h2 id="mail-review-queue">Newsletter review</h2>
-                <?php if ($queue === []): ?><p class="quiet">No newsletter candidates.</p><?php else: ?>
-                    <ol class="mail-item-list"><?php foreach ($queue as $candidate): ?><li><a href="/mail?area=campaigns&amp;post=<?= rawurlencode($candidate['slug']) ?>"><strong><?= e($candidate['title']) ?></strong><span><?= e((string) ($candidate['author'] ?? '—')) ?></span><time datetime="<?= e($candidate['published_at']) ?>"><?= e((new DateTimeImmutable($candidate['published_at']))->format('M j, Y')) ?></time></a></li><?php endforeach; ?></ol>
-                <?php endif; ?>
-            </section>
+            <section aria-labelledby="mail-review-queue"><h2 id="mail-review-queue">Newsletter review</h2><?php if ($queue === []): ?><p class="quiet">No newsletter candidates.</p><?php else: ?><ol class="mail-item-list"><?php foreach ($queue as $candidate): ?><li><a href="/mail?area=campaigns&amp;post=<?= rawurlencode($candidate['slug']) ?>"><strong><?= e($candidate['title']) ?></strong><span><?= e((string) ($candidate['author'] ?? '—')) ?></span><time datetime="<?= e($candidate['published_at']) ?>"><?= e((new DateTimeImmutable($candidate['published_at']))->format('M j, Y')) ?></time></a></li><?php endforeach; ?></ol><?php endif; ?></section>
         <?php endif; ?>
     </section>
 
-    <section class="mail-detail-panel" aria-labelledby="mail-detail-title">
+    <section class="mail-detail-panel" aria-live="polite">
         <?php if ($area === 'campaigns'): ?>
             <header class="mail-panel-header"><h2 id="mail-detail-title">Campaign detail</h2></header>
             <section><h3>Audience now</h3><p><strong><?= $audience['count'] ?></strong> confirmed <?= $audience['count'] === 1 ? 'recipient' : 'recipients' ?></p><p class="quiet">This count is informational only. The recipient set is snapshotted when a reviewed campaign is confirmed and queued.</p></section>
-            <section><h3>Selected candidate</h3>
-                <?php if ($campaign === null): ?><p class="quiet">Select a campaign draft or newsletter candidate from the center list.</p><?php else: ?>
-                    <article><h3><?= e($campaign['post']['title']) ?></h3><?php if ($campaign['post']['excerpt']): ?><p><?= e($campaign['post']['excerpt']) ?></p><?php endif; ?><div class="form-actions"><a href="<?= e($campaign['post']['url']) ?>">View post</a><?php if ($newsletterReady): ?><a class="button" href="/mail/confirm?post=<?= rawurlencode($campaign['post']['slug']) ?>">Review dispatch proof</a><?php endif; ?></div></article>
-                <?php endif; ?>
-            </section>
+            <section><h3>Selected candidate</h3><?php if ($campaign === null): ?><p class="quiet">Select a campaign draft or newsletter candidate from the center list.</p><?php else: ?><article><h3><?= e($campaign['post']['title']) ?></h3><?php if ($campaign['post']['excerpt']): ?><p><?= e($campaign['post']['excerpt']) ?></p><?php endif; ?><div class="form-actions"><a href="<?= e($campaign['post']['url']) ?>">View post</a><?php if ($newsletterReady): ?><a class="button" href="/mail/confirm?post=<?= rawurlencode($campaign['post']['slug']) ?>">Review dispatch proof</a><?php endif; ?></div></article><?php endif; ?></section>
         <?php else: ?>
-            <header class="mail-panel-header"><h2 id="mail-detail-title">Select a message</h2></header>
-            <p class="quiet">Choose a message from the center list.</p>
+            <div data-mail-reader><p class="quiet">Select a message.</p></div>
         <?php endif; ?>
-
         <form class="form-actions" method="post" action="/logout"><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><button type="submit">Sign out</button></form>
     </section>
 </main>
+<script src="/assets/js/mail-reader.js" defer></script>
 </body>
 </html>
