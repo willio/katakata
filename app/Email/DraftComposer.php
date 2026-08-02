@@ -26,10 +26,11 @@ final class DraftComposer
             subject: trim($subject),
             text: $text,
             inReplyTo: $inReplyTo,
+            version: 1,
+            createdAt: $now,
             updatedAt: $now,
         );
 
-        $this->drafts->save($draft);
-        return $draft;
+        return $this->drafts->create($draft);
     }
 }
