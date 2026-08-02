@@ -14,6 +14,8 @@ final readonly class Draft
         public string $subject,
         public string $text,
         public ?string $inReplyTo,
+        public int $version,
+        public DateTimeImmutable $createdAt,
         public DateTimeImmutable $updatedAt,
     ) {
     }
