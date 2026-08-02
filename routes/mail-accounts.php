@@ -49,11 +49,17 @@ $router->get('/mail/messages/{accountId}/{messageId}', function (
     if ($message === null) {
         return Response::notFound();
     }
-    return Response::html($app->make(View::class)->render('mail-message', [
+
+    $view = $app->make(View::class);
+    $data = [
         'message' => $message,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'csrf' => $app->make(Session::class)->csrf(),
-    ]));
+    ];
+    if (($request->query['fragment'] ?? '') === '1') {
+        return Response::html($view->render('mail-message-panel', $data));
+    }
+    return Response::html($view->render('mail-message', $data));
 });
 
 foreach (['read' => true, 'unread' => false] as $action => $read) {
@@ -74,10 +80,7 @@ foreach (['read' => true, 'unread' => false] as $action => $read) {
             return Response::notFound();
         }
         $app->make(Mailbox::class)->markRead($id, $read);
-        return Response::redirect(
-            '/mail/messages/' . rawurlencode($accountId) . '/' . rawurlencode($messageId),
-            303,
-        );
+        return Response::redirect('/mail?area=inbox&account=' . rawurlencode($accountId) . '&message=' . rawurlencode($messageId), 303);
     });
 }
 
@@ -145,5 +148,5 @@ $router->post('/mail/messages/{accountId}/{messageId}/reply', function (
             . str_replace("\n", "\n> ", trim($message->text)),
         $message->id,
     );
-    return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id), 303);
+    return Response::redirect('/mail/drafts/' . rawurlencode($draft->id) . '/edit', 303);
 });
