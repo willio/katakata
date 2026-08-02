@@ -50,24 +50,32 @@ final class MailWorkspaceNavigationContractTest extends TestCase
         self::assertStringContainsString('MailboxRefreshRequest::class', $routes);
     }
 
-    public function testWorkspaceDetailPanelIsReaderOnly(): void
+    public function testWorkspaceDetailPanelLoadsSelectedMessagesWithoutBecomingAComposer(): void
     {
         $workspace = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail.php');
-        $routes = file_get_contents(dirname(__DIR__, 2) . '/routes/campaign.php');
+        $routes = file_get_contents(dirname(__DIR__, 2) . '/routes/mail-accounts.php');
+        $reader = file_get_contents(dirname(__DIR__, 2) . '/public/assets/js/mail-reader.js');
+        $partial = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail-message-panel.php');
 
         self::assertIsString($workspace);
         self::assertIsString($routes);
+        self::assertIsString($reader);
+        self::assertIsString($partial);
         self::assertStringNotContainsString('selectedDraft', $workspace);
         self::assertStringNotContainsString('Compose mail</h2>', $workspace);
         self::assertStringNotContainsString('mail-compose-form', $workspace);
         self::assertStringContainsString('href="/mail/drafts/', $workspace);
         self::assertStringContainsString('/edit"', $workspace);
-        self::assertStringContainsString('Select a message', $workspace);
-        self::assertStringNotContainsString("'selectedDraft' =>", $routes);
-        self::assertStringNotContainsString("'composeError' =>", $routes);
+        self::assertStringContainsString('data-mail-message-link', $workspace);
+        self::assertStringContainsString('data-mail-reader', $workspace);
+        self::assertStringContainsString('/assets/js/mail-reader.js', $workspace);
+        self::assertStringContainsString("(\$request->query['fragment'] ?? '') === '1'", $routes);
+        self::assertStringContainsString("render('mail-message-panel'", $routes);
+        self::assertStringContainsString('history.pushState', $reader);
+        self::assertStringContainsString('data-mail-message-panel', $partial);
     }
 
-    public function testWorkspaceAvoidsRepeatedLocationEyebrows(): void
+    public function testWorkspaceAvoidsRepeatedLocationLabels(): void
     {
         $workspace = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail.php');
 
@@ -75,5 +83,7 @@ final class MailWorkspaceNavigationContractTest extends TestCase
         self::assertStringNotContainsString('<p class="eyebrow">Editorial correspondence</p>', $workspace);
         self::assertStringNotContainsString('<p class="eyebrow">Reader mail</p>', $workspace);
         self::assertStringNotContainsString('<p class="eyebrow">Correspondence</p>', $workspace);
+        self::assertSame(1, substr_count($workspace, 'Select a message.'));
+        self::assertStringNotContainsString('<h2 id="mail-inbox">All accounts</h2>', $workspace);
     }
 }
