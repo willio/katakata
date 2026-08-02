@@ -11,10 +11,11 @@ use Katakata\Email\DraftComposer;
 use Katakata\Email\DraftSender;
 use Katakata\Email\DraftStore;
 use Katakata\Email\FileDraftStore;
+use Katakata\Email\ImapSettings;
 use Katakata\Email\Mailbox;
 use Katakata\Email\MailboxProvider;
 use Katakata\Email\OutboundMailProvider;
-use Katakata\Email\Providers\UnavailableMailboxProvider;
+use Katakata\Email\Providers\CachedMailboxProvider;
 use Katakata\Email\Providers\UnavailableOutboundMailProvider;
 use Katakata\Mail\CampaignDispatcher;
 use Katakata\Mail\CampaignDraftFactory;
@@ -29,7 +30,14 @@ use Katakata\Rendering\Markdown;
 
 /** @var Application $app */
 
-$app->singleton(MailboxProvider::class, static fn (): MailboxProvider => new UnavailableMailboxProvider());
+$app->singleton(ImapSettings::class, static fn (): ImapSettings => ImapSettings::fromEnvironment());
+$app->singleton(
+    MailboxProvider::class,
+    static fn (Application $container): MailboxProvider => new CachedMailboxProvider(
+        $container->storagePath('mail/cache'),
+        $container->make(AtomicFile::class),
+    ),
+);
 $app->singleton(
     Mailbox::class,
     static fn (Application $container): Mailbox => new Mailbox($container->make(MailboxProvider::class)),
