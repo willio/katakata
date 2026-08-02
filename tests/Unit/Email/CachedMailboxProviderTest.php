@@ -70,6 +70,28 @@ final class CachedMailboxProviderTest extends TestCase
         self::assertSame($before, file_get_contents($this->root . '/messages/message-1.json'));
     }
 
+    public function testLocalDeleteRemovesCachedContentAndPreventsImmediateResyncVisibility(): void
+    {
+        $provider = new CachedMailboxProvider($this->root, new AtomicFile());
+        $provider->markRead('message-1', true);
+        $provider->archive('message-1');
+
+        $provider->deleteLocal('message-1');
+
+        self::assertNull($provider->message('message-1'));
+        self::assertFileDoesNotExist($this->root . '/messages/message-1.json');
+        self::assertSame([], $provider->inbox());
+        self::assertSame([], $provider->archived());
+
+        $index = json_decode((string) file_get_contents($this->root . '/index.json'), true, 512, JSON_THROW_ON_ERROR);
+        $state = json_decode((string) file_get_contents($this->root . '/state.json'), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame([], $index['messages']);
+        self::assertSame([], $state['read']);
+        self::assertSame([], $state['archived']);
+        self::assertArrayHasKey('message-1', $state['deleted']);
+        self::assertSame(0600, fileperms($this->root . '/state.json') & 0777);
+    }
+
     private function remove(string $path): void
     {
         if (!is_dir($path)) {
