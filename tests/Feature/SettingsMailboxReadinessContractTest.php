@@ -35,4 +35,22 @@ final class SettingsMailboxReadinessContractTest extends TestCase
         self::assertStringContainsString("'status' => 'Ready'", $routes);
         self::assertStringContainsString("'last_synced_at' => \$mailbox['last_synced_at']", $routes);
     }
+
+    public function testSettingsRenderNonSecretMailboxSetupAndSchedulerGuidance(): void
+    {
+        $view = file_get_contents(dirname(__DIR__, 2) . '/resources/views/dashboard-settings.php');
+
+        self::assertIsString($view);
+        self::assertStringContainsString('href="#mailbox"', $view);
+        self::assertStringContainsString('id="mailbox"', $view);
+        self::assertStringContainsString('Deployment variables required', $view);
+        self::assertStringContainsString('php private/jobs/sync-mail.php', $view);
+        self::assertStringContainsString('storage/mail/cache', $view);
+        self::assertStringContainsString("\$mailbox['host']", $view);
+        self::assertStringContainsString("\$mailbox['port']", $view);
+        self::assertStringContainsString("\$mailbox['encryption']", $view);
+        self::assertStringContainsString("\$mailbox['mailbox']", $view);
+        self::assertStringNotContainsString("\$mailbox['username']", $view);
+        self::assertStringNotContainsString("\$mailbox['password']", $view);
+    }
 }
