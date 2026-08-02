@@ -6,8 +6,9 @@ use Katakata\Auth\Session;
 use Katakata\Dashboard\DashboardSettings;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Distribution\UnavailableSubscriberStore;
-use Katakata\Email\ImapSettings;
 use Katakata\Email\Mailbox;
+use Katakata\Email\MailboxAccountStore;
+use Katakata\Email\MailboxCredentialResolver;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\View;
@@ -20,15 +21,12 @@ use Katakata\View;
 $authorizeSettings = static function () use ($app): array|Response {
     $session = $app->make(Session::class);
     $user = $session->user();
-
     if ($user === null) {
         return Response::redirect('/login', 302);
     }
-
     if (!$session->canManageSettings()) {
         return Response::html('Forbidden.', 403);
     }
-
     return $user;
 };
 
@@ -40,8 +38,41 @@ $readiness = static function () use ($app): array {
         && trim((string) $app->config()->get('threads.access_token', '')) !== '';
     $analyticsSecret = trim((string) $app->config()->get('analytics.secret', ''));
     $newsletterReady = !($app->make(SubscriberStore::class) instanceof UnavailableSubscriberStore);
-    $imap = $app->make(ImapSettings::class);
     $mailbox = $app->make(Mailbox::class)->readiness();
+    $accounts = $app->make(MailboxAccountStore::class)->all();
+    $credentials = $app->make(MailboxCredentialResolver::class);
+
+    $accountStates = [];
+    foreach ($accounts as $account) {
+        $state = null;
+        foreach ((array) ($mailbox['accounts'] ?? []) as $candidate) {
+            if (is_array($candidate) && ($candidate['account_id'] ?? null) === $account->id) {
+                $state = $candidate;
+                break;
+            }
+        }
+        $missing = $credentials->missing($account);
+        $accountStates[] = [
+            'account_id' => $account->id,
+            'label' => $account->label,
+            'host' => $account->host,
+            'port' => $account->port,
+            'encryption' => $account->encryption,
+            'mailbox' => $account->mailbox,
+            'username_secret' => $account->usernameSecret,
+            'password_secret' => $account->passwordSecret,
+            'enabled' => $account->enabled,
+            'configured' => $missing === [],
+            'missing' => $missing,
+            'status' => !$account->enabled ? 'disabled' : (string) ($state['status'] ?? ($missing === [] ? 'needs_setup' : 'needs_setup')),
+            'reason' => !$account->enabled
+                ? 'Mailbox account is disabled.'
+                : (string) ($state['reason'] ?? ($missing === []
+                    ? 'Run the scheduled mailbox synchronizer to populate this cache.'
+                    : 'Deployment credential variables are missing.')),
+            'last_synced_at' => $state['last_synced_at'] ?? null,
+        ];
+    }
 
     $discussionState = match ($provider) {
         'none' => ['status' => 'Disabled', 'detail' => 'Discussion is disabled.'],
@@ -52,43 +83,18 @@ $readiness = static function () use ($app): array {
         default => ['status' => 'Needs setup', 'detail' => 'The selected discussion provider is unavailable.'],
     };
 
-    $mailboxState = match (true) {
-        !$imap->transportAvailable() => [
-            'status' => 'Needs setup',
-            'detail' => 'TLS socket support is unavailable because OpenSSL is not enabled.',
-        ],
-        $mailbox['status'] === 'ready' => [
-            'status' => 'Ready',
-            'detail' => $mailbox['last_synced_at'] === null
-                ? 'The private mailbox cache is available.'
-                : 'Last synchronized ' . $mailbox['last_synced_at'] . '.',
-        ],
-        $mailbox['status'] === 'error' => [
-            'status' => 'Needs attention',
-            'detail' => (string) ($mailbox['reason'] ?? 'The last scheduled mailbox synchronization failed.'),
-        ],
-        default => [
-            'status' => 'Needs setup',
-            'detail' => $imap->configured()
-                ? 'Run and schedule private/jobs/sync-mail.php to populate the mailbox cache.'
-                : 'Configure direct-TLS IMAP deployment variables, then schedule private/jobs/sync-mail.php.',
-        ],
+    $mailboxState = match ((string) ($mailbox['status'] ?? 'disabled')) {
+        'ready' => ['status' => 'Ready', 'detail' => 'All enabled mailbox caches are available.'],
+        'partial' => ['status' => 'Partially available', 'detail' => 'Healthy mailbox caches remain available while another account needs attention.'],
+        'needs_setup' => ['status' => 'Needs setup', 'detail' => 'No enabled mailbox account has a usable cache yet.'],
+        default => ['status' => 'Disabled', 'detail' => 'No mailbox account is enabled.'],
     };
 
     return [
         'newsletter' => $newsletterReady
             ? ['status' => 'Ready', 'detail' => 'Newsletter secret and subscriber storage are available.']
             : ['status' => 'Needs setup', 'detail' => 'Configure NEWSLETTER_SECRET or APP_KEY.'],
-        'mailbox' => $mailboxState + [
-            'configured' => $imap->configured(),
-            'missing' => $imap->missing(),
-            'host' => $imap->host,
-            'port' => $imap->port,
-            'encryption' => $imap->encryption,
-            'mailbox' => $imap->mailbox,
-            'last_synced_at' => $mailbox['last_synced_at'],
-            'transport_available' => $imap->transportAvailable(),
-        ],
+        'mailbox' => $mailboxState + ['accounts' => $accountStates],
         'discussion' => $discussionState,
         'analytics' => $analyticsSecret !== ''
             ? ['status' => 'Ready', 'detail' => 'Privacy-bounded analytics hashing is configured.']
@@ -116,8 +122,7 @@ $router->get('/dashboard/settings', function (Request $request) use ($authorizeS
     if ($authorization instanceof Response) {
         return $authorization;
     }
-
-    return $renderSettings($authorization, ($request->query['saved'] ?? '') === '1', null);
+    return $renderSettings($authorization, ($request->query['saved'] ?? '') === '1', $request->query['error'] ?? null);
 });
 
 $router->post('/dashboard/settings', function (Request $request) use ($app, $authorizeSettings, $renderSettings): Response {
@@ -125,22 +130,18 @@ $router->post('/dashboard/settings', function (Request $request) use ($app, $aut
     if ($authorization instanceof Response) {
         return $authorization;
     }
-
     $session = $app->make(Session::class);
     if (!$session->validCsrf($request->body['csrf'] ?? null)) {
         return Response::html('Invalid CSRF token.', 419);
     }
-
     $section = trim((string) ($request->body['section'] ?? ''));
     if ($section === 'appearance') {
         return $renderSettings($authorization, false, 'Appearance settings are unavailable until the renderer applies themes.');
     }
-
     try {
         $app->make(DashboardSettings::class)->update($section, $request->body);
     } catch (\Throwable $error) {
         return $renderSettings($authorization, false, $error->getMessage());
     }
-
     return Response::redirect('/dashboard/settings?saved=1#' . rawurlencode($section), 303);
 });

@@ -14,6 +14,9 @@ final readonly class MessageSummary
         public string $subject,
         public DateTimeImmutable $receivedAt,
         public bool $unread = true,
+        public ?string $sourceAccountId = null,
+        public ?string $sourceLabel = null,
+        public ?string $sourceMessageId = null,
     ) {
     }
 }

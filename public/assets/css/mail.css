@@ -1,3 +1,21 @@
+.mail-account-nav {
+    display: grid;
+    gap: .15rem;
+    margin: .25rem 0 .65rem .75rem;
+    padding-left: .75rem;
+    border-left: 1px solid var(--border);
+}
+
+.mail-account-nav a {
+    display: block;
+    padding: .2rem 0;
+    font-size: .86rem;
+}
+
+.mail-account-nav a[aria-current="page"] {
+    font-weight: 700;
+}
+
 .mail-compose-shell {
     width: min(100% - 2rem, 58rem);
 }
@@ -104,6 +122,11 @@
 }
 
 @media (max-width: 42rem) {
+    .mail-account-nav {
+        margin-left: .4rem;
+        padding-left: .6rem;
+    }
+
     .mail-compose-shell {
         width: min(100% - 1rem, 58rem);
         margin-top: 2rem;

@@ -83,11 +83,23 @@ final class MailRoleDispatchAuthorizationTest extends TestCase
         yield 'archive' => ['GET', '/mail/archive'];
         yield 'compose' => ['GET', '/mail/compose'];
         yield 'message detail' => ['GET', '/mail/messages/message-1'];
+        yield 'account message detail' => ['GET', '/mail/messages/letters/message-1'];
+        yield 'account archive message' => ['POST', '/mail/messages/letters/message-1/archive'];
+        yield 'account delete message' => ['POST', '/mail/messages/letters/message-1/delete'];
         yield 'archive message' => ['POST', '/mail/messages/message-1/archive'];
         yield 'delete cached message' => ['POST', '/mail/messages/message-1/delete'];
         yield 'draft save' => ['POST', '/mail/drafts/draft-1'];
         yield 'campaign draft' => ['GET', '/mail/campaign-drafts/campaign-1'];
         yield 'campaign autosave' => ['POST', '/mail/campaign-drafts/campaign-1/autosave'];
+        yield 'mailbox settings' => ['GET', '/dashboard/settings/mailboxes'];
+        yield 'mailbox create' => ['POST', '/dashboard/settings/mailboxes'];
+        yield 'mailbox update' => ['POST', '/dashboard/settings/mailboxes/letters'];
+        yield 'mailbox enable' => ['POST', '/dashboard/settings/mailboxes/letters/enable'];
+        yield 'mailbox disable' => ['POST', '/dashboard/settings/mailboxes/letters/disable'];
+        yield 'mailbox delete' => ['POST', '/dashboard/settings/mailboxes/letters/delete'];
+        yield 'mailbox import form' => ['GET', '/dashboard/settings/mailboxes/import'];
+        yield 'mailbox import upload' => ['POST', '/dashboard/settings/mailboxes/import'];
+        yield 'mailbox import confirm' => ['POST', '/dashboard/settings/mailboxes/import/confirm'];
     }
 
     /** @param array<string, mixed> $account */
@@ -107,7 +119,10 @@ final class MailRoleDispatchAuthorizationTest extends TestCase
 
         (static function () use ($app, $router): void {
             require dirname(__DIR__, 2) . '/routes/campaign.php';
+            require dirname(__DIR__, 2) . '/routes/mail-accounts.php';
             require dirname(__DIR__, 2) . '/routes/mail.php';
+            require dirname(__DIR__, 2) . '/routes/settings-mailboxes.php';
+            require dirname(__DIR__, 2) . '/routes/settings-mailbox-import.php';
         })();
 
         return $router;

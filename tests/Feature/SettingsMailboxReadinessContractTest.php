@@ -8,52 +8,59 @@ use PHPUnit\Framework\TestCase;
 
 final class SettingsMailboxReadinessContractTest extends TestCase
 {
-    public function testSettingsDeriveMailboxReadinessFromDeploymentAndPrivateCacheState(): void
+    public function testSettingsDeriveMailboxReadinessFromAccountRegistryCredentialsAndCaches(): void
     {
         $routes = file_get_contents(dirname(__DIR__, 2) . '/routes/settings.php');
 
         self::assertIsString($routes);
-        self::assertStringContainsString('ImapSettings::class', $routes);
+        self::assertStringContainsString('MailboxAccountStore::class)->all()', $routes);
+        self::assertStringContainsString('MailboxCredentialResolver::class', $routes);
         self::assertStringContainsString('Mailbox::class)->readiness()', $routes);
-        self::assertStringContainsString("'mailbox' => \$mailboxState", $routes);
-        self::assertStringContainsString("'configured' => \$imap->configured()", $routes);
-        self::assertStringContainsString("'missing' => \$imap->missing()", $routes);
-        self::assertStringContainsString("'transport_available' => \$imap->transportAvailable()", $routes);
-        self::assertStringContainsString('TLS socket support', $routes);
-        self::assertStringContainsString('direct-TLS IMAP deployment variables', $routes);
-        self::assertStringContainsString('private/jobs/sync-mail.php', $routes);
+        self::assertStringContainsString("(array) (\$mailbox['accounts'] ?? [])", $routes);
+        self::assertStringContainsString("'account_id' => \$account->id", $routes);
+        self::assertStringContainsString("'label' => \$account->label", $routes);
+        self::assertStringContainsString("'configured' => \$missing === []", $routes);
+        self::assertStringContainsString("'missing' => \$missing", $routes);
+        self::assertStringContainsString("'enabled' => \$account->enabled", $routes);
+        self::assertStringContainsString("'last_synced_at' => \$state['last_synced_at'] ?? null", $routes);
         self::assertStringNotContainsString("'username' =>", $routes);
         self::assertStringNotContainsString("'password' =>", $routes);
     }
 
-    public function testMailboxReadinessDistinguishesReadyErrorAndNeedsSetup(): void
+    public function testMailboxReadinessDistinguishesAggregateMultiAccountStates(): void
     {
         $routes = file_get_contents(dirname(__DIR__, 2) . '/routes/settings.php');
 
         self::assertIsString($routes);
-        self::assertStringContainsString("\$mailbox['status'] === 'ready'", $routes);
-        self::assertStringContainsString("\$mailbox['status'] === 'error'", $routes);
-        self::assertStringContainsString("'status' => 'Needs attention'", $routes);
-        self::assertStringContainsString("'status' => 'Needs setup'", $routes);
-        self::assertStringContainsString("'status' => 'Ready'", $routes);
-        self::assertStringContainsString("'last_synced_at' => \$mailbox['last_synced_at']", $routes);
+        self::assertStringContainsString("match ((string) (\$mailbox['status'] ?? 'disabled'))", $routes);
+        self::assertStringContainsString("'ready' => ['status' => 'Ready'", $routes);
+        self::assertStringContainsString("'partial' => ['status' => 'Partially available'", $routes);
+        self::assertStringContainsString("'needs_setup' => ['status' => 'Needs setup'", $routes);
+        self::assertStringContainsString("default => ['status' => 'Disabled'", $routes);
+        self::assertStringContainsString("'mailbox' => \$mailboxState + ['accounts' => \$accountStates]", $routes);
+        self::assertStringContainsString('Healthy mailbox caches remain available', $routes);
+        self::assertStringContainsString('No mailbox account is enabled', $routes);
     }
 
-    public function testSettingsRenderNonSecretMailboxSetupAndSchedulerGuidance(): void
+    public function testSettingsExposeAccountManagementWithoutCredentialValues(): void
     {
-        $view = file_get_contents(dirname(__DIR__, 2) . '/resources/views/dashboard-settings.php');
+        $settingsView = file_get_contents(dirname(__DIR__, 2) . '/resources/views/dashboard-settings.php');
+        $accountsView = file_get_contents(dirname(__DIR__, 2) . '/resources/views/dashboard-settings-mailboxes.php');
 
-        self::assertIsString($view);
-        self::assertStringContainsString('href="#mailbox"', $view);
-        self::assertStringContainsString('id="mailbox"', $view);
-        self::assertStringContainsString('Deployment variables required', $view);
-        self::assertStringContainsString('php private/jobs/sync-mail.php', $view);
-        self::assertStringContainsString('storage/mail/cache', $view);
-        self::assertStringContainsString("\$mailbox['host']", $view);
-        self::assertStringContainsString("\$mailbox['port']", $view);
-        self::assertStringContainsString("\$mailbox['encryption']", $view);
-        self::assertStringContainsString("\$mailbox['mailbox']", $view);
-        self::assertStringNotContainsString("\$mailbox['username']", $view);
-        self::assertStringNotContainsString("\$mailbox['password']", $view);
+        self::assertIsString($settingsView);
+        self::assertIsString($accountsView);
+        self::assertStringContainsString('href="#mailbox"', $settingsView);
+        self::assertStringContainsString('id="mailbox"', $settingsView);
+        self::assertStringContainsString('/dashboard/settings/mailboxes', $accountsView);
+        self::assertStringContainsString('Username variable name', $accountsView);
+        self::assertStringContainsString('Password variable name', $accountsView);
+        self::assertStringContainsString('$account->usernameSecret', $accountsView);
+        self::assertStringContainsString('$account->passwordSecret', $accountsView);
+        self::assertStringContainsString('php private/jobs/sync-mail.php', $accountsView);
+        self::assertStringContainsString('--account=&lt;id&gt;', $accountsView);
+        self::assertStringNotContainsString('name="username"', $accountsView);
+        self::assertStringNotContainsString('name="password"', $accountsView);
+        self::assertStringNotContainsString('$account->usernameValue', $accountsView);
+        self::assertStringNotContainsString('$account->passwordValue', $accountsView);
     }
 }

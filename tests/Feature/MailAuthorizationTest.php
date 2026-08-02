@@ -57,7 +57,8 @@ final class MailAuthorizationTest extends TestCase
         self::assertIsString($routes);
         self::assertIsString($view);
         self::assertStringNotContainsString('/attachments/{attachmentId}', $routes);
-        self::assertStringContainsString('original mailbox application', $view);
+        self::assertStringContainsString('Attachment files are not copied into Katakata.', $view);
+        self::assertStringContainsString('in its mailbox application', $view);
         self::assertStringContainsString('Delete cached copy', $view);
     }
 }
