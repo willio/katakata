@@ -33,7 +33,7 @@ final class DashboardBoundaryDesignContractTest extends TestCase
 
         self::assertIsString($view);
         self::assertStringContainsString('if ($buzz !== null)', $view);
-        self::assertStringNotContainsString("$user['email']", $view);
-        self::assertStringNotContainsString("$user['name']", $view);
+        self::assertStringNotContainsString("\$user['email']", $view);
+        self::assertStringNotContainsString("\$user['name']", $view);
     }
 }
