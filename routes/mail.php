@@ -115,22 +115,17 @@ $router->post('/mail/messages/{id}/archive', function (Request $request, string 
     return Response::redirect('/mail/archive', 303);
 });
 
-$router->get('/mail/messages/{messageId}/attachments/{attachmentId}', function (Request $request, string $messageId, string $attachmentId) use ($app, $authorizeMail): Response {
+$router->post('/mail/messages/{id}/delete', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) {
         return $user;
     }
-
-    $download = $app->make(Mailbox::class)->attachment($messageId, $attachmentId);
-    if ($download === null) {
-        return Response::notFound();
+    if (!$validMailCsrf($request)) {
+        return Response::html('Invalid CSRF token.', 419);
     }
 
-    return new Response($download->content, 200, [
-        'Content-Type' => $download->mediaType,
-        'Content-Disposition' => 'attachment; filename="' . addcslashes($download->name, "\\\"") . '"',
-        'X-Content-Type-Options' => 'nosniff',
-    ]);
+    $app->make(Mailbox::class)->deleteLocal($id);
+    return Response::redirect('/mail?area=inbox', 303);
 });
 
 $router->get('/mail/compose', function (Request $request) use ($app, $authorizeMail): Response {
