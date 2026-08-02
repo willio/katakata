@@ -298,6 +298,7 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
 .dashboard-buzz .dashboard-list span { overflow-wrap: anywhere; }
 .dashboard-visits .dashboard-list li { grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; }
 .dashboard-visits .dashboard-list .quiet { grid-column: 1 / -1; font-size: .75rem; }
+.posts-index { margin: 0; padding: 0; list-style: none; }
 .form-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-block: 1.25rem; }
 .dashboard-shell > .form-actions { margin-top: 3rem; }
 

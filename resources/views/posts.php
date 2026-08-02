@@ -12,6 +12,17 @@ $filters = [
 ];
 
 $rows = [];
+$draftCount = 0;
+
+foreach ($drafts as $draft) {
+    $scheduledAt = is_string($draft->meta['scheduled_at'] ?? null)
+        ? trim((string) $draft->meta['scheduled_at'])
+        : '';
+
+    if ($scheduledAt === '') {
+        $draftCount++;
+    }
+}
 
 if (in_array($status, ['all', 'drafts', 'scheduled'], true)) {
     foreach ($drafts as $draft) {
@@ -29,8 +40,9 @@ if (in_array($status, ['all', 'drafts', 'scheduled'], true)) {
             'status' => ucfirst($rowStatus),
             'author' => (string) ($draft->meta['author'] ?? '—'),
             'date' => $draft->updatedAt,
-            'primaryHref' => '/editor/drafts/' . rawurlencode($draft->slug),
-            'primaryLabel' => 'Edit',
+            'titleHref' => '/editor/drafts/' . rawurlencode($draft->slug),
+            'primaryHref' => null,
+            'primaryLabel' => null,
             'secondaryHref' => null,
             'secondaryLabel' => null,
         ];
@@ -44,6 +56,7 @@ if (in_array($status, ['all', 'published'], true)) {
             'status' => 'Published',
             'author' => $post->author ?? '—',
             'date' => $post->date,
+            'titleHref' => null,
             'primaryHref' => $post->url(),
             'primaryLabel' => 'View',
             'secondaryHref' => null,
@@ -83,27 +96,34 @@ usort($rows, static function (array $left, array $right): int {
 
     <nav class="posts-filters" aria-label="Post status">
         <?php foreach ($filters as $key => $label): ?>
-            <a href="/posts?status=<?= e($key) ?>"<?= $status === $key ? ' aria-current="page"' : '' ?>><?= e($label) ?></a>
+            <?php $filterLabel = $key === 'drafts' ? 'Draft (' . $draftCount . ')' : $label; ?>
+            <a href="/posts?status=<?= e($key) ?>"<?= $status === $key ? ' aria-current="page"' : '' ?>><?= e($filterLabel) ?></a>
         <?php endforeach; ?>
     </nav>
 
     <?php if ($rows === []): ?>
         <p class="quiet">No posts match this filter.</p>
     <?php else: ?>
-        <ol class="posts-index">
+        <ul class="posts-index">
             <?php foreach ($rows as $row): ?>
                 <li>
                     <div class="posts-index-main">
-                        <strong><?= e($row['title']) ?></strong>
+                        <?php if ($row['titleHref'] !== null): ?>
+                            <strong><a href="<?= e($row['titleHref']) ?>"><?= e($row['title']) ?></a></strong>
+                        <?php else: ?>
+                            <strong><?= e($row['title']) ?></strong>
+                        <?php endif; ?>
                         <span class="quiet"><?= e($row['status']) ?> · <?= e($row['author']) ?></span>
                     </div>
                     <time datetime="<?= e($row['date']->format(DATE_ATOM)) ?>"><?= e($row['date']->format('M j, Y')) ?></time>
-                    <div class="posts-index-actions">
-                        <a href="<?= e($row['primaryHref']) ?>"><?= e($row['primaryLabel']) ?></a>
-                    </div>
+                    <?php if ($row['primaryHref'] !== null && $row['primaryLabel'] !== null): ?>
+                        <div class="posts-index-actions">
+                            <a href="<?= e($row['primaryHref']) ?>"><?= e($row['primaryLabel']) ?></a>
+                        </div>
+                    <?php endif; ?>
                 </li>
             <?php endforeach; ?>
-        </ol>
+        </ul>
     <?php endif; ?>
 </main>
 </body>
