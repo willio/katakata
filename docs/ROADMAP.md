@@ -1,7 +1,6 @@
 # Roadmap
 
-The build proceeds in independently useful increments. The repository is the
-source of truth; status reflects implemented contracts rather than aspiration.
+The build proceeds in independently useful increments. The repository is the source of truth; status reflects implemented contracts rather than aspiration.
 
 ## Phase 0 — Foundation ✅
 
@@ -43,8 +42,7 @@ See [`docs/subsystems/rendering.md`](./subsystems/rendering.md).
 - [x] Canonical revisions
 - [x] Scheduling and publishing
 
-See [`docs/subsystems/editorial.md`](./subsystems/editorial.md) and
-[`docs/design_specification.md`](./design_specification.md).
+See [`docs/subsystems/editorial.md`](./subsystems/editorial.md) and [`docs/design_specification.md`](./design_specification.md).
 
 ## Phase 4 — Dashboard and Analytics ✅
 
@@ -59,9 +57,7 @@ See [`docs/subsystems/editorial.md`](./subsystems/editorial.md) and
 - [x] Failure-isolated, read-only discussion activity
 - [ ] Regional aggregates and visitor map after derivation and disclosure review
 
-See [`docs/subsystems/dashboard.md`](./subsystems/dashboard.md),
-[`docs/subsystems/analytics.md`](./subsystems/analytics.md), and
-[ADR 0009](./adr/0009-sqlite-analytics-seo.md).
+See [`docs/subsystems/dashboard.md`](./subsystems/dashboard.md), [`docs/subsystems/analytics.md`](./subsystems/analytics.md), and [ADR 0009](./adr/0009-sqlite-analytics-seo.md).
 
 ## Phase 5 — Distribution and Mail ✅
 
@@ -74,23 +70,22 @@ See [`docs/subsystems/dashboard.md`](./subsystems/dashboard.md),
 - [x] Production email provider integration
 - [x] Authenticated delivery webhooks and delivery-state reconciliation
 - [x] Provider-neutral mailbox boundary
-- [x] Safe unavailable mailbox provider with non-secret readiness state
-- [x] Unified `/mail` workspace for Inbox readiness and campaign work
+- [x] Unified `/mail` workspace for Inbox, drafts, sent mail, archive, and campaign work
 - [x] Combined Mail attention model surfaced on the dashboard
 - [x] `/dashboard/mail` compatibility redirect to `/mail`
-- [ ] Scheduled IMAP synchronization adapter and cached operational inbox
-- [ ] Guided Mail connection setup in `/dashboard/settings`, including safe
-  non-secret connection readiness; IMAP credentials are provisioned only via
-  environment variables or the host secret manager for self-hosted testing
-- [ ] Correspondence storage, retention, deletion/export, and attachment-limit
-  policy before synchronizing real reader mail
-- [ ] Replace Mail authorization source-contract assertions with owner/admin/editor
-  request-dispatch coverage
-- [ ] MIME parsing, attachments, spam handling, and correspondence delivery policy
+- [x] Owner/admin Mail authorization with editor denial proven through request dispatch
+- [x] Deployment-only IMAP readiness guidance in `/dashboard/settings`
+- [x] Extension-free direct-TLS IMAP source using PHP streams and OpenSSL
+- [x] Scheduled cache-only synchronization with no request-time network access
+- [x] Text-only private cache with 30-day retention and failure preservation
+- [x] Local read/archive state and local-only cached-copy deletion
+- [x] Attachment payload exclusion and original-mailbox access guidance
+- [ ] Complete a controlled five-message synchronization against the deployment mailbox and record the operational result
+- [ ] Spam handling and quarantine policy
+- [ ] Correspondence export policy, if export is introduced
+- [ ] Additional mailbox authentication methods and providers
 
-See [`docs/subsystems/distribution.md`](./subsystems/distribution.md),
-[`docs/subsystems/email-client.md`](./subsystems/email-client.md), and
-[ADR 0010](./adr/0010-imap-inbox-adapter.md).
+See [`docs/subsystems/distribution.md`](./subsystems/distribution.md), [`docs/subsystems/email-client.md`](./subsystems/email-client.md), [`docs/operations/imap-mailbox-sync.md`](./operations/imap-mailbox-sync.md), and [ADR 0010](./adr/0010-imap-inbox-adapter.md).
 
 ## Global Settings ✅
 
@@ -100,6 +95,7 @@ See [`docs/subsystems/distribution.md`](./subsystems/distribution.md),
 - [x] Section-local status and error feedback
 - [x] Non-secret Ready / Disabled / Needs setup states
 - [x] Explicit Account and System availability boundaries
+- [x] Non-secret TLS transport, cache, and synchronization readiness for Mail
 
 See [`docs/subsystems/settings.md`](./subsystems/settings.md).
 
@@ -168,6 +164,4 @@ DuckDB queries analytical datasets. It is never canonical storage and is never r
 
 ---
 
-Each active area has a subsystem document under
-[`docs/subsystems/`](./subsystems). Architectural exceptions require an ADR
-before implementation.
+Each active area has a subsystem document under [`docs/subsystems/`](./subsystems). Architectural exceptions require an ADR before implementation.
