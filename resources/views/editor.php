@@ -79,6 +79,7 @@ $discussionEnabled = filter_var($draft?->meta['discussion_enabled'] ?? false, FI
         </form>
     <?php endif; ?>
 </main>
+<script src="/assets/js/editor-autosave.js" defer></script>
 <script src="/assets/js/editor.js" defer></script>
 </body>
 </html>
