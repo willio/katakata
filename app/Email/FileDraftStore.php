@@ -78,6 +78,16 @@ final class FileDraftStore implements DraftStore
         @unlink($this->target($id));
     }
 
+    public function deleteIfVersion(string $id, int $expectedVersion): bool
+    {
+        return $this->locked($id, function (Draft $current) use ($id, $expectedVersion): bool {
+            if ($current->version !== $expectedVersion) {
+                return false;
+            }
+            return @unlink($this->target($id));
+        });
+    }
+
     private function ensureDirectory(): void
     {
         if (!is_dir($this->path) && !mkdir($this->path, 0700, true) && !is_dir($this->path)) {
