@@ -11,6 +11,7 @@ use Katakata\Email\DraftComposer;
 use Katakata\Email\DraftSender;
 use Katakata\Email\DraftStore;
 use Katakata\Email\FileDraftStore;
+use Katakata\Email\LegacyMailboxMigrator;
 use Katakata\Email\Mailbox;
 use Katakata\Email\MailboxAccountStore;
 use Katakata\Email\MailboxCredentialResolver;
@@ -37,10 +38,14 @@ use Katakata\Rendering\Markdown;
 
 $app->singleton(
     MailboxAccountStore::class,
-    static fn (Application $container): MailboxAccountStore => new MailboxAccountStore(
-        $container->storagePath('mail/accounts.json'),
-        $container->make(AtomicFile::class),
-    ),
+    static function (Application $container): MailboxAccountStore {
+        $store = new MailboxAccountStore(
+            $container->storagePath('mail/accounts.json'),
+            $container->make(AtomicFile::class),
+        );
+        (new LegacyMailboxMigrator($store, $container->storagePath('mail/cache')))->migrate();
+        return $store;
+    },
 );
 $app->singleton(
     MailboxCredentialResolver::class,
