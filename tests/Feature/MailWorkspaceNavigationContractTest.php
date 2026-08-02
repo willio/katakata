@@ -49,4 +49,12 @@ final class MailWorkspaceNavigationContractTest extends TestCase
         self::assertStringContainsString('$router->post(\'/mail/refresh\'', $routes);
         self::assertStringContainsString('MailboxRefreshRequest::class', $routes);
     }
+
+    public function testWorkspaceAlwaysSuppliesTheComposeErrorContract(): void
+    {
+        $routes = file_get_contents(dirname(__DIR__, 2) . '/routes/campaign.php');
+
+        self::assertIsString($routes);
+        self::assertStringContainsString("'composeError' => trim((string) (\$request->query['error'] ?? ''))", $routes);
+    }
 }

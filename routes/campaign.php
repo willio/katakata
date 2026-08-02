@@ -75,6 +75,7 @@ $router->get('/mail', function (Request $request) use ($app, $authorizeMail): Re
         'campaign' => $workspace->campaignPreview($request->query['post'] ?? ''),
         'newsletterReady' => !($app->make(SubscriberStore::class) instanceof \Katakata\Distribution\UnavailableSubscriberStore),
         'refreshRequested' => $area === 'inbox' && ($request->query['refresh'] ?? '') === 'requested',
+        'composeError' => trim((string) ($request->query['error'] ?? '')),
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
