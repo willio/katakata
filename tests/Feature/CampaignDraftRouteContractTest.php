@@ -43,7 +43,7 @@ final class CampaignDraftRouteContractTest extends TestCase
         self::assertStringContainsString('confirmDraftAndQueue', $routes);
     }
 
-    public function testCampaignDraftStorageAndComposerKeepPrivateVersionedState(): void
+    public function testCampaignDraftUsesFocusedSharedEditorContract(): void
     {
         $bootstrap = file_get_contents(dirname(__DIR__, 2) . '/bootstrap/mail.php');
         $view = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail-campaign-draft.php');
@@ -53,11 +53,16 @@ final class CampaignDraftRouteContractTest extends TestCase
         self::assertIsString($view);
         self::assertIsString($script);
         self::assertStringContainsString("storagePath('mail/campaign-drafts')", $bootstrap);
+        self::assertStringContainsString('class="editor-page mail-draft-editor-page campaign-draft-editor-page"', $view);
+        self::assertStringContainsString('data-campaign-draft', $view);
+        self::assertStringContainsString('data-server-version=', $view);
+        self::assertStringContainsString('/assets/js/editor-autosave.js', $view);
         self::assertStringContainsString('name="expected_version"', $view);
         self::assertStringContainsString('Review campaign', $view);
         self::assertStringContainsString('Confirm and queue', $view);
-        self::assertStringContainsString('aria-pressed="false"', $view);
-        self::assertStringContainsString("classList.toggle('campaign-compose-fullscreen'", $script);
+        self::assertStringContainsString('KatakataAutosave.bind', $script);
+        self::assertStringNotContainsString('campaign-fullscreen-toggle', $view);
+        self::assertStringNotContainsString('campaign-compose-fullscreen', $script);
         self::assertStringNotContainsString('cloneNode(', $script);
     }
 }
