@@ -85,6 +85,7 @@ $feedback = $error ?? ($saved ? 'Settings saved.' : null);
                     <h2>Mailbox</h2>
                     <p class="quiet">Reader correspondence is synchronized into private operational storage. Credentials remain in the environment or host secret manager.</p>
                 </header>
+                <div class="form-actions"><a class="button" href="/dashboard/settings/mailboxes">Manage mailbox accounts</a></div>
                 <p class="readiness"><strong><?= e((string) ($mailbox['status'] ?? 'Needs setup')) ?></strong> — <?= e((string) ($mailbox['detail'] ?? 'Mailbox readiness is unavailable.')) ?></p>
 
                 <dl class="settings-status-list">

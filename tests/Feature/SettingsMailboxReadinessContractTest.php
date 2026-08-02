@@ -51,6 +51,7 @@ final class SettingsMailboxReadinessContractTest extends TestCase
         self::assertIsString($accountsView);
         self::assertStringContainsString('href="#mailbox"', $settingsView);
         self::assertStringContainsString('id="mailbox"', $settingsView);
+        self::assertStringContainsString('href="/dashboard/settings/mailboxes"', $settingsView);
         self::assertStringContainsString('/dashboard/settings/mailboxes', $accountsView);
         self::assertStringContainsString('Username variable name', $accountsView);
         self::assertStringContainsString('Password variable name', $accountsView);
