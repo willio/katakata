@@ -97,6 +97,9 @@ final class MailRoleDispatchAuthorizationTest extends TestCase
         yield 'mailbox enable' => ['POST', '/dashboard/settings/mailboxes/letters/enable'];
         yield 'mailbox disable' => ['POST', '/dashboard/settings/mailboxes/letters/disable'];
         yield 'mailbox delete' => ['POST', '/dashboard/settings/mailboxes/letters/delete'];
+        yield 'mailbox import form' => ['GET', '/dashboard/settings/mailboxes/import'];
+        yield 'mailbox import upload' => ['POST', '/dashboard/settings/mailboxes/import'];
+        yield 'mailbox import confirm' => ['POST', '/dashboard/settings/mailboxes/import/confirm'];
     }
 
     /** @param array<string, mixed> $account */
@@ -119,6 +122,7 @@ final class MailRoleDispatchAuthorizationTest extends TestCase
             require dirname(__DIR__, 2) . '/routes/mail-accounts.php';
             require dirname(__DIR__, 2) . '/routes/mail.php';
             require dirname(__DIR__, 2) . '/routes/settings-mailboxes.php';
+            require dirname(__DIR__, 2) . '/routes/settings-mailbox-import.php';
         })();
 
         return $router;
