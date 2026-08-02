@@ -32,12 +32,15 @@ final class ImapSynchronizer
         try {
             $messages = $this->source->fetch($this->settings, max(1, $limit));
             $cutoff = $now->modify('-' . self::RETENTION_DAYS . ' days');
+            $state = $this->readState();
+            $deleted = array_fill_keys(array_keys($state['deleted']), true);
             $written = 0;
 
             foreach ($messages as $message) {
                 $id = $this->safe((string) ($message['id'] ?? ''));
                 $receivedAt = $this->date((string) ($message['received_at'] ?? ''), $now);
-                if ($receivedAt < $cutoff) {
+                if ($receivedAt < $cutoff || isset($deleted[$id])) {
+                    @unlink($this->messagePath($id));
                     continue;
                 }
 
@@ -59,9 +62,9 @@ final class ImapSynchronizer
                 }
             }
 
-            $ids = $this->pruneAndOrder($cutoff);
+            $ids = $this->pruneAndOrder($cutoff, $deleted);
             $this->removeTree($this->cachePath . '/attachments');
-            $this->pruneState($ids);
+            $this->pruneState($ids, $cutoff);
             $this->writeIndex($ids, 'ready', null, $now->format(DATE_ATOM));
 
             return [
@@ -75,8 +78,8 @@ final class ImapSynchronizer
         }
     }
 
-    /** @return list<string> */
-    private function pruneAndOrder(DateTimeImmutable $cutoff): array
+    /** @param array<string,bool> $deleted @return list<string> */
+    private function pruneAndOrder(DateTimeImmutable $cutoff, array $deleted): array
     {
         $messages = [];
         foreach (glob($this->cachePath . '/messages/*.json') ?: [] as $path) {
@@ -94,7 +97,7 @@ final class ImapSynchronizer
                 continue;
             }
 
-            if ($receivedAt < $cutoff) {
+            if ($receivedAt < $cutoff || isset($deleted[$id])) {
                 @unlink($path);
                 continue;
             }
@@ -106,30 +109,53 @@ final class ImapSynchronizer
     }
 
     /** @param list<string> $validIds */
-    private function pruneState(array $validIds): void
+    private function pruneState(array $validIds, DateTimeImmutable $cutoff): void
+    {
+        $state = $this->readState();
+        $valid = array_fill_keys($validIds, true);
+        $deleted = [];
+        foreach ($state['deleted'] as $id => $deletedAt) {
+            try {
+                if (new DateTimeImmutable($deletedAt) >= $cutoff) {
+                    $deleted[$id] = $deletedAt;
+                }
+            } catch (\Throwable) {
+            }
+        }
+
+        $payload = [
+            'read' => array_values(array_filter($state['read'], static fn (string $id): bool => isset($valid[$id]))),
+            'archived' => array_values(array_filter($state['archived'], static fn (string $id): bool => isset($valid[$id]))),
+            'deleted' => $deleted,
+        ];
+        $target = $this->cachePath . '/state.json';
+        $this->files->write($target, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n");
+        @chmod($target, 0600);
+    }
+
+    /** @return array{read:list<string>,archived:list<string>,deleted:array<string,string>} */
+    private function readState(): array
     {
         $path = $this->cachePath . '/state.json';
         if (!is_file($path)) {
-            return;
+            return ['read' => [], 'archived' => [], 'deleted' => []];
         }
         $data = json_decode((string) file_get_contents($path), true);
         if (!is_array($data)) {
-            @unlink($path);
-            return;
+            return ['read' => [], 'archived' => [], 'deleted' => []];
         }
-        $valid = array_fill_keys($validIds, true);
-        $state = [
-            'read' => array_values(array_filter(
-                array_map('strval', (array) ($data['read'] ?? [])),
-                static fn (string $id): bool => isset($valid[$id]),
-            )),
-            'archived' => array_values(array_filter(
-                array_map('strval', (array) ($data['archived'] ?? [])),
-                static fn (string $id): bool => isset($valid[$id]),
-            )),
+        $deleted = [];
+        foreach ((array) ($data['deleted'] ?? []) as $id => $deletedAt) {
+            if (is_int($id)) {
+                continue;
+            }
+            $deleted[(string) $id] = (string) $deletedAt;
+        }
+        return [
+            'read' => array_values(array_map('strval', (array) ($data['read'] ?? []))),
+            'archived' => array_values(array_map('strval', (array) ($data['archived'] ?? []))),
+            'deleted' => $deleted,
         ];
-        $this->files->write($path, json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n");
-        @chmod($path, 0600);
     }
 
     /** @param list<string> $ids */
