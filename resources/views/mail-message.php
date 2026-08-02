@@ -10,6 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($message->subject) ?> — <?= e($siteName) ?></title>
     <link rel="stylesheet" href="/assets/css/site.css">
+    <link rel="stylesheet" href="/assets/css/mail.css">
 </head>
 <body class="dashboard-page mail-page">
 <header class="dashboard-header">
@@ -20,18 +21,18 @@
     </nav>
 </header>
 <main class="dashboard-shell">
-    <p><a href="/mail?area=inbox">← Inbox</a></p>
+    <p><a href="/mail?area=inbox&amp;account=<?= rawurlencode($message->sourceAccountId ?? 'all') ?>">← <?= e($message->sourceLabel ?? 'Inbox') ?></a></p>
     <article class="mail-message">
         <header>
-            <p class="eyebrow"><?= $message->unread ? 'Unread' : 'Read' ?></p>
+            <p class="eyebrow"><?= e($message->sourceLabel ?? 'Mailbox') ?> · <?= $message->unread ? 'Unread' : 'Read' ?></p>
             <h1><?= e($message->subject) ?></h1>
-            <p class="quiet">From <?= e($message->from) ?> · <?= e($message->receivedAt->format('M j, Y H:i')) ?> UTC</p>
+            <p class="quiet">From <?= e($message->from) ?> · received through <?= e($message->sourceLabel ?? 'the editorial inbox') ?> · <?= e($message->receivedAt->format('M j, Y H:i')) ?> UTC</p>
         </header>
         <div class="mail-message-body"><?= nl2br(e($message->text)) ?></div>
 
         <section class="mail-readiness" aria-labelledby="message-attachments">
             <h2 id="message-attachments">Attachments</h2>
-            <p>Attachment files are not copied into Katakata. Open the original mailbox application to review or download them.</p>
+            <p>Attachment files are not copied into Katakata. Open the original <?= e($message->sourceLabel ?? 'mailbox') ?> account in its mailbox application to review or download them.</p>
         </section>
 
         <div class="form-actions">
