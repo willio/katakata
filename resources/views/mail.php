@@ -19,10 +19,23 @@ $accountStates = array_values(array_filter(
     static fn (mixed $state): bool => is_array($state) && isset($state['account_id'], $state['label']),
 ));
 $selectedAccount = trim((string) ($_GET['account'] ?? 'all'));
-$selectedMessage = trim((string) ($_GET['message'] ?? ''));
+$selectedMessageAccount = trim((string) ($_GET['message_account'] ?? ''));
+$selectedMessageId = trim((string) ($_GET['message'] ?? ''));
 $knownAccounts = array_column($accountStates, 'account_id');
 if ($selectedAccount !== 'all' && !in_array($selectedAccount, $knownAccounts, true)) {
     $selectedAccount = 'all';
+}
+if ($selectedMessageAccount !== '' && !in_array($selectedMessageAccount, $knownAccounts, true)) {
+    $selectedMessageAccount = '';
+    $selectedMessageId = '';
+}
+
+$selectedMessageRecord = null;
+foreach ($messages as $message) {
+    if ($message->sourceAccountId === $selectedMessageAccount && $message->sourceMessageId === $selectedMessageId) {
+        $selectedMessageRecord = $message;
+        break;
+    }
 }
 if ($selectedAccount !== 'all') {
     $messages = array_values(array_filter(
@@ -104,9 +117,11 @@ foreach ($accountStates as $accountState) {
                     <ol class="mail-item-list">
                         <?php foreach ($messages as $message): ?>
                             <?php
-                            $messageHref = '/mail?area=inbox&account=' . rawurlencode((string) $message->sourceAccountId) . '&message=' . rawurlencode((string) $message->sourceMessageId);
+                            $messageHref = '/mail?area=inbox&account=' . rawurlencode($selectedAccount)
+                                . '&message_account=' . rawurlencode((string) $message->sourceAccountId)
+                                . '&message=' . rawurlencode((string) $message->sourceMessageId);
                             $detailUrl = '/mail/messages/' . rawurlencode((string) $message->sourceAccountId) . '/' . rawurlencode((string) $message->sourceMessageId) . '?fragment=1';
-                            $isSelected = $selectedAccount === $message->sourceAccountId && $selectedMessage === $message->sourceMessageId;
+                            $isSelected = $selectedMessageAccount === $message->sourceAccountId && $selectedMessageId === $message->sourceMessageId;
                             ?>
                             <li><a href="<?= e($messageHref) ?>" data-mail-message-link data-detail-url="<?= e($detailUrl) ?>" data-account="<?= e((string) $message->sourceAccountId) ?>" data-message="<?= e((string) $message->sourceMessageId) ?>"<?= $isSelected ? ' aria-current="page"' : '' ?>><strong><?= e($message->subject) ?></strong><span><?= e($message->from) ?> · <?= e((string) $message->sourceLabel) ?><?= $message->unread ? ' · Unread' : '' ?></span><time datetime="<?= e($message->receivedAt->format(DATE_ATOM)) ?>"><?= e($message->receivedAt->format('M j, H:i')) ?></time></a></li>
                         <?php endforeach; ?>
@@ -136,7 +151,27 @@ foreach ($accountStates as $accountState) {
             <section><h3>Audience now</h3><p><strong><?= $audience['count'] ?></strong> confirmed <?= $audience['count'] === 1 ? 'recipient' : 'recipients' ?></p><p class="quiet">This count is informational only. The recipient set is snapshotted when a reviewed campaign is confirmed and queued.</p></section>
             <section><h3>Selected candidate</h3><?php if ($campaign === null): ?><p class="quiet">Select a campaign draft or newsletter candidate from the center list.</p><?php else: ?><article><h3><?= e($campaign['post']['title']) ?></h3><?php if ($campaign['post']['excerpt']): ?><p><?= e($campaign['post']['excerpt']) ?></p><?php endif; ?><div class="form-actions"><a href="<?= e($campaign['post']['url']) ?>">View post</a><?php if ($newsletterReady): ?><a class="button" href="/mail/confirm?post=<?= rawurlencode($campaign['post']['slug']) ?>">Review dispatch proof</a><?php endif; ?></div></article><?php endif; ?></section>
         <?php else: ?>
-            <div data-mail-reader><p class="quiet">Select a message.</p></div>
+            <div data-mail-reader>
+                <?php if ($selectedMessageRecord === null): ?>
+                    <p class="quiet">Select a message.</p>
+                <?php else: ?>
+                    <?php $messagePath = '/mail/messages/' . rawurlencode((string) $selectedMessageRecord->sourceAccountId) . '/' . rawurlencode((string) $selectedMessageRecord->sourceMessageId); ?>
+                    <article class="mail-message mail-message-panel">
+                        <header>
+                            <p class="eyebrow"><?= e((string) $selectedMessageRecord->sourceLabel) ?> · <?= $selectedMessageRecord->unread ? 'Unread' : 'Read' ?></p>
+                            <h2 tabindex="-1"><?= e($selectedMessageRecord->subject) ?></h2>
+                            <p class="quiet">From <?= e($selectedMessageRecord->from) ?> · <?= e($selectedMessageRecord->receivedAt->format('M j, Y H:i')) ?> UTC</p>
+                        </header>
+                        <div class="mail-message-body"><?= nl2br(e($selectedMessageRecord->text)) ?></div>
+                        <div class="form-actions">
+                            <form method="post" action="<?= e($messagePath) ?>/reply"><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><button type="submit">Reply</button></form>
+                            <form method="post" action="<?= e($messagePath) ?>/<?= $selectedMessageRecord->unread ? 'read' : 'unread' ?>"><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><button type="submit">Mark <?= $selectedMessageRecord->unread ? 'read' : 'unread' ?></button></form>
+                            <form method="post" action="<?= e($messagePath) ?>/archive"><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><button type="submit">Archive</button></form>
+                            <form method="post" action="<?= e($messagePath) ?>/delete"><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><button type="submit">Delete cached copy</button></form>
+                        </div>
+                    </article>
+                <?php endif; ?>
+            </div>
         <?php endif; ?>
         <form class="form-actions" method="post" action="/logout"><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><button type="submit">Sign out</button></form>
     </section>
