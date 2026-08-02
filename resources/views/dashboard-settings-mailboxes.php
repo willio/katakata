@@ -24,6 +24,7 @@
 <p class="eyebrow">Settings · Mailbox</p>
 <h1>Mailbox accounts</h1>
 <p>Manage up to <?= $limit ?> cached IMAP sources. Connection credentials remain deployment-managed.</p>
+<div class="form-actions"><a class="button" href="/dashboard/settings/mailboxes/import">Import configuration profile</a></div>
 </header>
 <?php if ($saved): ?><p class="settings-feedback" role="status">Mailbox settings saved.</p><?php endif; ?>
 <?php if ($error !== null && $error !== ''): ?><p class="settings-feedback" role="alert"><?= e($error) ?></p><?php endif; ?>
@@ -72,7 +73,8 @@
 </section>
 <?php if (count($accounts) < $limit): ?>
 <section class="settings-section" id="add-mailbox">
-<header><h2>Add mailbox account</h2><p class="quiet">Save non-secret connection metadata and deployment variable names only.</p></header>
+<header><h2>Add mailbox account</h2><p class="quiet">Save non-secret connection metadata and deployment variable names only, or import a standard Apple Mail configuration profile.</p></header>
+<div class="form-actions"><a href="/dashboard/settings/mailboxes/import">Import configuration profile</a></div>
 <form method="post" action="/dashboard/settings/mailboxes">
 <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
 <label>Account ID</label><input name="id" pattern="[a-z0-9][a-z0-9_-]{1,31}" required placeholder="letters">
