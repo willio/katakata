@@ -11,6 +11,7 @@ final class DraftSender
     public function __construct(
         private readonly DraftStore $drafts,
         private readonly OutboundMailProvider $outbound,
+        private readonly ?SentMessageStore $sent = null,
     ) {
     }
 
@@ -22,6 +23,7 @@ final class DraftSender
         }
 
         $this->outbound->send($draft);
+        $this->sent?->record($draft);
         $this->drafts->delete($id);
     }
 }
