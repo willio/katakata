@@ -26,7 +26,6 @@ $authorizeMail = $authorizeMail ?? static function () use ($app): array|Response
     if (!$session->canManageMail()) {
         return Response::html('Forbidden.', 403);
     }
-
     return $user;
 };
 
@@ -41,10 +40,7 @@ $router->get('/dashboard/mail', function (Request $request) use ($authorizeMail)
 
 $router->get('/mail/sent', function (Request $request) use ($app, $authorizeMail): Response {
     $user = $authorizeMail();
-    if ($user instanceof Response) {
-        return $user;
-    }
-
+    if ($user instanceof Response) return $user;
     return Response::html($app->make(View::class)->render('mail-sent', [
         'user' => $user,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
@@ -55,10 +51,7 @@ $router->get('/mail/sent', function (Request $request) use ($app, $authorizeMail
 
 $router->get('/mail/archive', function (Request $request) use ($app, $authorizeMail): Response {
     $user = $authorizeMail();
-    if ($user instanceof Response) {
-        return $user;
-    }
-
+    if ($user instanceof Response) return $user;
     $mailbox = $app->make(Mailbox::class);
     return Response::html($app->make(View::class)->render('mail-archive', [
         'user' => $user,
@@ -71,15 +64,9 @@ $router->get('/mail/archive', function (Request $request) use ($app, $authorizeM
 
 $router->get('/mail/messages/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
     $user = $authorizeMail();
-    if ($user instanceof Response) {
-        return $user;
-    }
-
+    if ($user instanceof Response) return $user;
     $message = $app->make(Mailbox::class)->message($id);
-    if ($message === null) {
-        return Response::notFound();
-    }
-
+    if ($message === null) return Response::notFound();
     return Response::html($app->make(View::class)->render('mail-message', [
         'message' => $message,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
@@ -90,13 +77,8 @@ $router->get('/mail/messages/{id}', function (Request $request, string $id) use 
 foreach (['read' => true, 'unread' => false] as $action => $read) {
     $router->post('/mail/messages/{id}/' . $action, function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf, $read): Response {
         $user = $authorizeMail();
-        if ($user instanceof Response) {
-            return $user;
-        }
-        if (!$validMailCsrf($request)) {
-            return Response::html('Invalid CSRF token.', 419);
-        }
-
+        if ($user instanceof Response) return $user;
+        if (!$validMailCsrf($request)) return Response::html('Invalid CSRF token.', 419);
         $app->make(Mailbox::class)->markRead($id, $read);
         return Response::redirect('/mail/messages/' . rawurlencode($id), 303);
     });
@@ -104,91 +86,57 @@ foreach (['read' => true, 'unread' => false] as $action => $read) {
 
 $router->post('/mail/messages/{id}/archive', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
     $user = $authorizeMail();
-    if ($user instanceof Response) {
-        return $user;
-    }
-    if (!$validMailCsrf($request)) {
-        return Response::html('Invalid CSRF token.', 419);
-    }
-
+    if ($user instanceof Response) return $user;
+    if (!$validMailCsrf($request)) return Response::html('Invalid CSRF token.', 419);
     $app->make(Mailbox::class)->archive($id);
     return Response::redirect('/mail/archive', 303);
 });
 
 $router->post('/mail/messages/{id}/delete', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
     $user = $authorizeMail();
-    if ($user instanceof Response) {
-        return $user;
-    }
-    if (!$validMailCsrf($request)) {
-        return Response::html('Invalid CSRF token.', 419);
-    }
-
+    if ($user instanceof Response) return $user;
+    if (!$validMailCsrf($request)) return Response::html('Invalid CSRF token.', 419);
     $app->make(Mailbox::class)->deleteLocal($id);
     return Response::redirect('/mail?area=inbox', 303);
 });
 
 $router->get('/mail/compose', function (Request $request) use ($app, $authorizeMail): Response {
     $user = $authorizeMail();
-    if ($user instanceof Response) {
-        return $user;
-    }
-
+    if ($user instanceof Response) return $user;
     $draft = $app->make(DraftComposer::class)->compose('', '', '');
     return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id), 302);
 });
 
 $router->post('/mail/messages/{id}/reply', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
     $user = $authorizeMail();
-    if ($user instanceof Response) {
-        return $user;
-    }
-    if (!$validMailCsrf($request)) {
-        return Response::html('Invalid CSRF token.', 419);
-    }
-
+    if ($user instanceof Response) return $user;
+    if (!$validMailCsrf($request)) return Response::html('Invalid CSRF token.', 419);
     $message = $app->make(Mailbox::class)->message($id);
-    if ($message === null) {
-        return Response::notFound();
-    }
-
+    if ($message === null) return Response::notFound();
     $draft = $app->make(DraftComposer::class)->compose(
         $message->from,
         str_starts_with($message->subject, 'Re:') ? $message->subject : 'Re: ' . $message->subject,
         "\n\nOn " . $message->receivedAt->format('M j, Y') . ', ' . $message->from . " wrote:\n> " . str_replace("\n", "\n> ", trim($message->text)),
         $message->id,
     );
-
     return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id), 303);
 });
 
 $router->get('/mail/drafts/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
     $user = $authorizeMail();
-    if ($user instanceof Response) {
-        return $user;
-    }
-
+    if ($user instanceof Response) return $user;
     $draft = $app->make(DraftStore::class)->find($id);
-    if ($draft === null) {
-        return Response::notFound();
-    }
-
-    return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id), 302);
+    return $draft === null ? Response::notFound() : Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id), 302);
 });
 
 $router->post('/mail/drafts/{id}', function (Request $request, string $id) use ($app, $authorizeMail, $validMailCsrf): Response {
     $user = $authorizeMail();
-    if ($user instanceof Response) {
-        return $user;
-    }
-    if (!$validMailCsrf($request)) {
-        return Response::html('Invalid CSRF token.', 419);
-    }
+    if ($user instanceof Response) return $user;
+    if (!$validMailCsrf($request)) return Response::html('Invalid CSRF token.', 419);
 
-    $existing = $app->make(DraftStore::class)->find($id);
-    if ($existing === null) {
-        return Response::notFound();
-    }
+    $store = $app->make(DraftStore::class);
+    $existing = $store->find($id);
+    if ($existing === null) return Response::notFound();
 
     $draft = new \Katakata\Email\Draft(
         id: $existing->id,
@@ -196,18 +144,19 @@ $router->post('/mail/drafts/{id}', function (Request $request, string $id) use (
         subject: trim((string) ($request->body['subject'] ?? '')),
         text: (string) ($request->body['text'] ?? ''),
         inReplyTo: $existing->inReplyTo,
+        version: $existing->version,
+        createdAt: $existing->createdAt,
         updatedAt: new DateTimeImmutable(),
     );
-    $app->make(DraftStore::class)->save($draft);
+    $saved = $store->save($draft, (int) ($request->body['version'] ?? $existing->version));
 
     if (($request->body['intent'] ?? '') === 'send') {
         try {
-            $app->make(DraftSender::class)->send($draft->id);
+            $app->make(DraftSender::class)->send($saved->id);
             return Response::redirect('/mail/sent', 303);
         } catch (\Throwable $error) {
-            return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id) . '&error=' . rawurlencode($error->getMessage()), 303);
+            return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($saved->id) . '&error=' . rawurlencode($error->getMessage()), 303);
         }
     }
-
-    return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id) . '&saved=1', 303);
+    return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($saved->id) . '&saved=1', 303);
 });
