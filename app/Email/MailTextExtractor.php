@@ -15,17 +15,67 @@ final class MailTextExtractor
         $headers = $this->headers($headerBlock);
         $contentType = strtolower($headers['content-type'] ?? 'text/plain');
         $encoding = strtolower($headers['content-transfer-encoding'] ?? '');
-        $text = str_starts_with($contentType, 'multipart/')
-            ? $this->multipartText($body, $contentType)
-            : $this->decodeBody($body, $encoding, $contentType);
 
         return [
             'from' => $this->decodeHeader($headers['from'] ?? ''),
             'to' => $this->decodeHeader($headers['to'] ?? ''),
             'subject' => $this->decodeHeader($headers['subject'] ?? ''),
             'received_at' => $this->date($headers['date'] ?? ''),
-            'text' => trim($text),
+            'text' => trim($this->extractText($body, $contentType, $encoding)),
         ];
+    }
+
+    private function extractText(string $body, string $contentType, string $encoding): string
+    {
+        if (!str_starts_with($contentType, 'multipart/')) {
+            return str_starts_with($contentType, 'text/plain')
+                ? $this->decodeBody($body, $encoding, $contentType)
+                : '';
+        }
+
+        $boundary = $this->boundary($contentType);
+        if ($boundary === null) {
+            return '';
+        }
+
+        foreach (explode('--' . $boundary, $body) as $part) {
+            $part = ltrim($part, "\r\n");
+            if ($part === '' || str_starts_with($part, '--')) {
+                continue;
+            }
+
+            [$headerBlock, $payload] = $this->split($part);
+            if ($headerBlock === '' || $payload === '') {
+                continue;
+            }
+
+            $headers = $this->headers($headerBlock);
+            $disposition = strtolower($headers['content-disposition'] ?? '');
+            if (str_contains($disposition, 'attachment')) {
+                continue;
+            }
+
+            $type = strtolower($headers['content-type'] ?? 'text/plain');
+            $text = $this->extractText(
+                $payload,
+                $type,
+                strtolower($headers['content-transfer-encoding'] ?? ''),
+            );
+            if (trim($text) !== '') {
+                return $text;
+            }
+        }
+
+        return '';
+    }
+
+    private function boundary(string $contentType): ?string
+    {
+        if (preg_match('/boundary=(?:"([^"]+)"|([^;\s]+))/i', $contentType, $match) !== 1) {
+            return null;
+        }
+
+        return $match[1] !== '' ? $match[1] : $match[2];
     }
 
     /** @return array{0:string,1:string} */
@@ -50,34 +100,6 @@ final class MailTextExtractor
         return $headers;
     }
 
-    private function multipartText(string $body, string $contentType): string
-    {
-        if (preg_match('/boundary=(?:"([^"]+)"|([^;\s]+))/i', $contentType, $match) !== 1) {
-            return '';
-        }
-        $boundary = $match[1] !== '' ? $match[1] : $match[2];
-        foreach (explode('--' . $boundary, $body) as $part) {
-            $part = ltrim($part, "\r\n");
-            if ($part === '' || str_starts_with($part, '--')) {
-                continue;
-            }
-
-            [$headers, $payload] = $this->split($part);
-            if (trim($payload) === '') {
-                continue;
-            }
-
-            $map = $this->headers($headers);
-            $type = strtolower($map['content-type'] ?? 'text/plain');
-            $disposition = strtolower($map['content-disposition'] ?? '');
-            if (str_contains($disposition, 'attachment') || !str_starts_with($type, 'text/plain')) {
-                continue;
-            }
-            return $this->decodeBody($payload, strtolower($map['content-transfer-encoding'] ?? ''), $type);
-        }
-        return '';
-    }
-
     private function decodeBody(string $body, string $encoding, string $contentType): string
     {
         $decoded = match ($encoding) {
@@ -99,10 +121,7 @@ final class MailTextExtractor
 
     private function decodeHeader(string $value): string
     {
-        if (function_exists('mb_decode_mimeheader')) {
-            return mb_decode_mimeheader($value);
-        }
-        return $value;
+        return function_exists('mb_decode_mimeheader') ? mb_decode_mimeheader($value) : $value;
     }
 
     private function date(string $value): string
