@@ -24,6 +24,6 @@ final class DraftSender
 
         $this->outbound->send($draft);
         $this->sent?->record($draft);
-        $this->drafts->delete($id);
+        $this->drafts->deleteIfVersion($id, $draft->version);
     }
 }
