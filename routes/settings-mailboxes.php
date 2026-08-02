@@ -5,8 +5,13 @@ declare(strict_types=1);
 use Katakata\Auth\Session;
 use Katakata\Email\MailboxAccount;
 use Katakata\Email\MailboxAccountStore;
+use Katakata\Email\MailboxCredentialResolver;
+use Katakata\Email\Providers\AccountCachedMailboxProvider;
+use Katakata\Email\Providers\CachedMailboxProvider;
+use Katakata\Editorial\AtomicFile;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
+use Katakata\View;
 
 /**
  * @var \Katakata\Http\Router $router
@@ -45,8 +50,42 @@ $mailboxAccountFromRequest = static function (Request $request, ?string $id = nu
 
 $settingsRedirect = static function (?string $error = null): Response {
     $query = $error === null ? 'saved=1' : 'error=' . rawurlencode($error);
-    return Response::redirect('/dashboard/settings?' . $query . '#mailbox', 303);
+    return Response::redirect('/dashboard/settings/mailboxes?' . $query, 303);
 };
+
+$router->get('/dashboard/settings/mailboxes', function (Request $request) use ($app, $authorizeMailboxSettings): Response {
+    $authorization = $authorizeMailboxSettings();
+    if ($authorization instanceof Response) {
+        return $authorization;
+    }
+
+    $credentials = $app->make(MailboxCredentialResolver::class);
+    $accounts = [];
+    foreach ($app->make(MailboxAccountStore::class)->all() as $account) {
+        $readiness = (new AccountCachedMailboxProvider(
+            $account,
+            new CachedMailboxProvider(
+                $app->storagePath('mail/cache/' . $account->id),
+                $app->make(AtomicFile::class),
+            ),
+        ))->readiness();
+        $accounts[] = [
+            'account' => $account,
+            'missing' => $credentials->missing($account),
+            'readiness' => $readiness,
+        ];
+    }
+
+    return Response::html($app->make(View::class)->render('dashboard-settings-mailboxes', [
+        'user' => $authorization,
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'accounts' => $accounts,
+        'saved' => ($request->query['saved'] ?? '') === '1',
+        'error' => $request->query['error'] ?? null,
+        'csrf' => $app->make(Session::class)->csrf(),
+        'limit' => MailboxAccountStore::MAX_ACCOUNTS,
+    ]));
+});
 
 $router->post('/dashboard/settings/mailboxes', function (Request $request) use (
     $app,
