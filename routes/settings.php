@@ -6,6 +6,8 @@ use Katakata\Auth\Session;
 use Katakata\Dashboard\DashboardSettings;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Distribution\UnavailableSubscriberStore;
+use Katakata\Email\ImapSettings;
+use Katakata\Email\Mailbox;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\View;
@@ -38,6 +40,8 @@ $readiness = static function () use ($app): array {
         && trim((string) $app->config()->get('threads.access_token', '')) !== '';
     $analyticsSecret = trim((string) $app->config()->get('analytics.secret', ''));
     $newsletterReady = !($app->make(SubscriberStore::class) instanceof UnavailableSubscriberStore);
+    $imap = $app->make(ImapSettings::class);
+    $mailbox = $app->make(Mailbox::class)->readiness();
 
     $discussionState = match ($provider) {
         'none' => ['status' => 'Disabled', 'detail' => 'Discussion is disabled.'],
@@ -48,10 +52,38 @@ $readiness = static function () use ($app): array {
         default => ['status' => 'Needs setup', 'detail' => 'The selected discussion provider is unavailable.'],
     };
 
+    $mailboxState = match ($mailbox['status']) {
+        'ready' => [
+            'status' => 'Ready',
+            'detail' => $mailbox['last_synced_at'] === null
+                ? 'The private mailbox cache is available.'
+                : 'Last synchronized ' . $mailbox['last_synced_at'] . '.',
+        ],
+        'error' => [
+            'status' => 'Needs attention',
+            'detail' => (string) ($mailbox['reason'] ?? 'The last scheduled mailbox synchronization failed.'),
+        ],
+        default => [
+            'status' => 'Needs setup',
+            'detail' => $imap->configured()
+                ? 'Run and schedule private/jobs/sync-mail.php to populate the mailbox cache.'
+                : 'Configure the required IMAP deployment variables, then schedule private/jobs/sync-mail.php.',
+        ],
+    };
+
     return [
         'newsletter' => $newsletterReady
             ? ['status' => 'Ready', 'detail' => 'Newsletter secret and subscriber storage are available.']
             : ['status' => 'Needs setup', 'detail' => 'Configure NEWSLETTER_SECRET or APP_KEY.'],
+        'mailbox' => $mailboxState + [
+            'configured' => $imap->configured(),
+            'missing' => $imap->missing(),
+            'host' => $imap->host,
+            'port' => $imap->port,
+            'encryption' => $imap->encryption,
+            'mailbox' => $imap->mailbox,
+            'last_synced_at' => $mailbox['last_synced_at'],
+        ],
         'discussion' => $discussionState,
         'analytics' => $analyticsSecret !== ''
             ? ['status' => 'Ready', 'detail' => 'Privacy-bounded analytics hashing is configured.']
