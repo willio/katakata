@@ -50,11 +50,30 @@ final class MailWorkspaceNavigationContractTest extends TestCase
         self::assertStringContainsString('MailboxRefreshRequest::class', $routes);
     }
 
-    public function testWorkspaceAlwaysSuppliesTheComposeErrorContract(): void
+    public function testWorkspaceDetailPanelIsReaderOnly(): void
     {
+        $workspace = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail.php');
         $routes = file_get_contents(dirname(__DIR__, 2) . '/routes/campaign.php');
 
+        self::assertIsString($workspace);
         self::assertIsString($routes);
-        self::assertStringContainsString("'composeError' => trim((string) (\$request->query['error'] ?? ''))", $routes);
+        self::assertStringNotContainsString('selectedDraft', $workspace);
+        self::assertStringNotContainsString('Compose mail</h2>', $workspace);
+        self::assertStringNotContainsString('mail-compose-form', $workspace);
+        self::assertStringContainsString('href="/mail/drafts/', $workspace);
+        self::assertStringContainsString('/edit"', $workspace);
+        self::assertStringContainsString('Select a message', $workspace);
+        self::assertStringNotContainsString("'selectedDraft' =>", $routes);
+        self::assertStringNotContainsString("'composeError' =>", $routes);
+    }
+
+    public function testWorkspaceAvoidsRepeatedLocationEyebrows(): void
+    {
+        $workspace = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail.php');
+
+        self::assertIsString($workspace);
+        self::assertStringNotContainsString('<p class="eyebrow">Editorial correspondence</p>', $workspace);
+        self::assertStringNotContainsString('<p class="eyebrow">Reader mail</p>', $workspace);
+        self::assertStringNotContainsString('<p class="eyebrow">Correspondence</p>', $workspace);
     }
 }
