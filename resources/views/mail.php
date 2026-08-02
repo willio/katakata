@@ -37,7 +37,8 @@
             <p class="eyebrow">Mail</p>
             <a href="/mail?area=inbox"<?= $area === 'inbox' ? ' aria-current="page"' : '' ?>>Inbox<?= $attention['reader'] > 0 ? ' (' . $attention['reader'] . ')' : '' ?></a>
             <a href="/mail?area=inbox#mail-drafts">Draft replies</a>
-            <a href="/mail?area=inbox#mail-archive">Archive</a>
+            <a href="/mail/sent">Sent mail</a>
+            <a href="/mail/archive">Archive</a>
         </section>
         <section>
             <p class="eyebrow">Newsletter</p>
