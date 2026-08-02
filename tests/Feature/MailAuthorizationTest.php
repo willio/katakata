@@ -38,6 +38,8 @@ final class MailAuthorizationTest extends TestCase
             '/mail/compose',
             '/mail/messages/{id}/reply',
             '/mail/drafts/{id}',
+            '/mail/drafts/{id}/edit',
+            '/mail/drafts/{id}/autosave',
         ] as $path) {
             self::assertStringContainsString($path, $routes);
         }
@@ -45,8 +47,8 @@ final class MailAuthorizationTest extends TestCase
         self::assertStringContainsString("foreach (['read' => true, 'unread' => false] as \$action => \$read)", $routes);
         self::assertStringContainsString("'/mail/messages/{id}/' . \$action", $routes);
         self::assertStringContainsString('->deleteLocal($id)', $routes);
-        self::assertGreaterThanOrEqual(8, substr_count($routes, '$authorizeMail();'));
-        self::assertGreaterThanOrEqual(8, substr_count($routes, 'if ($user instanceof Response)'));
+        self::assertGreaterThanOrEqual(10, substr_count($routes, '$authorizeMail();'));
+        self::assertGreaterThanOrEqual(10, substr_count($routes, 'if ($user instanceof Response)'));
     }
 
     public function testAttachmentDownloadRouteIsAbsent(): void
