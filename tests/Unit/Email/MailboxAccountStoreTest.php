@@ -50,6 +50,32 @@ final class MailboxAccountStoreTest extends TestCase
         $store->create($this->account('four'));
     }
 
+    public function testItUpdatesAndDeletesAnExistingAccountWithoutChangingItsId(): void
+    {
+        $store = new MailboxAccountStore($this->directory . '/accounts.json', new AtomicFile());
+        $store->create($this->account('letters'));
+        $store->update(new MailboxAccount(
+            id: 'letters',
+            label: 'Reader Letters',
+            host: 'mail.example.test',
+            port: 993,
+            encryption: 'ssl',
+            mailbox: 'INBOX',
+            usernameSecret: 'IMAP_LETTERS_USERNAME',
+            passwordSecret: 'IMAP_LETTERS_PASSWORD',
+            enabled: false,
+        ));
+
+        $updated = $store->find('letters');
+        self::assertSame('Reader Letters', $updated?->label);
+        self::assertSame('mail.example.test', $updated?->host);
+        self::assertFalse($updated?->enabled ?? true);
+
+        $store->delete('letters');
+        self::assertNull($store->find('letters'));
+        self::assertSame([], $store->all());
+    }
+
     private function account(string $id): MailboxAccount
     {
         return new MailboxAccount(
