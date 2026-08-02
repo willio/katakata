@@ -7,6 +7,7 @@ use Katakata\Email\DraftComposer;
 use Katakata\Email\DraftSender;
 use Katakata\Email\DraftStore;
 use Katakata\Email\Mailbox;
+use Katakata\Email\SentMessageStore;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\View;
@@ -36,6 +37,20 @@ $validMailCsrf = static function (Request $request) use ($app): bool {
 $router->get('/dashboard/mail', function (Request $request) use ($authorizeMail): Response {
     $user = $authorizeMail();
     return $user instanceof Response ? $user : Response::redirect('/mail', 302);
+});
+
+$router->get('/mail/sent', function (Request $request) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
+    }
+
+    return Response::html($app->make(View::class)->render('mail-sent', [
+        'user' => $user,
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'messages' => $app->make(SentMessageStore::class)->recent(),
+        'csrf' => $app->make(Session::class)->csrf(),
+    ]));
 });
 
 $router->get('/mail/archive', function (Request $request) use ($app, $authorizeMail): Response {
@@ -193,7 +208,7 @@ $router->post('/mail/drafts/{id}', function (Request $request, string $id) use (
     if (($request->body['intent'] ?? '') === 'send') {
         try {
             $app->make(DraftSender::class)->send($draft->id);
-            return Response::redirect('/mail?area=inbox&sent=1', 303);
+            return Response::redirect('/mail/sent', 303);
         } catch (\Throwable $error) {
             return Response::redirect('/mail?area=inbox&draft=' . rawurlencode($draft->id) . '&error=' . rawurlencode($error->getMessage()), 303);
         }
