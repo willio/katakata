@@ -6,6 +6,7 @@ use Katakata\Email\MailboxSyncCoordinator;
 
 /** @var \Katakata\Application $app */
 $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
+require dirname(__DIR__, 2) . '/bootstrap/mail.php';
 
 $accountId = null;
 $limit = 100;
