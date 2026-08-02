@@ -38,6 +38,22 @@ $router->get('/dashboard/mail', function (Request $request) use ($authorizeMail)
     return $user instanceof Response ? $user : Response::redirect('/mail', 302);
 });
 
+$router->get('/mail/archive', function (Request $request) use ($app, $authorizeMail): Response {
+    $user = $authorizeMail();
+    if ($user instanceof Response) {
+        return $user;
+    }
+
+    $mailbox = $app->make(Mailbox::class);
+    return Response::html($app->make(View::class)->render('mail-archive', [
+        'user' => $user,
+        'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'messages' => $mailbox->archived(),
+        'mailboxReadiness' => $mailbox->readiness(),
+        'csrf' => $app->make(Session::class)->csrf(),
+    ]));
+});
+
 $router->get('/mail/messages/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) {
@@ -81,7 +97,7 @@ $router->post('/mail/messages/{id}/archive', function (Request $request, string 
     }
 
     $app->make(Mailbox::class)->archive($id);
-    return Response::redirect('/mail?area=inbox', 303);
+    return Response::redirect('/mail/archive', 303);
 });
 
 $router->get('/mail/messages/{messageId}/attachments/{attachmentId}', function (Request $request, string $messageId, string $attachmentId) use ($app, $authorizeMail): Response {
