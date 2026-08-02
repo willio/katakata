@@ -50,7 +50,6 @@ final class ImapSynchronizer
                     'to' => (string) ($message['to'] ?? ''),
                     'subject' => (string) ($message['subject'] ?? ''),
                     'text' => (string) ($message['text'] ?? ''),
-                    'html' => isset($message['html']) ? (string) $message['html'] : null,
                     'received_at' => $receivedAt->format(DATE_ATOM),
                 ];
                 $target = $this->messagePath($id);
