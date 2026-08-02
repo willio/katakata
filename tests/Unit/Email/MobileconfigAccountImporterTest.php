@@ -56,6 +56,12 @@ final class MobileconfigAccountImporterTest extends TestCase
         $parser->parse("<?xml version=\"1.0\"?><!DOCTYPE plist SYSTEM \"file:///etc/passwd\"><plist><dict/></plist>");
     }
 
+    public function testItRejectsSignedOrBinaryProfilesExplicitly(): void
+    {
+        $this->expectExceptionMessage('Signed or binary configuration profiles are not supported');
+        (new SafePlistParser())->parse("\x30\x82\x01\x00CMS-SignedData");
+    }
+
     public function testItRejectsMailProfilesWithIdentityMaterial(): void
     {
         $profile = $this->profile([
