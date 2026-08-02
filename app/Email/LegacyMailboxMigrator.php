@@ -21,7 +21,7 @@ final class LegacyMailboxMigrator
         }
 
         $legacy ??= ImapSettings::fromEnvironment();
-        if ($legacy->host === '' || $legacy->encryption !== 'ssl') {
+        if (!$legacy->configured()) {
             return false;
         }
 
@@ -31,7 +31,7 @@ final class LegacyMailboxMigrator
             host: $legacy->host,
             port: $legacy->port,
             encryption: 'ssl',
-            mailbox: $legacy->mailbox !== '' ? $legacy->mailbox : 'INBOX',
+            mailbox: $legacy->mailbox,
             usernameSecret: 'IMAP_USERNAME',
             passwordSecret: 'IMAP_PASSWORD',
             enabled: true,
