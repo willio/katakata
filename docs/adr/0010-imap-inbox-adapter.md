@@ -39,10 +39,13 @@ campaign work. A failed sync never deletes local synchronized messages.
 
 Reader addresses, subjects, bodies, and attachments are sensitive operational
 data. They are excluded from Git, public paths, analytics, and diagnostic
-logs. Before implementation, the mail subsystem must define private storage
-modes, a retention policy, deletion/export handling, and attachment limits.
-Encryption at rest is a self-host deployment responsibility unless a managed
-service explicitly provides and documents it.
+logs. The first implementation retains cached message metadata and text for 30
+days, supports local-only cache deletion, and provides no export endpoint.
+Attachment payloads are not synchronized or downloaded through Katakata;
+editors use their original mailbox application. Encryption at rest is a
+self-host deployment responsibility unless a managed service explicitly
+provides and documents it. See
+[`docs/superpowers/specs/2026-08-02-imap-cache-privacy-design.md`](../superpowers/specs/2026-08-02-imap-cache-privacy-design.md).
 
 ## Consequences
 
