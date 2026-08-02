@@ -6,14 +6,14 @@ namespace Katakata\Email\Providers;
 
 use DateTimeImmutable;
 use Katakata\Editorial\AtomicFile;
+use Katakata\Email\ArchivedMailboxProvider;
 use Katakata\Email\Attachment;
 use Katakata\Email\AttachmentDownload;
-use Katakata\Email\MailboxProvider;
 use Katakata\Email\Message;
 use Katakata\Email\MessageSummary;
 use RuntimeException;
 
-final class CachedMailboxProvider implements MailboxProvider
+final class CachedMailboxProvider implements ArchivedMailboxProvider
 {
     public function __construct(
         private readonly string $path,
@@ -23,15 +23,12 @@ final class CachedMailboxProvider implements MailboxProvider
 
     public function inbox(int $limit = 50): array
     {
-        $messages = [];
-        foreach ($this->index()['messages'] as $id) {
-            $message = $this->message((string) $id);
-            if ($message !== null && !$this->archived($message->id)) {
-                $messages[] = $message->summary();
-            }
-        }
-        usort($messages, static fn (MessageSummary $a, MessageSummary $b): int => $b->receivedAt <=> $a->receivedAt);
-        return array_slice($messages, 0, max(1, $limit));
+        return $this->summaries(false, $limit);
+    }
+
+    public function archived(int $limit = 50): array
+    {
+        return $this->summaries(true, $limit);
     }
 
     public function unreadCount(): int
@@ -118,6 +115,20 @@ final class CachedMailboxProvider implements MailboxProvider
             'reason' => isset($status['error']) ? (string) $status['error'] : null,
             'last_synced_at' => isset($status['last_synced_at']) ? (string) $status['last_synced_at'] : null,
         ];
+    }
+
+    /** @return list<MessageSummary> */
+    private function summaries(bool $archived, int $limit): array
+    {
+        $messages = [];
+        foreach ($this->index()['messages'] as $id) {
+            $message = $this->message((string) $id);
+            if ($message !== null && $this->archived($message->id) === $archived) {
+                $messages[] = $message->summary();
+            }
+        }
+        usort($messages, static fn (MessageSummary $a, MessageSummary $b): int => $b->receivedAt <=> $a->receivedAt);
+        return array_slice($messages, 0, max(1, $limit));
     }
 
     private function index(): array
