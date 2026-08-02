@@ -75,6 +75,25 @@ final class MailWorkspaceNavigationContractTest extends TestCase
         self::assertStringContainsString('data-mail-message-panel', $partial);
     }
 
+    public function testSelectedMessageRendersOnTheServerAndDoesNotChangeTheInboxFilter(): void
+    {
+        $workspace = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail.php');
+        $reader = file_get_contents(dirname(__DIR__, 2) . '/public/assets/js/mail-reader.js');
+        $message = file_get_contents(dirname(__DIR__, 2) . '/app/Email/Message.php');
+
+        self::assertIsString($workspace);
+        self::assertIsString($reader);
+        self::assertIsString($message);
+        self::assertStringContainsString("\$_GET['message_account']", $workspace);
+        self::assertStringContainsString('$selectedMessageRecord = null;', $workspace);
+        self::assertStringContainsString('$selectedMessageRecord->text', $workspace);
+        self::assertStringContainsString("'&account=' . rawurlencode(\$selectedAccount)", $workspace);
+        self::assertStringContainsString("'&message_account='", $workspace);
+        self::assertStringContainsString("searchParams.get('message_account')", $reader);
+        self::assertStringContainsString('text: $this->text', $message);
+        self::assertStringNotContainsString("searchParams.get('account');", $reader);
+    }
+
     public function testWorkspaceAvoidsRepeatedLocationLabels(): void
     {
         $workspace = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail.php');
