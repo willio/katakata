@@ -26,28 +26,23 @@ final class ImapSynchronizerTest extends TestCase
         $this->remove($this->root);
     }
 
-    public function testRepeatedSyncWritesEachUnchangedMessageOnlyOnce(): void
+    public function testRepeatedSyncWritesEachUnchangedMessageOnlyOnceWithoutAttachments(): void
     {
-        $source = new class implements ImapMailboxSource {
-            public function fetch(ImapSettings $settings, int $limit = 100): array
-            {
-                return [[
-                    'id' => 'uid-100',
-                    'from' => 'reader@example.com',
-                    'to' => 'letters@example.com',
-                    'subject' => 'A reply',
-                    'text' => 'Hello.',
-                    'html' => '<p>Hello.</p>',
-                    'received_at' => '2026-08-02T00:00:00+00:00',
-                    'attachments' => [[
-                        'id' => 'attachment-1',
-                        'name' => 'note.txt',
-                        'media_type' => 'text/plain',
-                        'content' => 'Attached note.',
-                    ]],
-                ]];
-            }
-        };
+        $source = $this->source([[
+            'id' => 'uid-100',
+            'from' => 'reader@example.com',
+            'to' => 'letters@example.com',
+            'subject' => 'A reply',
+            'text' => 'Hello.',
+            'html' => '<p>Hello.</p>',
+            'received_at' => '2026-08-02T00:00:00+00:00',
+            'attachments' => [[
+                'id' => 'attachment-1',
+                'name' => 'note.txt',
+                'media_type' => 'text/plain',
+                'content' => 'Attached note.',
+            ]],
+        ]]);
         $sync = new ImapSynchronizer($this->settings(), $source, $this->root, new AtomicFile());
 
         $first = $sync->sync(50, new DateTimeImmutable('2026-08-02T01:00:00+00:00'));
@@ -63,29 +58,58 @@ final class ImapSynchronizerTest extends TestCase
         self::assertSame(0, $second['written']);
         self::assertSame($firstBytes, file_get_contents($messagePath));
         self::assertSame($firstMtime, filemtime($messagePath));
-        self::assertSame('Attached note.', file_get_contents($this->root . '/attachments/uid-100/attachment-1'));
+        self::assertStringNotContainsString('attachments', (string) file_get_contents($messagePath));
+        self::assertDirectoryDoesNotExist($this->root . '/attachments');
         self::assertSame(0600, fileperms($messagePath) & 0777);
         self::assertSame(0600, fileperms($this->root . '/index.json') & 0777);
     }
 
+    public function testSmallerSyncWindowRetainsExistingUnexpiredMessages(): void
+    {
+        $first = new ImapSynchronizer($this->settings(), $this->source([
+            $this->message('uid-1', '2026-08-01T10:00:00+00:00'),
+            $this->message('uid-2', '2026-08-02T10:00:00+00:00'),
+        ]), $this->root, new AtomicFile());
+        $first->sync(100, new DateTimeImmutable('2026-08-02T12:00:00+00:00'));
+
+        $second = new ImapSynchronizer($this->settings(), $this->source([
+            $this->message('uid-2', '2026-08-02T10:00:00+00:00'),
+        ]), $this->root, new AtomicFile());
+        $second->sync(1, new DateTimeImmutable('2026-08-02T13:00:00+00:00'));
+
+        $index = $this->index();
+        self::assertSame(['uid-2', 'uid-1'], $index['messages']);
+        self::assertFileExists($this->root . '/messages/uid-1.json');
+        self::assertFileExists($this->root . '/messages/uid-2.json');
+    }
+
+    public function testSyncPrunesExpiredMessagesLegacyAttachmentsAndLocalState(): void
+    {
+        mkdir($this->root . '/messages', 0700, true);
+        mkdir($this->root . '/attachments/expired-id', 0700, true);
+        file_put_contents($this->root . '/attachments/expired-id/file', 'legacy');
+        file_put_contents($this->root . '/messages/expired-id.json', json_encode($this->message('expired-id', '2026-06-01T00:00:00+00:00'), JSON_THROW_ON_ERROR));
+        file_put_contents($this->root . '/messages/current-id.json', json_encode($this->message('current-id', '2026-08-01T00:00:00+00:00'), JSON_THROW_ON_ERROR));
+        file_put_contents($this->root . '/index.json', json_encode(['messages' => ['expired-id', 'current-id'], 'status' => []], JSON_THROW_ON_ERROR));
+        file_put_contents($this->root . '/state.json', json_encode(['read' => ['expired-id', 'current-id'], 'archived' => ['expired-id']], JSON_THROW_ON_ERROR));
+
+        $sync = new ImapSynchronizer($this->settings(), $this->source([]), $this->root, new AtomicFile());
+        $sync->sync(10, new DateTimeImmutable('2026-08-02T00:00:00+00:00'));
+
+        self::assertFileDoesNotExist($this->root . '/messages/expired-id.json');
+        self::assertFileExists($this->root . '/messages/current-id.json');
+        self::assertDirectoryDoesNotExist($this->root . '/attachments');
+        self::assertSame(['current-id'], $this->index()['messages']);
+        $state = json_decode((string) file_get_contents($this->root . '/state.json'), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame(['current-id'], $state['read']);
+        self::assertSame([], $state['archived']);
+    }
+
     public function testFailedSyncPreservesCachedMessagesAndLastSuccessfulTimestamp(): void
     {
-        $successful = new class implements ImapMailboxSource {
-            public function fetch(ImapSettings $settings, int $limit = 100): array
-            {
-                return [[
-                    'id' => 'uid-200',
-                    'from' => 'reader@example.com',
-                    'to' => 'letters@example.com',
-                    'subject' => 'Cached reply',
-                    'text' => 'Keep this.',
-                    'html' => null,
-                    'received_at' => '2026-08-02T00:00:00+00:00',
-                    'attachments' => [],
-                ]];
-            }
-        };
-        (new ImapSynchronizer($this->settings(), $successful, $this->root, new AtomicFile()))
+        (new ImapSynchronizer($this->settings(), $this->source([
+            $this->message('uid-200', '2026-08-02T00:00:00+00:00'),
+        ]), $this->root, new AtomicFile()))
             ->sync(50, new DateTimeImmutable('2026-08-02T01:00:00+00:00'));
 
         $failing = new class implements ImapMailboxSource {
@@ -103,7 +127,7 @@ final class ImapSynchronizerTest extends TestCase
             self::assertSame('Mailbox connection failed.', $error->getMessage());
         }
 
-        $index = json_decode((string) file_get_contents($this->root . '/index.json'), true, 512, JSON_THROW_ON_ERROR);
+        $index = $this->index();
         self::assertSame(['uid-200'], $index['messages']);
         self::assertSame('error', $index['status']['state']);
         self::assertSame('Mailbox connection failed.', $index['status']['error']);
@@ -131,7 +155,7 @@ final class ImapSynchronizerTest extends TestCase
         try {
             $sync->sync();
         } finally {
-            $index = json_decode((string) file_get_contents($this->root . '/index.json'), true, 512, JSON_THROW_ON_ERROR);
+            $index = $this->index();
             self::assertFalse($source->called);
             self::assertSame([], $index['messages']);
             self::assertSame('needs_setup', $index['status']['state']);
@@ -142,6 +166,42 @@ final class ImapSynchronizerTest extends TestCase
     private function settings(): ImapSettings
     {
         return new ImapSettings('imap.example.com', 993, 'ssl', 'letters@example.com', 'secret', 'INBOX');
+    }
+
+    /** @param list<array<string,mixed>> $messages */
+    private function source(array $messages): ImapMailboxSource
+    {
+        return new class($messages) implements ImapMailboxSource {
+            public function __construct(private readonly array $messages)
+            {
+            }
+
+            public function fetch(ImapSettings $settings, int $limit = 100): array
+            {
+                return array_slice($this->messages, 0, $limit);
+            }
+        };
+    }
+
+    /** @return array<string,mixed> */
+    private function message(string $id, string $receivedAt): array
+    {
+        return [
+            'id' => $id,
+            'from' => 'reader@example.com',
+            'to' => 'letters@example.com',
+            'subject' => 'Reply ' . $id,
+            'text' => 'Hello.',
+            'html' => null,
+            'received_at' => $receivedAt,
+            'attachments' => [],
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private function index(): array
+    {
+        return json_decode((string) file_get_contents($this->root . '/index.json'), true, 512, JSON_THROW_ON_ERROR);
     }
 
     private function remove(string $path): void
