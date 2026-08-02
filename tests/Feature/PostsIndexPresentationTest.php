@@ -6,6 +6,7 @@ namespace Katakata\Tests\Feature;
 
 use DateTimeImmutable;
 use Katakata\Content\Draft;
+use Katakata\Content\Post;
 use Katakata\View;
 use PHPUnit\Framework\TestCase;
 
@@ -36,5 +37,20 @@ final class PostsIndexPresentationTest extends TestCase
 
         self::assertIsString($css);
         self::assertStringContainsString('.posts-index { margin: 0; padding: 0; list-style: none; }', $css);
+    }
+
+    public function testPublishedPostTitleIsItsPublicLink(): void
+    {
+        $html = (new View(dirname(__DIR__, 2) . '/resources/views'))->render('posts', [
+            'siteName' => 'Katakata',
+            'status' => 'published',
+            'drafts' => [],
+            'posts' => [
+                new Post('published-post', 'Published Post', new DateTimeImmutable('2026-08-02'), 'Author', [], null, 'published', '', [], ''),
+            ],
+        ]);
+
+        self::assertStringContainsString('<strong><a href="/2026/08/published-post">Published Post</a></strong>', $html);
+        self::assertStringNotContainsString('>View</a>', $html);
     }
 }

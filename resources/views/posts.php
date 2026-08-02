@@ -56,9 +56,9 @@ if (in_array($status, ['all', 'published'], true)) {
             'status' => 'Published',
             'author' => $post->author ?? '—',
             'date' => $post->date,
-            'titleHref' => null,
-            'primaryHref' => $post->url(),
-            'primaryLabel' => 'View',
+            'titleHref' => $post->url(),
+            'primaryHref' => null,
+            'primaryLabel' => null,
             'secondaryHref' => null,
             'secondaryLabel' => null,
         ];
