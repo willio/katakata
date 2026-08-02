@@ -23,7 +23,7 @@
         return data;
     };
     const passkeysSupported = Boolean(window.isSecureContext && window.PublicKeyCredential && navigator.credentials);
-    const outputFor = control => control.closest('form, .editor-panel')?.querySelector('[data-passkey-status]');
+    const outputFor = control => control.closest('form, .editor-panel, [data-passkey-login]')?.querySelector('[data-passkey-status]');
     const message = (control, text, error = false) => {
         const output = outputFor(control);
         if (!output) return;
@@ -39,9 +39,7 @@
         const eventName = control.tagName === 'FORM' ? 'submit' : 'click';
         control.addEventListener(eventName, async event => {
             event.preventDefault();
-            if (!passkeysSupported) return;
-            const csrf = control.closest('form')?.elements.csrf?.value
-                || document.querySelector('input[name="csrf"]')?.value;
+            const csrf = control.closest('form')?.elements.csrf?.value || document.querySelector('input[name="csrf"]')?.value;
             try {
                 message(control, 'Waiting for your device…');
                 const options = await post('/passkeys/register/options', {csrf});
@@ -49,12 +47,11 @@
                 options.user.id = decode(options.user.id);
                 options.excludeCredentials = options.excludeCredentials.map(item => ({...item, id: decode(item.id)}));
                 const credential = await navigator.credentials.create({publicKey: options});
-                const payload = {
+                await post('/passkeys/register', {csrf, credential: JSON.stringify({
                     id: credential.id,
                     clientDataJSON: encode(credential.response.clientDataJSON),
                     attestationObject: encode(credential.response.attestationObject),
-                };
-                await post('/passkeys/register', {csrf, credential: JSON.stringify(payload)});
+                })});
                 message(control, 'Passkey added.');
             } catch (error) {
                 message(control, error.message || 'Passkey registration failed.', true);
@@ -62,34 +59,39 @@
         });
     });
 
-    document.querySelectorAll('[data-passkey-login]').forEach(form => {
+    document.querySelectorAll('[data-passkey-login]').forEach(control => {
         if (!passkeysSupported) {
-            form.hidden = true;
+            control.hidden = true;
             return;
         }
-        form.addEventListener('submit', async event => {
-        event.preventDefault();
-        if (!passkeysSupported) return;
-        const csrf = form.elements.csrf.value;
-        const email = form.elements.email.value;
-        try {
-            message(form, 'Waiting for your device…');
-            const options = await post('/passkeys/login/options', {csrf, email});
-            options.challenge = decode(options.challenge);
-            options.allowCredentials = options.allowCredentials.map(item => ({...item, id: decode(item.id)}));
-            const credential = await navigator.credentials.get({publicKey: options});
-            const payload = {
-                id: credential.id,
-                clientDataJSON: encode(credential.response.clientDataJSON),
-                authenticatorData: encode(credential.response.authenticatorData),
-                signature: encode(credential.response.signature),
-                userHandle: credential.response.userHandle ? encode(credential.response.userHandle) : '',
-            };
-            const result = await post('/passkeys/login', {csrf, credential: JSON.stringify(payload)});
-            window.location.assign(result.redirect || '/editor');
-        } catch (error) {
-            message(form, error.message || 'Passkey authentication failed.', true);
-        }
+        const submit = control.querySelector('[data-passkey-submit]') || control;
+        submit.addEventListener(control.tagName === 'FORM' ? 'submit' : 'click', async event => {
+            event.preventDefault();
+            const csrf = control.querySelector('input[name="csrf"]')?.value || '';
+            const emailField = document.querySelector('[data-password-login] input[name="email"]');
+            const email = emailField instanceof HTMLInputElement ? emailField.value.trim() : '';
+            if (email === '') {
+                message(control, 'Enter your email above first.', true);
+                emailField?.focus();
+                return;
+            }
+            try {
+                message(control, 'Waiting for your device…');
+                const options = await post('/passkeys/login/options', {csrf, email});
+                options.challenge = decode(options.challenge);
+                options.allowCredentials = options.allowCredentials.map(item => ({...item, id: decode(item.id)}));
+                const credential = await navigator.credentials.get({publicKey: options});
+                const result = await post('/passkeys/login', {csrf, credential: JSON.stringify({
+                    id: credential.id,
+                    clientDataJSON: encode(credential.response.clientDataJSON),
+                    authenticatorData: encode(credential.response.authenticatorData),
+                    signature: encode(credential.response.signature),
+                    userHandle: credential.response.userHandle ? encode(credential.response.userHandle) : '',
+                })});
+                window.location.assign(result.redirect || '/editor');
+            } catch (error) {
+                message(control, error.message || 'Passkey authentication failed.', true);
+            }
         });
     });
 })();
