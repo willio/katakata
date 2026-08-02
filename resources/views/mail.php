@@ -3,7 +3,7 @@
 /** @var string $siteName */
 /** @var 'inbox'|'campaigns' $area */
 /** @var array{reader:int,campaigns:int,total:int,detail:string} $attention */
-/** @var array{status:string,reason:?string,last_synced_at:?string} $mailboxReadiness */
+/** @var array<string,mixed> $mailboxReadiness */
 /** @var list<\Katakata\Email\MessageSummary> $messages */
 /** @var list<\Katakata\Email\Draft> $drafts */
 /** @var ?\Katakata\Email\Draft $selectedDraft */
@@ -14,6 +14,23 @@
 /** @var bool $newsletterReady */
 /** @var string $csrf */
 /** @var string $composeError */
+
+$accountStates = array_values(array_filter(
+    (array) ($mailboxReadiness['accounts'] ?? []),
+    static fn (mixed $state): bool => is_array($state) && isset($state['account_id'], $state['label']),
+));
+$selectedAccount = trim((string) ($_GET['account'] ?? 'all'));
+$knownAccounts = array_column($accountStates, 'account_id');
+if ($selectedAccount !== 'all' && !in_array($selectedAccount, $knownAccounts, true)) {
+    $selectedAccount = 'all';
+}
+if ($selectedAccount !== 'all') {
+    $messages = array_values(array_filter(
+        $messages,
+        static fn (\Katakata\Email\MessageSummary $message): bool => $message->sourceAccountId === $selectedAccount,
+    ));
+}
+$inboxQuery = static fn (string $account): string => '/mail?area=inbox&amp;account=' . rawurlencode($account);
 ?>
 <!doctype html>
 <html lang="en">
@@ -36,7 +53,19 @@
     <aside class="mail-sidebar" aria-label="Mail destinations">
         <section>
             <p class="eyebrow">Mail</p>
-            <a href="/mail?area=inbox"<?= $area === 'inbox' ? ' aria-current="page"' : '' ?>>Inbox<?= $attention['reader'] > 0 ? ' (' . $attention['reader'] . ')' : '' ?></a>
+            <a href="/mail?area=inbox"<?= $area === 'inbox' && $selectedAccount === 'all' ? ' aria-current="page"' : '' ?>>Inbox<?= $attention['reader'] > 0 ? ' (' . $attention['reader'] . ')' : '' ?></a>
+            <?php if ($accountStates !== []): ?>
+                <nav class="mail-account-nav" aria-label="Inbox accounts">
+                    <a href="<?= $inboxQuery('all') ?>"<?= $selectedAccount === 'all' ? ' aria-current="page"' : '' ?>>All accounts</a>
+                    <?php foreach ($accountStates as $accountState): ?>
+                        <?php $accountStatus = (string) ($accountState['status'] ?? 'needs_setup'); ?>
+                        <a href="<?= $inboxQuery((string) $accountState['account_id']) ?>"<?= $selectedAccount === $accountState['account_id'] ? ' aria-current="page"' : '' ?>>
+                            <?= e((string) $accountState['label']) ?>
+                            <?php if ($accountStatus !== 'ready'): ?><span class="quiet"> · <?= $accountStatus === 'error' ? 'Needs attention' : 'Needs setup' ?></span><?php endif; ?>
+                        </a>
+                    <?php endforeach; ?>
+                </nav>
+            <?php endif; ?>
             <a href="/mail?area=inbox#mail-drafts">Draft replies</a>
             <a href="/mail/sent">Sent mail</a>
             <a href="/mail/archive">Archive</a>
@@ -53,29 +82,29 @@
     <section class="mail-list-panel" aria-labelledby="mail-list-title">
         <header class="mail-panel-header">
             <p class="eyebrow">Editorial correspondence</p>
-            <h1 id="mail-list-title"><?= $area === 'inbox' ? 'Inbox' : 'Campaigns' ?></h1>
+            <h1 id="mail-list-title"><?= $area === 'inbox' ? ($selectedAccount === 'all' ? 'Inbox' : e((string) (($accountStates[array_search($selectedAccount, $knownAccounts, true)]['label'] ?? 'Inbox')))) : 'Campaigns' ?></h1>
             <p><?= e($attention['detail']) ?></p>
         </header>
 
-        <?php if ($mailboxReadiness['status'] !== 'ready'): ?>
+        <?php if (!in_array($mailboxReadiness['status'], ['ready', 'disabled'], true)): ?>
             <section class="mail-readiness" role="status" aria-labelledby="mail-readiness-title">
-                <h2 id="mail-readiness-title">Inbox needs setup</h2>
-                <p><?= e((string) ($mailboxReadiness['reason'] ?? 'Configure the deployment mailbox adapter to enable reader correspondence.')) ?></p>
-                <p class="quiet">Campaign work remains available. Inbox credentials are deployment-only and are never shown here.</p>
+                <h2 id="mail-readiness-title"><?= $mailboxReadiness['status'] === 'partial' ? 'Inbox partially available' : 'Inbox needs setup' ?></h2>
+                <p><?= e((string) ($mailboxReadiness['reason'] ?? 'Configure at least one deployment mailbox to enable reader correspondence.')) ?></p>
+                <p class="quiet">Healthy account caches remain available. Inbox credentials are deployment-only and are never shown here.</p>
             </section>
         <?php endif; ?>
 
         <?php if ($area === 'inbox'): ?>
             <section aria-labelledby="mail-inbox">
-                <h2 id="mail-inbox">Inbox</h2>
-                <?php if ($mailboxReadiness['status'] !== 'ready'): ?>
-                    <p class="quiet">The inbox is unavailable until scheduled mailbox sync is configured.</p>
+                <h2 id="mail-inbox"><?= $selectedAccount === 'all' ? 'All accounts' : 'Selected account' ?></h2>
+                <?php if ($mailboxReadiness['status'] === 'disabled'): ?>
+                    <p class="quiet">No mailbox account is enabled.</p>
                 <?php elseif ($messages === []): ?>
-                    <p class="quiet">No reader messages.</p>
+                    <p class="quiet">No reader messages<?= $selectedAccount === 'all' ? '' : ' in this account' ?>.</p>
                 <?php else: ?>
                     <ol class="mail-item-list">
                         <?php foreach ($messages as $message): ?>
-                            <li><a href="/mail/messages/<?= rawurlencode($message->id) ?>"><strong><?= e($message->subject) ?></strong><span><?= e($message->from) ?><?= $message->unread ? ' · Unread' : '' ?></span><time datetime="<?= e($message->receivedAt->format(DATE_ATOM)) ?>"><?= e($message->receivedAt->format('M j, H:i')) ?></time></a></li>
+                            <li><a href="/mail/messages/<?= rawurlencode($message->id) ?>"><strong><?= e($message->subject) ?></strong><span><?= e($message->from) ?> · <?= e($message->sourceLabel ?? 'Mailbox') ?><?= $message->unread ? ' · Unread' : '' ?></span><time datetime="<?= e($message->receivedAt->format(DATE_ATOM)) ?>"><?= e($message->receivedAt->format('M j, H:i')) ?></time></a></li>
                         <?php endforeach; ?>
                     </ol>
                 <?php endif; ?>
