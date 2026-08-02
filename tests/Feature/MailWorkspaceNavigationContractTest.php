@@ -87,7 +87,7 @@ final class MailWorkspaceNavigationContractTest extends TestCase
         self::assertStringContainsString("\$_GET['message_account']", $workspace);
         self::assertStringContainsString('$selectedMessageRecord = null;', $workspace);
         self::assertStringContainsString('$selectedMessageRecord->text', $workspace);
-        self::assertStringContainsString("'&account=' . rawurlencode(\$selectedAccount)", $workspace);
+        self::assertStringContainsString("'/mail?area=inbox&account=' . rawurlencode(\$selectedAccount)", $workspace);
         self::assertStringContainsString("'&message_account='", $workspace);
         self::assertStringContainsString("searchParams.get('message_account')", $reader);
         self::assertStringContainsString('text: $this->text', $message);
