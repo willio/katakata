@@ -11,17 +11,17 @@ use Katakata\Email\DraftComposer;
 use Katakata\Email\DraftSender;
 use Katakata\Email\DraftStore;
 use Katakata\Email\FileDraftStore;
-use Katakata\Email\ImapMailboxSource;
-use Katakata\Email\ImapSettings;
-use Katakata\Email\ImapSynchronizer;
 use Katakata\Email\Mailbox;
+use Katakata\Email\MailboxAccountStore;
+use Katakata\Email\MailboxCredentialResolver;
 use Katakata\Email\MailboxProvider;
-use Katakata\Email\MailTextExtractor;
+use Katakata\Email\MailboxSyncCoordinator;
 use Katakata\Email\OutboundMailProvider;
+use Katakata\Email\Providers\AccountCachedMailboxProvider;
+use Katakata\Email\Providers\AggregatedMailboxProvider;
 use Katakata\Email\Providers\CachedMailboxProvider;
 use Katakata\Email\Providers\UnavailableOutboundMailProvider;
 use Katakata\Email\SentMessageStore;
-use Katakata\Email\SocketImapMailboxSource;
 use Katakata\Mail\CampaignDispatcher;
 use Katakata\Mail\CampaignDraftFactory;
 use Katakata\Mail\CampaignDraftReviewer;
@@ -35,29 +35,44 @@ use Katakata\Rendering\Markdown;
 
 /** @var Application $app */
 
-$app->singleton(ImapSettings::class, static fn (): ImapSettings => ImapSettings::fromEnvironment());
-$app->singleton(MailTextExtractor::class, static fn (): MailTextExtractor => new MailTextExtractor());
 $app->singleton(
-    ImapMailboxSource::class,
-    static fn (Application $container): ImapMailboxSource => new SocketImapMailboxSource(
-        $container->make(MailTextExtractor::class),
+    MailboxAccountStore::class,
+    static fn (Application $container): MailboxAccountStore => new MailboxAccountStore(
+        $container->storagePath('mail/accounts.json'),
+        $container->make(AtomicFile::class),
     ),
 );
 $app->singleton(
-    ImapSynchronizer::class,
-    static fn (Application $container): ImapSynchronizer => new ImapSynchronizer(
-        $container->make(ImapSettings::class),
-        $container->make(ImapMailboxSource::class),
+    MailboxCredentialResolver::class,
+    static fn (): MailboxCredentialResolver => new MailboxCredentialResolver(),
+);
+$app->singleton(
+    MailboxSyncCoordinator::class,
+    static fn (Application $container): MailboxSyncCoordinator => new MailboxSyncCoordinator(
+        $container->make(MailboxAccountStore::class),
+        $container->make(MailboxCredentialResolver::class),
         $container->storagePath('mail/cache'),
         $container->make(AtomicFile::class),
     ),
 );
 $app->singleton(
     MailboxProvider::class,
-    static fn (Application $container): MailboxProvider => new CachedMailboxProvider(
-        $container->storagePath('mail/cache'),
-        $container->make(AtomicFile::class),
-    ),
+    static function (Application $container): MailboxProvider {
+        $providers = [];
+        foreach ($container->make(MailboxAccountStore::class)->all() as $account) {
+            if (!$account->enabled) {
+                continue;
+            }
+            $providers[$account->id] = new AccountCachedMailboxProvider(
+                $account,
+                new CachedMailboxProvider(
+                    $container->storagePath('mail/cache/' . $account->id),
+                    $container->make(AtomicFile::class),
+                ),
+            );
+        }
+        return new AggregatedMailboxProvider($providers);
+    },
 );
 $app->singleton(
     Mailbox::class,
