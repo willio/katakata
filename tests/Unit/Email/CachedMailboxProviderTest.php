@@ -56,6 +56,7 @@ final class CachedMailboxProviderTest extends TestCase
         self::assertSame('ready', $provider->readiness()['status']);
         self::assertSame('2026-08-01T10:05:00+00:00', $provider->readiness()['last_synced_at']);
         self::assertCount(1, $provider->inbox());
+        self::assertSame([], $provider->archived());
         self::assertSame('A reply', $provider->message('message-1')?->subject);
         self::assertSame('note', $provider->attachment('message-1', 'attachment-1')?->content);
     }
@@ -70,6 +71,8 @@ final class CachedMailboxProviderTest extends TestCase
 
         $provider->archive('message-1');
         self::assertSame([], $provider->inbox());
+        self::assertCount(1, $provider->archived());
+        self::assertSame('message-1', $provider->archived()[0]->id);
         self::assertSame($before, file_get_contents($this->root . '/messages/message-1.json'));
     }
 
