@@ -1,35 +1,32 @@
 # Email client subsystem
 
-Katakata treats reader correspondence as private operational data and exposes
-it through one provider-neutral Mail workspace.
+Katakata treats reader correspondence as private operational data and exposes it through one provider-neutral Mail workspace.
 
 ## Canonical surface
 
-`/mail` is the only canonical Mail workspace. It contains two distinct work
-areas backed by one attention model:
+`/mail` is the canonical Mail workspace. It contains two distinct work areas backed by one attention model:
 
-- **Inbox** for reader correspondence readiness and cached mailbox state;
-- **Campaigns** for newsletter review, confirmation, delivery, history, and
-  retryable work.
+- **Inbox** for cached reader correspondence, drafts, sent mail, and archive;
+- **Campaigns** for newsletter review, confirmation, delivery, history, and retryable work.
 
-Legacy `/dashboard/mail` redirects to `/mail`. It does not register a second
-inbox surface.
+Legacy `/dashboard/mail` redirects to `/mail`. It does not register a second inbox surface.
 
 ## Current implementation
 
-The current implementation provides:
+The implementation provides:
 
-- `Mailbox` as the application-facing read boundary;
-- `MailboxProvider` for inbound adapters;
-- `UnavailableMailboxProvider` as the safe default;
-- message, attachment, and draft value objects;
-- a private filesystem draft store;
+- `Mailbox` as the application-facing correspondence boundary;
+- `MailboxProvider` for cache-backed inbound adapters;
+- `CachedMailboxProvider` for request-time reads from private operational storage;
+- `UnavailableMailboxProvider` as a controlled setup state;
+- `SocketImapMailboxSource` as the extension-free scheduled source;
+- `ImapSynchronizer` for bounded private cache merge and retention;
+- private filesystem draft and sent-message stores;
+- local read, archive, and cached-copy deletion state;
 - `MailAttention` for combined Inbox and campaign attention;
-- one Mail landing decision based on the newest actionable state.
+- owner/admin authorization for Mail routes.
 
-The default provider returns an empty inbox, zero unread messages, and a
-non-secret `needs_setup` readiness state. Campaign work remains usable when
-Inbox is unavailable.
+Campaign work remains usable when Inbox synchronization is unavailable.
 
 ## Attention contract
 
@@ -50,59 +47,75 @@ The detail string uses precise split copy such as:
 2 reader messages · 1 campaign needs attention
 ```
 
-`MailAttention::landing()` returns `inbox` or `campaigns`. It compares the
-latest unread cached message with the latest campaign awaiting review or retry.
-If neither requires attention, it opens Inbox. If mailbox readiness is not
-`ready`, it opens Campaigns and shows Inbox setup guidance.
+`MailAttention::landing()` returns `inbox` or `campaigns`. It compares the latest unread cached message with the latest campaign awaiting review or retry. If neither requires attention, it opens Inbox. If mailbox readiness is not `ready`, it opens Campaigns and shows Inbox setup guidance.
 
 Neither method performs network access.
 
 ## IMAP boundary
 
-ADR 0010 selects IMAP as the first inbound adapter, but protocol implementation
-is deliberately deferred. A scheduled sync process will fetch remote mailbox
-state into private operational storage. Dashboard and Mail requests read only
-that cached state.
+ADR 0010 selects IMAP as the first inbound adapter. The implementation uses direct IMAP-over-TLS through PHP streams and OpenSSL; it does not require `ext-imap` or a Composer IMAP library.
+
+The scheduled source supports only the bounded command set required for synchronization:
+
+- `LOGIN`;
+- `SELECT`;
+- UID search;
+- bounded UID fetch.
+
+Only `IMAP_ENCRYPTION=ssl` is accepted. Plaintext and STARTTLS modes are rejected. Credentials remain in the environment or host secret manager and are never rendered, cached, or logged.
 
 The web request path must never:
 
 - connect to IMAP;
 - parse remote MIME payloads;
 - expose credentials;
-- block dashboard, publishing, or campaign work when inbox sync is unavailable.
+- mutate the remote mailbox;
+- block dashboard, publishing, or campaign work when synchronization is unavailable.
 
-The Mail workspace may show the last successful sync and a degraded or stale
-state once cached sync exists. It must not display credential values.
+## Cache and MIME policy
+
+The scheduled synchronizer stores only message identity, selected headers, extracted plain text, and receipt time. It deliberately excludes:
+
+- attachment metadata and payloads;
+- remote HTML rendering;
+- remote mailbox flags or mutations;
+- correspondence export.
+
+Attachments remain in the original mailbox application. Cached correspondence is retained for 30 days from `received_at`. A smaller synchronization window merges with existing unexpired cache entries rather than replacing the visible inbox.
+
+Source failure preserves the prior cached message set and last successful synchronization time.
+
+## Local correspondence state
+
+Read and archive state are local operational preferences. They do not issue IMAP commands.
+
+`Delete cached copy` removes only the private cached record and associated local state. A 30-day tombstone prevents immediate restoration by a later synchronization. The original message remains unchanged in the remote mailbox.
 
 ## Privacy and storage
 
-Reader messages, attachments, and correspondence drafts must remain outside:
+Reader messages, correspondence drafts, sent records, synchronization state, and deletion tombstones remain outside:
 
 - Git;
 - public roots;
 - reader analytics;
-- diagnostic logs.
+- diagnostic payload logs.
 
-Runtime files use private directory and file modes where supported. Encryption
-at rest remains a deployment responsibility for self-hosted installations.
-Retention, deletion/export behavior, and attachment policy must be documented
-before real inbox synchronization is enabled.
+Runtime files use private directory and `0600` file modes where supported. Encryption at rest remains a deployment responsibility for self-hosted installations.
+
+See [`docs/operations/imap-mailbox-sync.md`](../operations/imap-mailbox-sync.md) for deployment and controlled-sync guidance.
 
 ## Outbound boundary
 
-`OutboundMailProvider` defines future correspondence delivery. It is separate
-from newsletter campaign delivery and does not create a second campaign
-transport contract. No concrete correspondence sender is registered until its
-delivery, retention, and failure behavior are specified.
+`OutboundMailProvider` defines correspondence delivery. It remains separate from newsletter campaign delivery and does not create a second campaign transport contract. Successful correspondence sends are recorded privately; failed sends preserve the draft.
 
 ## Deferred scope
 
-The following remain outside the current workspace:
+The following remain outside the current implementation:
 
-- network IMAP implementation;
-- scheduled synchronization worker;
-- MIME parsing;
-- attachment download and retention policy;
-- spam handling;
-- correspondence sending;
-- credential editing in Settings.
+- spam classification and quarantine;
+- remote mailbox mutations;
+- attachment caching or download;
+- correspondence export;
+- credential editing in Settings;
+- additional IMAP authentication mechanisms;
+- multiple mailbox accounts.
