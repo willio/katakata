@@ -57,7 +57,16 @@ final class MailTextExtractor
         }
         $boundary = $match[1] !== '' ? $match[1] : $match[2];
         foreach (explode('--' . $boundary, $body) as $part) {
-            [$headers, $payload] = $this->split(ltrim($part, "\r\n"));
+            $part = ltrim($part, "\r\n");
+            if ($part === '' || str_starts_with($part, '--')) {
+                continue;
+            }
+
+            [$headers, $payload] = $this->split($part);
+            if (trim($payload) === '') {
+                continue;
+            }
+
             $map = $this->headers($headers);
             $type = strtolower($map['content-type'] ?? 'text/plain');
             $disposition = strtolower($map['content-disposition'] ?? '');
