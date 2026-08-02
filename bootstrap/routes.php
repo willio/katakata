@@ -16,6 +16,7 @@ require $app->routesPath('mail-accounts.php');
 require $app->routesPath('mail.php');
 require $app->routesPath('campaign.php');
 require $app->routesPath('settings.php');
+require $app->routesPath('settings-mailboxes.php');
 require $app->routesPath('article.php');
 
 return $router;
