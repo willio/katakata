@@ -7,7 +7,6 @@ namespace Katakata\Email\Providers;
 use DateTimeImmutable;
 use Katakata\Editorial\AtomicFile;
 use Katakata\Email\ArchivedMailboxProvider;
-use Katakata\Email\Attachment;
 use Katakata\Email\AttachmentDownload;
 use Katakata\Email\Message;
 use Katakata\Email\MessageSummary;
@@ -47,15 +46,6 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
             throw new RuntimeException('Cached mailbox message is invalid.');
         }
         $state = $this->state();
-        $attachments = array_map(
-            static fn (array $item): Attachment => new Attachment(
-                (string) ($item['id'] ?? ''),
-                (string) ($item['name'] ?? ''),
-                (string) ($item['media_type'] ?? 'application/octet-stream'),
-                (int) ($item['bytes'] ?? 0),
-            ),
-            array_values(array_filter((array) ($data['attachments'] ?? []), 'is_array')),
-        );
         return new Message(
             id: (string) ($data['id'] ?? $id),
             from: (string) ($data['from'] ?? ''),
@@ -65,26 +55,12 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
             html: isset($data['html']) ? (string) $data['html'] : null,
             receivedAt: new DateTimeImmutable((string) ($data['received_at'] ?? 'now')),
             unread: !in_array($id, $state['read'], true),
-            attachments: $attachments,
+            attachments: [],
         );
     }
 
     public function attachment(string $messageId, string $attachmentId): ?AttachmentDownload
     {
-        $message = $this->message($messageId);
-        if ($message === null) {
-            return null;
-        }
-        foreach ($message->attachments as $attachment) {
-            if ($attachment->id !== $attachmentId) {
-                continue;
-            }
-            $path = $this->path . '/attachments/' . $this->safe($messageId) . '/' . $this->safe($attachmentId);
-            if (!is_file($path)) {
-                return null;
-            }
-            return new AttachmentDownload($attachment->name, $attachment->mediaType, (string) file_get_contents($path));
-        }
         return null;
     }
 
