@@ -19,6 +19,8 @@ interface MailboxProvider
 
     public function archive(string $id): void;
 
+    public function deleteLocal(string $id): void;
+
     /** @return array{status:string,reason:?string,last_synced_at:?string} */
     public function readiness(): array;
 }

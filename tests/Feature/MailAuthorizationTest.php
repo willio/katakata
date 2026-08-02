@@ -34,7 +34,7 @@ final class MailAuthorizationTest extends TestCase
             '/dashboard/mail',
             '/mail/messages/{id}',
             '/mail/messages/{id}/archive',
-            '/mail/messages/{messageId}/attachments/{attachmentId}',
+            '/mail/messages/{id}/delete',
             '/mail/compose',
             '/mail/messages/{id}/reply',
             '/mail/drafts/{id}',
@@ -44,16 +44,20 @@ final class MailAuthorizationTest extends TestCase
 
         self::assertStringContainsString("foreach (['read' => true, 'unread' => false] as \$action => \$read)", $routes);
         self::assertStringContainsString("'/mail/messages/{id}/' . \$action", $routes);
+        self::assertStringContainsString('->deleteLocal($id)', $routes);
         self::assertGreaterThanOrEqual(8, substr_count($routes, '$authorizeMail();'));
         self::assertGreaterThanOrEqual(8, substr_count($routes, 'if ($user instanceof Response)'));
     }
 
-    public function testAttachmentResponsesDisableContentSniffing(): void
+    public function testAttachmentDownloadRouteIsAbsent(): void
     {
         $routes = file_get_contents(dirname(__DIR__, 2) . '/routes/mail.php');
+        $view = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail-message.php');
 
         self::assertIsString($routes);
-        self::assertStringContainsString("'Content-Disposition' => 'attachment; filename=", $routes);
-        self::assertStringContainsString("'X-Content-Type-Options' => 'nosniff'", $routes);
+        self::assertIsString($view);
+        self::assertStringNotContainsString('/attachments/{attachmentId}', $routes);
+        self::assertStringContainsString('original mailbox application', $view);
+        self::assertStringContainsString('Delete cached copy', $view);
     }
 }

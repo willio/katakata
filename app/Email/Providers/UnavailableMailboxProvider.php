@@ -38,6 +38,10 @@ final class UnavailableMailboxProvider implements MailboxProvider
     {
     }
 
+    public function deleteLocal(string $id): void
+    {
+    }
+
     public function readiness(): array
     {
         return [

@@ -7,7 +7,6 @@ namespace Katakata\Email\Providers;
 use DateTimeImmutable;
 use Katakata\Editorial\AtomicFile;
 use Katakata\Email\ArchivedMailboxProvider;
-use Katakata\Email\Attachment;
 use Katakata\Email\AttachmentDownload;
 use Katakata\Email\Message;
 use Katakata\Email\MessageSummary;
@@ -38,6 +37,12 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
 
     public function message(string $id): ?Message
     {
+        $id = $this->safe($id);
+        $state = $this->state();
+        if (array_key_exists($id, $state['deleted'])) {
+            return null;
+        }
+
         $path = $this->messagePath($id);
         if (!is_file($path)) {
             return null;
@@ -46,16 +51,7 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
         if (!is_array($data)) {
             throw new RuntimeException('Cached mailbox message is invalid.');
         }
-        $state = $this->state();
-        $attachments = array_map(
-            static fn (array $item): Attachment => new Attachment(
-                (string) ($item['id'] ?? ''),
-                (string) ($item['name'] ?? ''),
-                (string) ($item['media_type'] ?? 'application/octet-stream'),
-                (int) ($item['bytes'] ?? 0),
-            ),
-            array_values(array_filter((array) ($data['attachments'] ?? []), 'is_array')),
-        );
+
         return new Message(
             id: (string) ($data['id'] ?? $id),
             from: (string) ($data['from'] ?? ''),
@@ -65,34 +61,21 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
             html: isset($data['html']) ? (string) $data['html'] : null,
             receivedAt: new DateTimeImmutable((string) ($data['received_at'] ?? 'now')),
             unread: !in_array($id, $state['read'], true),
-            attachments: $attachments,
+            attachments: [],
         );
     }
 
     public function attachment(string $messageId, string $attachmentId): ?AttachmentDownload
     {
-        $message = $this->message($messageId);
-        if ($message === null) {
-            return null;
-        }
-        foreach ($message->attachments as $attachment) {
-            if ($attachment->id !== $attachmentId) {
-                continue;
-            }
-            $path = $this->path . '/attachments/' . $this->safe($messageId) . '/' . $this->safe($attachmentId);
-            if (!is_file($path)) {
-                return null;
-            }
-            return new AttachmentDownload($attachment->name, $attachment->mediaType, (string) file_get_contents($path));
-        }
         return null;
     }
 
     public function markRead(string $id, bool $read): void
     {
+        $id = $this->safe($id);
         $state = $this->state();
         $state['read'] = array_values(array_filter($state['read'], static fn (string $value): bool => $value !== $id));
-        if ($read) {
+        if ($read && !array_key_exists($id, $state['deleted'])) {
             $state['read'][] = $id;
         }
         $this->writeState($state);
@@ -100,10 +83,30 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
 
     public function archive(string $id): void
     {
+        $id = $this->safe($id);
         $state = $this->state();
-        if (!in_array($id, $state['archived'], true)) {
+        if (!in_array($id, $state['archived'], true) && !array_key_exists($id, $state['deleted'])) {
             $state['archived'][] = $id;
         }
+        $this->writeState($state);
+    }
+
+    public function deleteLocal(string $id): void
+    {
+        $id = $this->safe($id);
+        @unlink($this->messagePath($id));
+
+        $index = $this->index();
+        $index['messages'] = array_values(array_filter(
+            $index['messages'],
+            static fn (string $value): bool => $value !== $id,
+        ));
+        $this->writeIndex($index);
+
+        $state = $this->state();
+        $state['read'] = array_values(array_filter($state['read'], static fn (string $value): bool => $value !== $id));
+        $state['archived'] = array_values(array_filter($state['archived'], static fn (string $value): bool => $value !== $id));
+        $state['deleted'][$id] = (new DateTimeImmutable())->format(DATE_ATOM);
         $this->writeState($state);
     }
 
@@ -131,11 +134,18 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
         return array_slice($messages, 0, max(1, $limit));
     }
 
+    /** @return array{messages:list<string>,status:array<string,mixed>} */
     private function index(): array
     {
         $path = $this->path . '/index.json';
         if (!is_file($path)) {
-            return ['messages' => [], 'status' => ['state' => 'needs_setup', 'error' => 'Run the scheduled IMAP synchronizer to create the private mailbox cache.']];
+            return [
+                'messages' => [],
+                'status' => [
+                    'state' => 'needs_setup',
+                    'error' => 'Run the scheduled IMAP synchronizer to create the private mailbox cache.',
+                ],
+            ];
         }
         $data = json_decode((string) file_get_contents($path), true);
         if (!is_array($data)) {
@@ -147,26 +157,49 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
         ];
     }
 
+    /** @param array{messages:list<string>,status:array<string,mixed>} $index */
+    private function writeIndex(array $index): void
+    {
+        $target = $this->path . '/index.json';
+        $this->files->write(
+            $target,
+            json_encode($index, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n",
+        );
+        @chmod($target, 0600);
+    }
+
+    /** @return array{read:list<string>,archived:list<string>,deleted:array<string,string>} */
     private function state(): array
     {
         $path = $this->path . '/state.json';
         if (!is_file($path)) {
-            return ['read' => [], 'archived' => []];
+            return ['read' => [], 'archived' => [], 'deleted' => []];
         }
         $data = json_decode((string) file_get_contents($path), true);
+        $deleted = [];
+        foreach ((array) ($data['deleted'] ?? []) as $id => $deletedAt) {
+            if (is_int($id)) {
+                $deleted[(string) $deletedAt] = (new DateTimeImmutable())->format(DATE_ATOM);
+                continue;
+            }
+            $deleted[(string) $id] = (string) $deletedAt;
+        }
         return [
             'read' => array_values(array_map('strval', (array) ($data['read'] ?? []))),
             'archived' => array_values(array_map('strval', (array) ($data['archived'] ?? []))),
+            'deleted' => $deleted,
         ];
     }
 
+    /** @param array{read:list<string>,archived:list<string>,deleted:array<string,string>} $state */
     private function writeState(array $state): void
     {
+        $target = $this->path . '/state.json';
         $this->files->write(
-            $this->path . '/state.json',
+            $target,
             json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n",
         );
-        @chmod($this->path . '/state.json', 0600);
+        @chmod($target, 0600);
     }
 
     private function isArchived(string $id): bool
@@ -181,7 +214,7 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
 
     private function safe(string $value): string
     {
-        if (!preg_match('/^[A-Za-z0-9._-]+$/', $value)) {
+        if ($value === '' || !preg_match('/^[A-Za-z0-9._-]+$/', $value)) {
             throw new RuntimeException('Cached mailbox identifier is invalid.');
         }
         return $value;

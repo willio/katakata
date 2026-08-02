@@ -52,14 +52,18 @@ $readiness = static function () use ($app): array {
         default => ['status' => 'Needs setup', 'detail' => 'The selected discussion provider is unavailable.'],
     };
 
-    $mailboxState = match ($mailbox['status']) {
-        'ready' => [
+    $mailboxState = match (true) {
+        !$imap->transportAvailable() => [
+            'status' => 'Needs setup',
+            'detail' => 'TLS socket support is unavailable because OpenSSL is not enabled.',
+        ],
+        $mailbox['status'] === 'ready' => [
             'status' => 'Ready',
             'detail' => $mailbox['last_synced_at'] === null
                 ? 'The private mailbox cache is available.'
                 : 'Last synchronized ' . $mailbox['last_synced_at'] . '.',
         ],
-        'error' => [
+        $mailbox['status'] === 'error' => [
             'status' => 'Needs attention',
             'detail' => (string) ($mailbox['reason'] ?? 'The last scheduled mailbox synchronization failed.'),
         ],
@@ -67,7 +71,7 @@ $readiness = static function () use ($app): array {
             'status' => 'Needs setup',
             'detail' => $imap->configured()
                 ? 'Run and schedule private/jobs/sync-mail.php to populate the mailbox cache.'
-                : 'Configure the required IMAP deployment variables, then schedule private/jobs/sync-mail.php.',
+                : 'Configure direct-TLS IMAP deployment variables, then schedule private/jobs/sync-mail.php.',
         ],
     };
 
@@ -83,6 +87,7 @@ $readiness = static function () use ($app): array {
             'encryption' => $imap->encryption,
             'mailbox' => $imap->mailbox,
             'last_synced_at' => $mailbox['last_synced_at'],
+            'transport_available' => $imap->transportAvailable(),
         ],
         'discussion' => $discussionState,
         'analytics' => $analyticsSecret !== ''

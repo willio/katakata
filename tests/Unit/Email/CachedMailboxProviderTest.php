@@ -16,7 +16,6 @@ final class CachedMailboxProviderTest extends TestCase
     {
         $this->root = sys_get_temp_dir() . '/katakata-mail-cache-' . bin2hex(random_bytes(6));
         mkdir($this->root . '/messages', 0700, true);
-        mkdir($this->root . '/attachments/message-1', 0700, true);
 
         file_put_contents($this->root . '/messages/message-1.json', json_encode([
             'id' => 'message-1',
@@ -26,14 +25,7 @@ final class CachedMailboxProviderTest extends TestCase
             'text' => 'Hello.',
             'html' => '<p>Hello.</p>',
             'received_at' => '2026-08-01T10:00:00+00:00',
-            'attachments' => [[
-                'id' => 'attachment-1',
-                'name' => 'note.txt',
-                'media_type' => 'text/plain',
-                'bytes' => 4,
-            ]],
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n");
-        file_put_contents($this->root . '/attachments/message-1/attachment-1', 'note');
         file_put_contents($this->root . '/index.json', json_encode([
             'messages' => ['message-1'],
             'status' => [
@@ -49,7 +41,7 @@ final class CachedMailboxProviderTest extends TestCase
         $this->remove($this->root);
     }
 
-    public function testItServesMessagesAndAttachmentsFromPrivateCache(): void
+    public function testItServesTextOnlyMessagesFromPrivateCache(): void
     {
         $provider = new CachedMailboxProvider($this->root, new AtomicFile());
 
@@ -58,7 +50,9 @@ final class CachedMailboxProviderTest extends TestCase
         self::assertCount(1, $provider->inbox());
         self::assertSame([], $provider->archived());
         self::assertSame('A reply', $provider->message('message-1')?->subject);
-        self::assertSame('note', $provider->attachment('message-1', 'attachment-1')?->content);
+        self::assertSame([], $provider->message('message-1')?->attachments);
+        self::assertNull($provider->attachment('message-1', 'attachment-1'));
+        self::assertDirectoryDoesNotExist($this->root . '/attachments');
     }
 
     public function testReadAndArchiveStateDoNotRewriteCachedMessage(): void
@@ -74,6 +68,28 @@ final class CachedMailboxProviderTest extends TestCase
         self::assertCount(1, $provider->archived());
         self::assertSame('message-1', $provider->archived()[0]->id);
         self::assertSame($before, file_get_contents($this->root . '/messages/message-1.json'));
+    }
+
+    public function testLocalDeleteRemovesCachedContentAndPreventsImmediateResyncVisibility(): void
+    {
+        $provider = new CachedMailboxProvider($this->root, new AtomicFile());
+        $provider->markRead('message-1', true);
+        $provider->archive('message-1');
+
+        $provider->deleteLocal('message-1');
+
+        self::assertNull($provider->message('message-1'));
+        self::assertFileDoesNotExist($this->root . '/messages/message-1.json');
+        self::assertSame([], $provider->inbox());
+        self::assertSame([], $provider->archived());
+
+        $index = json_decode((string) file_get_contents($this->root . '/index.json'), true, 512, JSON_THROW_ON_ERROR);
+        $state = json_decode((string) file_get_contents($this->root . '/state.json'), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame([], $index['messages']);
+        self::assertSame([], $state['read']);
+        self::assertSame([], $state['archived']);
+        self::assertArrayHasKey('message-1', $state['deleted']);
+        self::assertSame(0600, fileperms($this->root . '/state.json') & 0777);
     }
 
     private function remove(string $path): void

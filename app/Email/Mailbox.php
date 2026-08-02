@@ -49,6 +49,11 @@ final class Mailbox
         $this->provider->archive($id);
     }
 
+    public function deleteLocal(string $id): void
+    {
+        $this->provider->deleteLocal($id);
+    }
+
     public function readiness(): array
     {
         return $this->provider->readiness();

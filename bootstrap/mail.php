@@ -16,11 +16,12 @@ use Katakata\Email\ImapSettings;
 use Katakata\Email\ImapSynchronizer;
 use Katakata\Email\Mailbox;
 use Katakata\Email\MailboxProvider;
-use Katakata\Email\NativeImapMailboxSource;
+use Katakata\Email\MailTextExtractor;
 use Katakata\Email\OutboundMailProvider;
 use Katakata\Email\Providers\CachedMailboxProvider;
 use Katakata\Email\Providers\UnavailableOutboundMailProvider;
 use Katakata\Email\SentMessageStore;
+use Katakata\Email\SocketImapMailboxSource;
 use Katakata\Mail\CampaignDispatcher;
 use Katakata\Mail\CampaignDraftFactory;
 use Katakata\Mail\CampaignDraftReviewer;
@@ -35,7 +36,13 @@ use Katakata\Rendering\Markdown;
 /** @var Application $app */
 
 $app->singleton(ImapSettings::class, static fn (): ImapSettings => ImapSettings::fromEnvironment());
-$app->singleton(ImapMailboxSource::class, static fn (): ImapMailboxSource => new NativeImapMailboxSource());
+$app->singleton(MailTextExtractor::class, static fn (): MailTextExtractor => new MailTextExtractor());
+$app->singleton(
+    ImapMailboxSource::class,
+    static fn (Application $container): ImapMailboxSource => new SocketImapMailboxSource(
+        $container->make(MailTextExtractor::class),
+    ),
+);
 $app->singleton(
     ImapSynchronizer::class,
     static fn (Application $container): ImapSynchronizer => new ImapSynchronizer(

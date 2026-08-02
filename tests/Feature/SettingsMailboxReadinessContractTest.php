@@ -18,6 +18,9 @@ final class SettingsMailboxReadinessContractTest extends TestCase
         self::assertStringContainsString("'mailbox' => \$mailboxState", $routes);
         self::assertStringContainsString("'configured' => \$imap->configured()", $routes);
         self::assertStringContainsString("'missing' => \$imap->missing()", $routes);
+        self::assertStringContainsString("'transport_available' => \$imap->transportAvailable()", $routes);
+        self::assertStringContainsString('TLS socket support', $routes);
+        self::assertStringContainsString('direct-TLS IMAP deployment variables', $routes);
         self::assertStringContainsString('private/jobs/sync-mail.php', $routes);
         self::assertStringNotContainsString("'username' =>", $routes);
         self::assertStringNotContainsString("'password' =>", $routes);
@@ -28,8 +31,8 @@ final class SettingsMailboxReadinessContractTest extends TestCase
         $routes = file_get_contents(dirname(__DIR__, 2) . '/routes/settings.php');
 
         self::assertIsString($routes);
-        self::assertStringContainsString("'ready' =>", $routes);
-        self::assertStringContainsString("'error' =>", $routes);
+        self::assertStringContainsString("\$mailbox['status'] === 'ready'", $routes);
+        self::assertStringContainsString("\$mailbox['status'] === 'error'", $routes);
         self::assertStringContainsString("'status' => 'Needs attention'", $routes);
         self::assertStringContainsString("'status' => 'Needs setup'", $routes);
         self::assertStringContainsString("'status' => 'Ready'", $routes);

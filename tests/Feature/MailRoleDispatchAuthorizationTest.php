@@ -84,6 +84,7 @@ final class MailRoleDispatchAuthorizationTest extends TestCase
         yield 'compose' => ['GET', '/mail/compose'];
         yield 'message detail' => ['GET', '/mail/messages/message-1'];
         yield 'archive message' => ['POST', '/mail/messages/message-1/archive'];
+        yield 'delete cached message' => ['POST', '/mail/messages/message-1/delete'];
         yield 'draft save' => ['POST', '/mail/drafts/draft-1'];
         yield 'campaign draft' => ['GET', '/mail/campaign-drafts/campaign-1'];
         yield 'campaign autosave' => ['POST', '/mail/campaign-drafts/campaign-1/autosave'];
