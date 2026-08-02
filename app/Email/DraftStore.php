@@ -16,4 +16,6 @@ interface DraftStore
     public function recent(int $limit = 8): array;
 
     public function delete(string $id): void;
+
+    public function deleteIfVersion(string $id, int $expectedVersion): bool;
 }
