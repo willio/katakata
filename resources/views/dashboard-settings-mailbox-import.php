@@ -22,8 +22,8 @@
 <main class="dashboard-shell">
     <header class="dashboard-intro">
         <p class="eyebrow">Mailbox accounts</p>
-        <h1>Import configuration profile</h1>
-        <p>Upload an Apple <code>.mobileconfig</code> or XML plist. Katakata extracts supported IMAP settings locally and never imports embedded passwords or identity material.</p>
+        <h1>Import XML Mail profile</h1>
+        <p>Upload an unsigned XML Apple <code>.mobileconfig</code> or XML plist. Signed CMS or binary profiles are not supported. Katakata extracts supported IMAP settings locally and never imports embedded passwords or identity material.</p>
     </header>
 
     <?php if ($error !== null): ?><p class="settings-feedback" role="alert"><?= e($error) ?></p><?php endif; ?>
@@ -32,9 +32,9 @@
         <section class="settings-section">
             <form method="post" enctype="multipart/form-data" action="/dashboard/settings/mailboxes/import">
                 <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                <label for="mail-profile">Configuration profile</label>
+                <label for="mail-profile">Unsigned XML configuration profile</label>
                 <input id="mail-profile" type="file" name="profile" accept=".mobileconfig,.xml,application/xml,text/xml" required>
-                <p class="quiet">Maximum 256 KiB. POP, certificates, private keys, and non-TLS incoming accounts are rejected.</p>
+                <p class="quiet">Maximum 256 KiB. Signed CMS profiles, POP, certificates, private keys, and non-TLS incoming accounts are rejected.</p>
                 <button type="submit">Review profile</button>
             </form>
         </section>
