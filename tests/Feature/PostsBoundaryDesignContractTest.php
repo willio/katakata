@@ -15,7 +15,7 @@ final class PostsBoundaryDesignContractTest extends TestCase
         self::assertIsString($view);
         self::assertStringContainsString("'drafts' => 'Drafts'", $view);
         self::assertStringContainsString("'scheduled' => 'Scheduled'", $view);
-        self::assertStringContainsString("$scheduledAt === ''", $view);
+        self::assertStringContainsString('$scheduledAt === \'\'', $view);
         self::assertStringContainsString("'href' => '/editor/drafts/'", $view);
         self::assertStringContainsString('class="posts-index-title"', $view);
         self::assertStringNotContainsString('posts-index-actions', $view);
