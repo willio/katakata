@@ -6,7 +6,9 @@ namespace Katakata\Email;
 
 interface DraftStore
 {
-    public function save(Draft $draft): void;
+    public function create(Draft $draft): Draft;
+
+    public function save(Draft $draft, int $expectedVersion): Draft;
 
     public function find(string $id): ?Draft;
 
