@@ -14,7 +14,9 @@ objects already depend on a provider-neutral `MailboxProvider` boundary.
 
 ## Decision
 
-Use IMAP as the first inbound adapter behind `MailboxProvider`.
+Use IMAP as the first inbound adapter behind `MailboxProvider`, implemented
+initially by a bounded extension-free IMAP-over-TLS source behind
+`ImapMailboxSource`.
 
 - IMAP credentials remain deployment-only configuration: environment variables
   or the host's secret manager. They are never persisted by Katakata.
@@ -27,6 +29,9 @@ Use IMAP as the first inbound adapter behind `MailboxProvider`.
   reply drafts, and conservative attachment handling. Full MIME rendering,
   advanced threading, spam classification, and mailbox administration are out
   of scope until separately designed.
+- The source supports only TLS socket transport, `LOGIN`, `SELECT`, UID
+  search, and UID fetch. It deliberately avoids a custom PECL/C-library build
+  and a large framework-style Composer client.
 
 ## Failure model
 
