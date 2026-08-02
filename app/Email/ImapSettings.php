@@ -30,7 +30,17 @@ final readonly class ImapSettings
 
     public function configured(): bool
     {
-        return $this->host !== '' && $this->username !== '' && $this->password !== '' && $this->mailbox !== '';
+        return $this->host !== ''
+            && $this->username !== ''
+            && $this->password !== ''
+            && $this->mailbox !== ''
+            && $this->encryption === 'ssl'
+            && $this->transportAvailable();
+    }
+
+    public function transportAvailable(): bool
+    {
+        return extension_loaded('openssl');
     }
 
     /** @return list<string> */
@@ -47,10 +57,13 @@ final readonly class ImapSettings
                 $missing[] = $name;
             }
         }
+        if ($this->encryption !== 'ssl') {
+            $missing[] = 'IMAP_ENCRYPTION';
+        }
         return $missing;
     }
 
-    /** @return array{host:string,port:int,encryption:string,mailbox:string,configured:bool,missing:list<string>} */
+    /** @return array{host:string,port:int,encryption:string,mailbox:string,configured:bool,missing:list<string>,transport_available:bool} */
     public function publicStatus(): array
     {
         return [
@@ -60,6 +73,7 @@ final readonly class ImapSettings
             'mailbox' => $this->mailbox,
             'configured' => $this->configured(),
             'missing' => $this->missing(),
+            'transport_available' => $this->transportAvailable(),
         ];
     }
 }
