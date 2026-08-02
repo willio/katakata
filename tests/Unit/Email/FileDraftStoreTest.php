@@ -62,6 +62,20 @@ final class FileDraftStoreTest extends TestCase
         }
     }
 
+    public function testItDeletesOnlyTheExpectedVersion(): void
+    {
+        $store = new FileDraftStore($this->path, new AtomicFile());
+        $now = new DateTimeImmutable('2026-08-02T10:00:00+00:00');
+        $draft = new Draft(str_repeat('d', 32), '', '', 'First', null, 1, $now, $now);
+        $store->create($draft);
+        $saved = $store->save(new Draft($draft->id, '', '', 'Newer', null, 1, $now, $now), 1);
+
+        self::assertFalse($store->deleteIfVersion($draft->id, 1));
+        self::assertSame('Newer', $store->find($draft->id)?->text);
+        self::assertTrue($store->deleteIfVersion($draft->id, $saved->version));
+        self::assertNull($store->find($draft->id));
+    }
+
     public function testItDecodesLegacyDraftsAsVersionOne(): void
     {
         mkdir($this->path, 0700, true);
@@ -77,6 +91,6 @@ final class FileDraftStoreTest extends TestCase
         $draft = (new FileDraftStore($this->path, new AtomicFile()))->find($id);
 
         self::assertSame(1, $draft?->version);
-        self::assertSame($draft?->updatedAt, $draft?->createdAt);
+        self::assertSame($draft?->updatedAt->format(DATE_ATOM), $draft?->createdAt->format(DATE_ATOM));
     }
 }
