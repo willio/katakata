@@ -1,0 +1,33 @@
+.dashboard-section-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.dashboard-section-heading h2 { margin: 0; }
+.dashboard-section-heading a { font: .76rem/1.2 var(--font-sans); }
+
+.auth-reassurance { margin: .75rem 0 1.5rem; }
+.auth-alternative { margin-top: 1.75rem; font-family: var(--font-sans); text-align: center; }
+.auth-alternative > span {
+    display: block;
+    height: 1px;
+    margin-bottom: 1rem;
+    background: var(--border);
+}
+.auth-alternative button {
+    padding: .35rem 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font: 600 .82rem/1.2 var(--font-sans);
+    text-decoration: underline;
+    text-underline-offset: .2em;
+}
+.auth-alternative [data-passkey-status] { min-height: 1.4em; margin: .75rem 0 0; }
+
+@media (max-width: 20rem) {
+    .dashboard-section-heading { align-items: flex-start; flex-direction: column; gap: .35rem; }
+    .auth-shell { width: min(100% - 1.25rem, 30rem); }
+}
