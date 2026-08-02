@@ -29,16 +29,10 @@
         </header>
         <div class="mail-message-body"><?= nl2br(e($message->text)) ?></div>
 
-        <?php if ($message->attachments !== []): ?>
-            <section aria-labelledby="message-attachments">
-                <h2 id="message-attachments">Attachments</h2>
-                <ul>
-                    <?php foreach ($message->attachments as $attachment): ?>
-                        <li><a href="/mail/messages/<?= rawurlencode($message->id) ?>/attachments/<?= rawurlencode($attachment->id) ?>"><?= e($attachment->name) ?></a> <span class="quiet"><?= e($attachment->mediaType) ?> · <?= e((string) $attachment->bytes) ?> bytes</span></li>
-                    <?php endforeach; ?>
-                </ul>
-            </section>
-        <?php endif; ?>
+        <section class="mail-readiness" aria-labelledby="message-attachments">
+            <h2 id="message-attachments">Attachments</h2>
+            <p>Attachment files are not copied into Katakata. Open the original mailbox application to review or download them.</p>
+        </section>
 
         <div class="form-actions">
             <form method="post" action="/mail/messages/<?= rawurlencode($message->id) ?>/reply">
@@ -53,7 +47,12 @@
                 <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
                 <button type="submit">Archive</button>
             </form>
+            <form method="post" action="/mail/messages/<?= rawurlencode($message->id) ?>/delete">
+                <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                <button type="submit">Delete cached copy</button>
+            </form>
         </div>
+        <p class="quiet">Deleting removes only Katakata’s private cached copy. It does not change the original mailbox.</p>
     </article>
 </main>
 </body>
