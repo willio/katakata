@@ -19,6 +19,10 @@ Only direct TLS is supported. `IMAP_ENCRYPTION` must be `ssl`; plaintext and STA
 
 Credentials must never be stored in dashboard settings, committed files, logs, fixtures, cached status, or rendered HTML.
 
+`IMAP_HOST` must resolve directly to the mail server. Do not put it behind an
+HTTP/CDN proxy such as Cloudflare's proxied DNS mode: direct IMAPS on port 993
+requires a DNS-only mail hostname and a valid TLS certificate for that host.
+
 ## Manual verification
 
 Run the synchronizer from the application root:

@@ -6,6 +6,7 @@ use Katakata\Email\ImapSynchronizer;
 
 /** @var \Katakata\Application $app */
 $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
+require dirname(__DIR__, 2) . '/bootstrap/mail.php';
 $limit = isset($argv[1]) ? max(1, (int) $argv[1]) : 100;
 
 try {
