@@ -39,7 +39,7 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
     {
         $id = $this->safe($id);
         $state = $this->state();
-        if (in_array($id, $state['deleted'], true)) {
+        if (array_key_exists($id, $state['deleted'])) {
             return null;
         }
 
@@ -75,7 +75,7 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
         $id = $this->safe($id);
         $state = $this->state();
         $state['read'] = array_values(array_filter($state['read'], static fn (string $value): bool => $value !== $id));
-        if ($read && !in_array($id, $state['deleted'], true)) {
+        if ($read && !array_key_exists($id, $state['deleted'])) {
             $state['read'][] = $id;
         }
         $this->writeState($state);
@@ -85,7 +85,7 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
     {
         $id = $this->safe($id);
         $state = $this->state();
-        if (!in_array($id, $state['archived'], true) && !in_array($id, $state['deleted'], true)) {
+        if (!in_array($id, $state['archived'], true) && !array_key_exists($id, $state['deleted'])) {
             $state['archived'][] = $id;
         }
         $this->writeState($state);
@@ -106,9 +106,7 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
         $state = $this->state();
         $state['read'] = array_values(array_filter($state['read'], static fn (string $value): bool => $value !== $id));
         $state['archived'] = array_values(array_filter($state['archived'], static fn (string $value): bool => $value !== $id));
-        if (!in_array($id, $state['deleted'], true)) {
-            $state['deleted'][] = $id;
-        }
+        $state['deleted'][$id] = (new DateTimeImmutable())->format(DATE_ATOM);
         $this->writeState($state);
     }
 
@@ -170,7 +168,7 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
         @chmod($target, 0600);
     }
 
-    /** @return array{read:list<string>,archived:list<string>,deleted:list<string>} */
+    /** @return array{read:list<string>,archived:list<string>,deleted:array<string,string>} */
     private function state(): array
     {
         $path = $this->path . '/state.json';
@@ -178,14 +176,22 @@ final class CachedMailboxProvider implements ArchivedMailboxProvider
             return ['read' => [], 'archived' => [], 'deleted' => []];
         }
         $data = json_decode((string) file_get_contents($path), true);
+        $deleted = [];
+        foreach ((array) ($data['deleted'] ?? []) as $id => $deletedAt) {
+            if (is_int($id)) {
+                $deleted[(string) $deletedAt] = (new DateTimeImmutable())->format(DATE_ATOM);
+                continue;
+            }
+            $deleted[(string) $id] = (string) $deletedAt;
+        }
         return [
             'read' => array_values(array_map('strval', (array) ($data['read'] ?? []))),
             'archived' => array_values(array_map('strval', (array) ($data['archived'] ?? []))),
-            'deleted' => array_values(array_map('strval', (array) ($data['deleted'] ?? []))),
+            'deleted' => $deleted,
         ];
     }
 
-    /** @param array{read:list<string>,archived:list<string>,deleted:list<string>} $state */
+    /** @param array{read:list<string>,archived:list<string>,deleted:array<string,string>} $state */
     private function writeState(array $state): void
     {
         $target = $this->path . '/state.json';
