@@ -18,6 +18,9 @@ final class SafePlistParser
         if ($contents === '' || strlen($contents) > self::MAX_BYTES) {
             throw new RuntimeException('Configuration profile is empty or exceeds 256 KiB.');
         }
+        if (!str_starts_with(ltrim($contents), '<')) {
+            throw new RuntimeException('Signed or binary configuration profiles are not supported; export an unsigned XML plist profile.');
+        }
         if (stripos($contents, '<!DOCTYPE') !== false || stripos($contents, '<!ENTITY') !== false) {
             throw new RuntimeException('Configuration profile contains unsupported declarations.');
         }
