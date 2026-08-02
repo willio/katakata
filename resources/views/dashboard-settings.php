@@ -2,7 +2,7 @@
 /** @var array<string, mixed> $user */
 /** @var string $siteName */
 /** @var array<string, array<string, scalar|null>> $settings */
-/** @var array<string, array{status:string,detail:string}> $readiness */
+/** @var array<string, array<string, mixed>> $readiness */
 /** @var bool $saved */
 /** @var ?string $error */
 /** @var string $csrf */
@@ -11,6 +11,7 @@ $publication = $settings['publication'] ?? [];
 $newsletter = $settings['newsletter'] ?? [];
 $discussion = $settings['discussion'] ?? [];
 $analytics = $settings['analytics'] ?? [];
+$mailbox = $readiness['mailbox'] ?? [];
 $feedbackRole = $error === null ? 'status' : 'alert';
 $feedback = $error ?? ($saved ? 'Settings saved.' : null);
 ?>
@@ -41,6 +42,7 @@ $feedback = $error ?? ($saved ? 'Settings saved.' : null);
         <nav class="settings-folio" aria-label="Settings sections">
             <a href="#publication">Publication</a>
             <a href="#newsletter">Newsletter</a>
+            <a href="#mailbox">Mailbox</a>
             <a href="#discussion">Discussion</a>
             <a href="#analytics">Analytics</a>
             <a href="#appearance">Appearance</a>
@@ -76,6 +78,36 @@ $feedback = $error ?? ($saved ? 'Settings saved.' : null);
                     <label class="checkbox-row"><input type="checkbox" name="publish_by_default" value="1"<?= !empty($newsletter['publish_by_default']) ? ' checked' : '' ?>> Include new posts by default</label>
                     <button type="submit">Save newsletter</button>
                 </form>
+            </section>
+
+            <section id="mailbox" class="settings-section settings-readonly">
+                <header>
+                    <h2>Mailbox</h2>
+                    <p class="quiet">Reader correspondence is synchronized into private operational storage. Credentials remain in the environment or host secret manager.</p>
+                </header>
+                <p class="readiness"><strong><?= e((string) ($mailbox['status'] ?? 'Needs setup')) ?></strong> — <?= e((string) ($mailbox['detail'] ?? 'Mailbox readiness is unavailable.')) ?></p>
+
+                <dl class="settings-status-list">
+                    <div><dt>Host</dt><dd><?= e((string) (($mailbox['host'] ?? '') !== '' ? $mailbox['host'] : 'Not configured')) ?></dd></div>
+                    <div><dt>Port</dt><dd><?= e((string) ($mailbox['port'] ?? 993)) ?></dd></div>
+                    <div><dt>Encryption</dt><dd><?= e(strtoupper((string) ($mailbox['encryption'] ?? 'ssl'))) ?></dd></div>
+                    <div><dt>Mailbox</dt><dd><?= e((string) ($mailbox['mailbox'] ?? 'INBOX')) ?></dd></div>
+                    <div><dt>Last synchronized</dt><dd><?= e((string) ($mailbox['last_synced_at'] ?? 'Never')) ?></dd></div>
+                </dl>
+
+                <?php if (($mailbox['missing'] ?? []) !== []): ?>
+                    <div class="mail-readiness" role="status">
+                        <h3>Deployment variables required</h3>
+                        <p class="quiet">Set these outside the application UI:</p>
+                        <code><?= e(implode(', ', array_map('strval', (array) $mailbox['missing']))) ?></code>
+                    </div>
+                <?php endif; ?>
+
+                <div class="mail-readiness">
+                    <h3>Scheduled synchronization</h3>
+                    <p>Run <code>php private/jobs/sync-mail.php</code> from the project root, then schedule it with cron or the host scheduler.</p>
+                    <p class="quiet">The web request path reads only from <code>storage/mail/cache</code>; it never connects to IMAP directly.</p>
+                </div>
             </section>
 
             <section id="discussion" class="settings-section">
