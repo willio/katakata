@@ -50,6 +50,22 @@ final class MailWorkspaceNavigationContractTest extends TestCase
         self::assertStringContainsString('MailboxRefreshRequest::class', $routes);
     }
 
+    public function testWorkspaceUsesThreeExplicitColumnsAndMarkerFreeRows(): void
+    {
+        $css = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/mail.css');
+
+        self::assertIsString($css);
+        self::assertStringContainsString('.mail-workspace-shell {', $css);
+        self::assertStringContainsString('grid-template-columns: minmax(10.5rem, 15rem) minmax(19rem, 26rem) minmax(0, 1fr);', $css);
+        self::assertStringContainsString('.mail-sidebar,', $css);
+        self::assertStringContainsString('.mail-list-panel { border-right: 1px solid var(--border); }', $css);
+        self::assertStringContainsString('.mail-item-list {', $css);
+        self::assertStringContainsString('list-style: none;', $css);
+        self::assertStringContainsString('grid-template-areas: "subject time" "meta time";', $css);
+        self::assertStringContainsString('@media (max-width: 42rem)', $css);
+        self::assertStringContainsString('.mail-page:has(.mail-message-panel) .mail-list-panel', $css);
+    }
+
     public function testWorkspaceDetailPanelLoadsSelectedMessagesWithoutBecomingAComposer(): void
     {
         $workspace = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail.php');
