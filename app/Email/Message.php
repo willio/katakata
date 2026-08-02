@@ -19,11 +19,23 @@ final readonly class Message
         public DateTimeImmutable $receivedAt,
         public bool $unread,
         public array $attachments = [],
+        public ?string $sourceAccountId = null,
+        public ?string $sourceLabel = null,
+        public ?string $sourceMessageId = null,
     ) {
     }
 
     public function summary(): MessageSummary
     {
-        return new MessageSummary($this->id, $this->from, $this->subject, $this->receivedAt, $this->unread);
+        return new MessageSummary(
+            id: $this->id,
+            from: $this->from,
+            subject: $this->subject,
+            receivedAt: $this->receivedAt,
+            unread: $this->unread,
+            sourceAccountId: $this->sourceAccountId,
+            sourceLabel: $this->sourceLabel,
+            sourceMessageId: $this->sourceMessageId,
+        );
     }
 }
