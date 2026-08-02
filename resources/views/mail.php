@@ -31,6 +31,13 @@ if ($selectedAccount !== 'all') {
     ));
 }
 $inboxQuery = static fn (string $account): string => '/mail?area=inbox&amp;account=' . rawurlencode($account);
+$selectedLabel = 'Inbox';
+foreach ($accountStates as $accountState) {
+    if ((string) $accountState['account_id'] === $selectedAccount) {
+        $selectedLabel = (string) $accountState['label'];
+        break;
+    }
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -82,7 +89,7 @@ $inboxQuery = static fn (string $account): string => '/mail?area=inbox&amp;accou
     <section class="mail-list-panel" aria-labelledby="mail-list-title">
         <header class="mail-panel-header">
             <p class="eyebrow">Editorial correspondence</p>
-            <h1 id="mail-list-title"><?= $area === 'inbox' ? ($selectedAccount === 'all' ? 'Inbox' : e((string) (($accountStates[array_search($selectedAccount, $knownAccounts, true)]['label'] ?? 'Inbox')))) : 'Campaigns' ?></h1>
+            <h1 id="mail-list-title"><?= $area === 'inbox' ? e($selectedAccount === 'all' ? 'Inbox' : $selectedLabel) : 'Campaigns' ?></h1>
             <p><?= e($attention['detail']) ?></p>
         </header>
 
@@ -96,7 +103,7 @@ $inboxQuery = static fn (string $account): string => '/mail?area=inbox&amp;accou
 
         <?php if ($area === 'inbox'): ?>
             <section aria-labelledby="mail-inbox">
-                <h2 id="mail-inbox"><?= $selectedAccount === 'all' ? 'All accounts' : 'Selected account' ?></h2>
+                <h2 id="mail-inbox"><?= $selectedAccount === 'all' ? 'All accounts' : e($selectedLabel) ?></h2>
                 <?php if ($mailboxReadiness['status'] === 'disabled'): ?>
                     <p class="quiet">No mailbox account is enabled.</p>
                 <?php elseif ($messages === []): ?>
@@ -104,7 +111,7 @@ $inboxQuery = static fn (string $account): string => '/mail?area=inbox&amp;accou
                 <?php else: ?>
                     <ol class="mail-item-list">
                         <?php foreach ($messages as $message): ?>
-                            <li><a href="/mail/messages/<?= rawurlencode($message->id) ?>"><strong><?= e($message->subject) ?></strong><span><?= e($message->from) ?> · <?= e($message->sourceLabel ?? 'Mailbox') ?><?= $message->unread ? ' · Unread' : '' ?></span><time datetime="<?= e($message->receivedAt->format(DATE_ATOM)) ?>"><?= e($message->receivedAt->format('M j, H:i')) ?></time></a></li>
+                            <li><a href="/mail/messages/<?= rawurlencode($message->sourceAccountId) ?>/<?= rawurlencode($message->sourceMessageId) ?>"><strong><?= e($message->subject) ?></strong><span><?= e($message->from) ?> · <?= e($message->sourceLabel) ?><?= $message->unread ? ' · Unread' : '' ?></span><time datetime="<?= e($message->receivedAt->format(DATE_ATOM)) ?>"><?= e($message->receivedAt->format('M j, H:i')) ?></time></a></li>
                         <?php endforeach; ?>
                     </ol>
                 <?php endif; ?>
