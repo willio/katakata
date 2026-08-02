@@ -17,6 +17,8 @@ final readonly class MessageSummary
         public ?string $sourceAccountId = null,
         public ?string $sourceLabel = null,
         public ?string $sourceMessageId = null,
+        public string $text = '',
+        public string $to = '',
     ) {
     }
 }
