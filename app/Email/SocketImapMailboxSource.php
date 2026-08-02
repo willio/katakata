@@ -126,7 +126,7 @@ final class SocketImapMailboxSource implements ImapMailboxSource
 
         $type = strtoupper((string) ($node[0] ?? ''));
         $subtype = strtoupper((string) ($node[1] ?? ''));
-        if ($type !== 'TEXT' || $subtype !== 'PLAIN') {
+        if ($type !== 'TEXT' || $subtype !== 'PLAIN' || $this->isAttachment($node)) {
             return null;
         }
 
@@ -144,6 +144,20 @@ final class SocketImapMailboxSource implements ImapMailboxSource
             'encoding' => strtolower((string) ($node[5] ?? '7bit')),
             'charset' => $charset,
         ];
+    }
+
+    /** @param list<mixed> $node */
+    private function isAttachment(array $node): bool
+    {
+        foreach (array_slice($node, 7) as $extension) {
+            if (!is_array($extension) || $extension === []) {
+                continue;
+            }
+            if (strtoupper((string) ($extension[0] ?? '')) === 'ATTACHMENT') {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function parseValue(string $input, int &$offset): mixed
