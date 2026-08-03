@@ -113,7 +113,6 @@ $router->post('/dashboard/settings/mailboxes/{id}', function (Request $request, 
     $app,
     $authorizeMailboxSettings,
     $validMailboxSettingsCsrf,
-    $mailboxAccountFromRequest,
     $settingsRedirect,
 ): Response {
     $authorization = $authorizeMailboxSettings();
@@ -125,10 +124,21 @@ $router->post('/dashboard/settings/mailboxes/{id}', function (Request $request, 
     }
     try {
         $store = $app->make(MailboxAccountStore::class);
-        if ($store->find($id) === null) {
+        $existing = $store->find($id);
+        if ($existing === null) {
             return Response::notFound();
         }
-        $store->update($mailboxAccountFromRequest($request, $id));
+        $store->update(new MailboxAccount(
+            id: $existing->id,
+            label: trim((string) ($request->body['label'] ?? '')),
+            host: $existing->host,
+            port: $existing->port,
+            encryption: $existing->encryption,
+            mailbox: $existing->mailbox,
+            usernameSecret: $existing->usernameSecret,
+            passwordSecret: $existing->passwordSecret,
+            enabled: $existing->enabled,
+        ));
         return $settingsRedirect();
     } catch (\Throwable $error) {
         return $settingsRedirect($error->getMessage());
