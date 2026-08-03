@@ -29,21 +29,34 @@ final class SentMessageStoreTest extends TestCase
 
     public function testSuccessfulDeliveryCreatesOnePrivateSentRecordAndDeletesDraft(): void
     {
+        $createdAt = new DateTimeImmutable('2026-08-02T00:00:00+00:00');
         $draft = new Draft(
             id: 'draft-1',
             to: 'reader@example.test',
             subject: 'Reply',
             text: 'Thank you.',
             inReplyTo: 'message-1',
-            updatedAt: new DateTimeImmutable('2026-08-02T00:00:00+00:00'),
+            version: 1,
+            createdAt: $createdAt,
+            updatedAt: $createdAt,
         );
         $drafts = new class($draft) implements DraftStore {
             public bool $deleted = false;
             public function __construct(private ?Draft $draft) {}
-            public function save(Draft $draft): void { $this->draft = $draft; }
+            public function create(Draft $draft): Draft { $this->draft = $draft; return $draft; }
+            public function save(Draft $draft, int $expectedVersion): Draft { $this->draft = $draft; return $draft; }
             public function find(string $id): ?Draft { return $this->draft?->id === $id ? $this->draft : null; }
             public function recent(int $limit = 8): array { return $this->draft === null ? [] : [$this->draft]; }
             public function delete(string $id): void { $this->deleted = true; $this->draft = null; }
+            public function deleteIfVersion(string $id, int $expectedVersion): bool
+            {
+                if ($this->draft?->id !== $id || $this->draft->version !== $expectedVersion) {
+                    return false;
+                }
+                $this->deleted = true;
+                $this->draft = null;
+                return true;
+            }
         };
         $outbound = new class implements OutboundMailProvider {
             public int $calls = 0;
@@ -64,14 +77,34 @@ final class SentMessageStoreTest extends TestCase
 
     public function testFailedDeliveryDoesNotCreateSentRecordOrDeleteDraft(): void
     {
-        $draft = new Draft('draft-2', 'reader@example.test', 'Reply', 'Body', null, new DateTimeImmutable());
+        $createdAt = new DateTimeImmutable('2026-08-02T00:00:00+00:00');
+        $draft = new Draft(
+            id: 'draft-2',
+            to: 'reader@example.test',
+            subject: 'Reply',
+            text: 'Body',
+            inReplyTo: null,
+            version: 1,
+            createdAt: $createdAt,
+            updatedAt: $createdAt,
+        );
         $drafts = new class($draft) implements DraftStore {
             public bool $deleted = false;
             public function __construct(private ?Draft $draft) {}
-            public function save(Draft $draft): void { $this->draft = $draft; }
+            public function create(Draft $draft): Draft { $this->draft = $draft; return $draft; }
+            public function save(Draft $draft, int $expectedVersion): Draft { $this->draft = $draft; return $draft; }
             public function find(string $id): ?Draft { return $this->draft?->id === $id ? $this->draft : null; }
             public function recent(int $limit = 8): array { return $this->draft === null ? [] : [$this->draft]; }
             public function delete(string $id): void { $this->deleted = true; $this->draft = null; }
+            public function deleteIfVersion(string $id, int $expectedVersion): bool
+            {
+                if ($this->draft?->id !== $id || $this->draft->version !== $expectedVersion) {
+                    return false;
+                }
+                $this->deleted = true;
+                $this->draft = null;
+                return true;
+            }
         };
         $outbound = new class implements OutboundMailProvider {
             public function send(Draft $draft): void { throw new \RuntimeException('Delivery failed.'); }
