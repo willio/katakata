@@ -27,7 +27,7 @@ final class PostsIndexPresentationTest extends TestCase
         self::assertStringContainsString('<a href="/posts?status=drafts" aria-current="page">Draft (1)</a>', $html);
         self::assertStringContainsString('<ul class="posts-index">', $html);
         self::assertStringNotContainsString('<ol class="posts-index">', $html);
-        self::assertStringContainsString('<strong><a href="/editor/drafts/first-draft">First Draft</a></strong>', $html);
+        self::assertStringContainsString('<a class="posts-index-title" href="/editor/drafts/first-draft">First Draft</a>', $html);
         self::assertStringNotContainsString('>Edit</a>', $html);
     }
 
@@ -50,7 +50,7 @@ final class PostsIndexPresentationTest extends TestCase
             ],
         ]);
 
-        self::assertStringContainsString('<strong><a href="/2026/08/published-post">Published Post</a></strong>', $html);
+        self::assertStringContainsString('<a class="posts-index-title" href="/2026/08/published-post">Published Post</a>', $html);
         self::assertStringNotContainsString('>View</a>', $html);
     }
 }
