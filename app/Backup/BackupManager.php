@@ -150,8 +150,25 @@ final class BackupManager
             return ['valid' => false, 'message' => 'Archive checksum does not match.', 'files' => 0];
         }
 
+        $temporaryBase = tempnam(sys_get_temp_dir(), 'katakata-verify-');
+        if (!is_string($temporaryBase)) {
+            return ['valid' => false, 'message' => 'Unable to create archive verification workspace.', 'files' => 0];
+        }
+
+        @unlink($temporaryBase);
+        $temporaryGzip = $temporaryBase . '.tar.gz';
+        $temporaryTar = $temporaryBase . '.tar';
+
         try {
-            $archive = new PharData($path);
+            if (!copy($path, $temporaryGzip)) {
+                throw new RuntimeException('Unable to copy archive for verification.');
+            }
+
+            $compressed = new PharData($temporaryGzip);
+            $compressed->decompress();
+            unset($compressed);
+
+            $archive = new PharData($temporaryTar);
             if (!isset($archive['manifest.json'])) {
                 return ['valid' => false, 'message' => 'Archive manifest is missing.', 'files' => 0];
             }
@@ -174,6 +191,9 @@ final class BackupManager
             return ['valid' => true, 'message' => 'Backup archive and manifest are valid.', 'files' => count($entries)];
         } catch (\Throwable $error) {
             return ['valid' => false, 'message' => 'Unable to read archive: ' . $error->getMessage(), 'files' => 0];
+        } finally {
+            @unlink($temporaryTar);
+            @unlink($temporaryGzip);
         }
     }
 

@@ -127,7 +127,7 @@ final class MailTextExtractor
     private function date(string $value): string
     {
         try {
-            return new DateTimeImmutable($value !== '' ? $value : 'now')->format(DATE_ATOM);
+            return (new DateTimeImmutable($value !== '' ? $value : 'now'))->format(DATE_ATOM);
         } catch (\Throwable) {
             return (new DateTimeImmutable())->format(DATE_ATOM);
         }

@@ -44,7 +44,9 @@ final class BackupManagerTest extends TestCase
         self::assertSame(0700, fileperms(dirname($created['path'])) & 0777);
         self::assertSame(0600, fileperms($created['path']) & 0777);
         self::assertSame(0600, fileperms($created['path'] . '.sha256') & 0777);
-        self::assertTrue($manager->verify($created['path'])['valid']);
+
+        $verification = $manager->verify($created['path']);
+        self::assertTrue($verification['valid'], $verification['message']);
 
         $backups = $manager->all();
         self::assertCount(1, $backups);
