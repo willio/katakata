@@ -50,7 +50,7 @@ final class CampaignDraftSecurityContractTest extends TestCase
         self::assertStringContainsString("recipients: \$proof['recipients']", $dispatcher);
     }
 
-    public function testFullscreenComposeRemainsPresentationOnly(): void
+    public function testCampaignComposeUsesOneFocusedEditorState(): void
     {
         $script = file_get_contents(dirname(__DIR__, 2) . '/public/assets/js/campaign-draft.js');
         $view = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail-campaign-draft.php');
@@ -58,8 +58,11 @@ final class CampaignDraftSecurityContractTest extends TestCase
         self::assertIsString($script);
         self::assertIsString($view);
 
-        self::assertStringContainsString('campaign-fullscreen-toggle', $view);
-        self::assertStringContainsString("classList.toggle('campaign-compose-fullscreen'", $script);
+        self::assertStringContainsString('editor-page mail-draft-editor-page campaign-draft-editor-page', $view);
+        self::assertStringContainsString('data-campaign-draft', $view);
+        self::assertStringContainsString('/assets/js/editor-autosave.js', $view);
+        self::assertStringNotContainsString('campaign-fullscreen-toggle', $view);
+        self::assertStringNotContainsString("classList.toggle('campaign-compose-fullscreen'", $script);
         self::assertStringNotContainsString('cloneNode', $script);
         self::assertStringNotContainsString('window.open', $script);
     }
