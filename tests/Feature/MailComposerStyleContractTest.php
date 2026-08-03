@@ -8,19 +8,23 @@ use PHPUnit\Framework\TestCase;
 
 final class MailComposerStyleContractTest extends TestCase
 {
-    public function testStandaloneAndEmbeddedComposersLoadDedicatedStyles(): void
+    public function testFocusedCorrespondenceAndCampaignEditorsLoadDedicatedStyles(): void
     {
         $workspace = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail.php');
-        $standalone = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail-compose.php');
+        $correspondence = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail-draft-editor.php');
+        $campaign = file_get_contents(dirname(__DIR__, 2) . '/resources/views/mail-campaign-draft.php');
 
         self::assertIsString($workspace);
-        self::assertIsString($standalone);
+        self::assertIsString($correspondence);
+        self::assertIsString($campaign);
         self::assertStringContainsString('/assets/css/mail.css', $workspace);
-        self::assertStringContainsString('/assets/css/mail.css', $standalone);
-        self::assertStringContainsString('mail-compose-form', $workspace);
-        self::assertStringContainsString('mail-compose-paper', $workspace);
-        self::assertStringContainsString('mail-compose-form', $standalone);
-        self::assertStringContainsString('mail-compose-paper', $standalone);
+        self::assertStringContainsString('/assets/css/mail.css', $correspondence);
+        self::assertStringContainsString('/assets/css/mail.css', $campaign);
+        self::assertStringNotContainsString('mail-compose-form', $workspace);
+        self::assertStringContainsString('mail-compose-form', $correspondence);
+        self::assertStringContainsString('mail-compose-paper', $correspondence);
+        self::assertStringContainsString('mail-draft-editor-form', $campaign);
+        self::assertStringContainsString('campaign-compose-paper', $campaign);
     }
 
     public function testComposerStylesCoverFieldsActionsErrorsAndNarrowScreens(): void
