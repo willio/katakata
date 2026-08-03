@@ -147,9 +147,13 @@ foreach ($accountStates as $accountState) {
 
     <section class="mail-detail-panel" aria-live="polite">
         <?php if ($area === 'campaigns'): ?>
-            <header class="mail-panel-header"><h2 id="mail-detail-title">Campaign detail</h2></header>
-            <section><h3>Audience now</h3><p><strong><?= $audience['count'] ?></strong> confirmed <?= $audience['count'] === 1 ? 'recipient' : 'recipients' ?></p><p class="quiet">This count is informational only. The recipient set is snapshotted when a reviewed campaign is confirmed and queued.</p></section>
-            <section><h3>Selected candidate</h3><?php if ($campaign === null): ?><p class="quiet">Select a campaign draft or newsletter candidate from the center list.</p><?php else: ?><article><h3><?= e($campaign['post']['title']) ?></h3><?php if ($campaign['post']['excerpt']): ?><p><?= e($campaign['post']['excerpt']) ?></p><?php endif; ?><div class="form-actions"><a href="<?= e($campaign['post']['url']) ?>">View post</a><?php if ($newsletterReady): ?><a class="button" href="/mail/confirm?post=<?= rawurlencode($campaign['post']['slug']) ?>">Review dispatch proof</a><?php endif; ?></div></article><?php endif; ?></section>
+            <?php if ($campaign === null): ?>
+                <p class="quiet">Select a campaign.</p>
+            <?php else: ?>
+                <header class="mail-panel-header"><h2 id="mail-detail-title"><?= e($campaign['post']['title']) ?></h2></header>
+                <section><h3>Audience now</h3><p><strong><?= $audience['count'] ?></strong> confirmed <?= $audience['count'] === 1 ? 'recipient' : 'recipients' ?></p><p class="quiet">This count is informational only. The recipient set is snapshotted when a reviewed campaign is confirmed and queued.</p></section>
+                <section><article><?php if ($campaign['post']['excerpt']): ?><p><?= e($campaign['post']['excerpt']) ?></p><?php endif; ?><div class="form-actions"><a href="<?= e($campaign['post']['url']) ?>">View post</a><?php if ($newsletterReady): ?><a class="button" href="/mail/confirm?post=<?= rawurlencode($campaign['post']['slug']) ?>">Review dispatch proof</a><?php endif; ?></div></article></section>
+            <?php endif; ?>
         <?php else: ?>
             <div data-mail-reader>
                 <?php if ($selectedMessageRecord === null): ?>
