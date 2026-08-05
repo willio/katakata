@@ -1,0 +1,125 @@
+.home-page {
+    --home-measure: 44rem;
+    min-height: 100svh;
+}
+
+.home-header,
+.home-footer,
+.home-editorial {
+    width: min(100% - 2rem, var(--home-measure));
+}
+
+.home-header {
+    padding-block: 1.2rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.home-editorial {
+    margin: clamp(2.5rem, 7vw, 5rem) auto;
+}
+
+.home-intro {
+    max-width: 34rem;
+    margin: 0 0 clamp(2.5rem, 7vw, 4.5rem);
+    color: var(--ink-muted);
+    font: .9rem/1.55 var(--font-sans);
+}
+
+.home-lead {
+    max-width: 39rem;
+}
+
+.home-lead h1 {
+    font-size: clamp(2.35rem, 7vw, 4.4rem);
+    line-height: 1.02;
+}
+
+.home-lead-meta {
+    margin: 1rem 0 0;
+    color: var(--ink-muted);
+    font: .72rem/1.4 var(--font-sans);
+}
+
+.home-index {
+    margin-top: clamp(3rem, 8vw, 5rem);
+}
+
+.home-index-heading {
+    margin: 0 0 .6rem;
+    color: var(--ink-muted);
+    font: 700 .68rem/1 var(--font-sans);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.home-index li {
+    display: grid;
+    grid-template-columns: 6.4rem minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+    padding: 1rem 0;
+}
+
+.home-index-date {
+    padding-top: .18rem;
+    color: var(--ink-muted);
+    font: .68rem/1.35 var(--font-sans);
+    white-space: nowrap;
+}
+
+.home-index-copy {
+    min-width: 0;
+}
+
+.home-index-title {
+    display: inline;
+    font-size: clamp(1.08rem, 2.7vw, 1.35rem);
+}
+
+.home-index-excerpt {
+    max-width: 36rem;
+    margin: .35rem 0 0;
+    color: var(--ink-muted);
+    font: .92rem/1.5 var(--font-serif);
+}
+
+.home-index-author {
+    margin: .4rem 0 0;
+    color: var(--ink-muted);
+    font: .68rem/1.35 var(--font-sans);
+}
+
+.home-index-author a { color: inherit; }
+
+.home-previous-edition,
+.home-search {
+    margin-top: 2.5rem;
+}
+
+@media (max-width: 32rem) {
+    .home-header {
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .home-header nav {
+        gap: .75rem;
+    }
+
+    .home-editorial {
+        margin-top: 2.5rem;
+    }
+
+    .home-lead h1 {
+        font-size: clamp(2.15rem, 12vw, 3.25rem);
+    }
+
+    .home-index li {
+        grid-template-columns: 1fr;
+        gap: .25rem;
+    }
+
+    .home-index-date {
+        padding-top: 0;
+    }
+}

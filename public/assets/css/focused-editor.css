@@ -1,0 +1,108 @@
+.focused-mail-editor {
+    min-height: 100svh;
+    background: var(--bg);
+}
+
+.focused-mail-editor .editor-status {
+    bottom: 1rem;
+    left: 1rem;
+    padding: .25rem .45rem;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    backdrop-filter: blur(.4rem);
+}
+
+.focused-mail-editor-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
+    width: min(100% - 2rem, 64rem);
+    margin: 0 auto;
+    padding: .9rem 0;
+    border-bottom: 1px solid var(--border);
+    font: .76rem/1.2 var(--font-sans);
+}
+
+.focused-mail-editor-header a {
+    color: var(--ink-muted);
+    text-decoration: none;
+}
+
+.focused-mail-editor-header a:hover,
+.focused-mail-editor-header a:focus-visible { color: var(--ink); }
+.focused-mail-editor-header a:last-child { justify-self: end; }
+.focused-mail-editor-header span { color: var(--ink-muted); }
+
+.focused-mail-editor-frame {
+    width: min(100% - 2rem, 64rem);
+    min-height: auto;
+    margin: 0 auto;
+    padding: clamp(2rem, 7vh, 5rem) 0 6rem;
+}
+
+.focused-mail-editor .mail-compose-paper {
+    min-height: min(72vh, 52rem);
+    padding: clamp(1rem, 3vw, 2rem);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--bg) 96%, var(--surface));
+    box-shadow: none;
+}
+
+.focused-mail-editor .mail-compose-body textarea {
+    min-height: min(48vh, 34rem);
+    font-family: var(--font-serif);
+}
+
+.focused-mail-editor .mail-compose-actions,
+.focused-mail-editor .mail-draft-editor-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .65rem;
+    margin-top: 1rem;
+}
+
+.focused-mail-editor .mail-compose-actions > a,
+.focused-mail-editor .mail-draft-editor-actions > a { margin-right: auto; }
+
+.focused-mail-editor .mail-compose-actions button,
+.focused-mail-editor .mail-draft-editor-actions button,
+.focused-mail-editor .mail-readiness button {
+    border-radius: 6px;
+}
+
+.focused-mail-editor .mail-readiness,
+.focused-mail-editor .campaign-review {
+    border-radius: 6px;
+}
+
+@media (max-width: 42rem) {
+    .focused-mail-editor-header {
+        width: min(100% - 1.25rem, 64rem);
+        grid-template-columns: 1fr auto;
+        gap: .5rem;
+    }
+
+    .focused-mail-editor-header span { display: none; }
+    .focused-mail-editor-frame { width: 100%; padding: 1rem 0 5rem; }
+    .focused-mail-editor .mail-compose-paper { border-inline: 0; border-radius: 0; }
+
+    .focused-mail-editor .mail-compose-actions,
+    .focused-mail-editor .mail-draft-editor-actions {
+        position: sticky;
+        z-index: 4;
+        bottom: 0;
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        width: 100%;
+        padding: .65rem .75rem;
+        border-top: 1px solid var(--border);
+        background: color-mix(in srgb, var(--bg) 94%, transparent);
+        backdrop-filter: blur(.5rem);
+    }
+
+    .focused-mail-editor .mail-draft-editor-actions { grid-template-columns: 1fr auto; }
+    .focused-mail-editor .mail-compose-actions > a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}

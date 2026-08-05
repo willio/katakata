@@ -1,6 +1,18 @@
 (() => {
     'use strict';
 
+    const sidebar = document.querySelector('.mail-sidebar');
+    const activeDestination = sidebar?.querySelector('a[aria-current="page"]');
+    if (sidebar instanceof HTMLElement && activeDestination instanceof HTMLElement) {
+        const revealActiveDestination = () => {
+            if (window.matchMedia('(max-width: 42rem)').matches) {
+                activeDestination.scrollIntoView({ block: 'nearest', inline: 'center' });
+            }
+        };
+        revealActiveDestination();
+        window.addEventListener('resize', revealActiveDestination, { passive: true });
+    }
+
     const reader = document.querySelector('[data-mail-reader]');
     const links = Array.from(document.querySelectorAll('[data-mail-message-link]'));
     if (!(reader instanceof HTMLElement) || links.length === 0) return;

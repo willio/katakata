@@ -1,0 +1,127 @@
+name: Browser verification
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: browser-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  responsive:
+    name: Chromium responsive routes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Prepare application
+        run: |
+          cp .env.example .env
+          rm -rf storage/auth
+          php bin/katakata auth:owner ci-owner@example.test 'BrowserTestPassword123!'
+
+      - name: Start application
+        run: |
+          php -S 127.0.0.1:8000 -t public tests/browser/router.php > /tmp/katakata-browser-server.log 2>&1 &
+          echo $! > /tmp/katakata-browser-server.pid
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:8000/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/katakata-browser-server.log
+          exit 1
+
+      - name: Run responsive browser checks
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:8000
+        run: npx playwright test tests/browser/responsive.spec.js --reporter=line
+
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-evidence
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Comment browser evidence on pull request
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const marker = '<!-- browser-verification-evidence -->';
+            const passed = '${{ job.status }}' === 'success';
+            const status = passed ? 'PASS' : 'FAIL';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              marker,
+              `### Browser verification: ${status}`,
+              '',
+              '- Runner: Ubuntu / Chromium',
+              '- Viewports: 1440px desktop and 320px mobile',
+              '- Stylesheet loading: required',
+              `- Screenshot artifact: [browser-evidence](${runUrl}#artifacts)`,
+              `- Workflow run: [#${context.runNumber}](${runUrl})`,
+              '',
+              'The artifact is retained for 14 days.'
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find(comment =>
+              comment.user?.type === 'Bot' && comment.body?.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Show server log on failure
+        if: failure()
+        run: test ! -f /tmp/katakata-browser-server.log || cat /tmp/katakata-browser-server.log

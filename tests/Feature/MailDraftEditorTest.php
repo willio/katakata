@@ -38,7 +38,8 @@ final class MailDraftEditorTest extends TestCase
 
         self::assertIsString($view);
         self::assertIsString($script);
-        self::assertStringContainsString('class="editor-page mail-draft-editor"', $view);
+        self::assertStringContainsString('mail-draft-editor', $view);
+        self::assertStringContainsString('focused-mail-editor', $view);
         self::assertStringContainsString('/assets/js/editor-autosave.js', $view);
         self::assertStringContainsString('/assets/js/mail-draft-editor.js', $view);
         self::assertStringContainsString('data-autosave-url=', $view);

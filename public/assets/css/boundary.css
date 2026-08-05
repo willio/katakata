@@ -1,3 +1,9 @@
+:root {
+    --radius-control: 6px;
+    --radius-status: 999px;
+    --owner-surface-raised: color-mix(in srgb, var(--surface) 72%, var(--bg));
+}
+
 .dashboard-section-heading {
     display: flex;
     align-items: baseline;
@@ -7,6 +13,47 @@
 
 .dashboard-section-heading h2 { margin: 0; }
 .dashboard-section-heading a { font: .76rem/1.2 var(--font-sans); }
+
+/* Owner workspaces use one restrained control radius. Circular icon controls remain circular. */
+.dashboard-header .button,
+.dashboard-shell .button,
+.dashboard-shell button:not(.field-clear):not(.editor-panel-close),
+.settings-section button,
+.auth-shell .button {
+    border-radius: var(--radius-control);
+}
+
+.dashboard-header a:focus-visible,
+.dashboard-shell a:focus-visible,
+.dashboard-shell button:focus-visible,
+.settings-section a:focus-visible,
+.settings-section button:focus-visible,
+.auth-shell a:focus-visible,
+.auth-shell button:focus-visible,
+.auth-shell input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.dashboard-stat-card {
+    border-radius: var(--radius-control);
+}
+
+.settings-feedback,
+.readiness {
+    border-radius: var(--radius-control);
+}
+
+.auth-shell article {
+    padding: clamp(1.1rem, 4vw, 2rem);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    background: var(--owner-surface-raised);
+}
+
+.auth-shell h1 {
+    font-size: clamp(2rem, 8vw, 3.25rem);
+}
 
 .auth-reassurance { margin: .75rem 0 1.5rem; }
 .auth-alternative { margin-top: 1.75rem; font-family: var(--font-sans); text-align: center; }
@@ -19,6 +66,7 @@
 .auth-alternative button {
     padding: .35rem 0;
     border: 0;
+    border-radius: 0;
     background: transparent;
     color: var(--accent);
     font: 600 .82rem/1.2 var(--font-sans);
@@ -30,4 +78,5 @@
 @media (max-width: 20rem) {
     .dashboard-section-heading { align-items: flex-start; flex-direction: column; gap: .35rem; }
     .auth-shell { width: min(100% - 1.25rem, 30rem); }
+    .auth-shell article { padding: 1rem; }
 }

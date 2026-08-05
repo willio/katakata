@@ -6,7 +6,6 @@
 /** @var array<string, \Katakata\Content\Author|null> $authors */
 $lead = $posts[0] ?? null;
 $previous = array_slice($posts, 1, 5);
-$leadAuthor = $lead === null ? null : ($authors[$lead->slug] ?? null);
 $archiveYear = null;
 
 foreach ($posts as $post) {
@@ -27,17 +26,20 @@ foreach ($posts as $post) {
     <link rel="alternate" type="application/rss+xml" title="<?= e($name) ?> RSS" href="/feed.xml">
     <link rel="alternate" type="application/feed+json" title="<?= e($name) ?> JSON Feed" href="/feed.json">
     <link rel="stylesheet" href="/assets/css/site.css">
+    <link rel="stylesheet" href="/assets/css/home-redesign.css">
 </head>
 <body class="home-page">
     <header class="home-header">
         <a class="home-mark" href="/" aria-label="<?= e($name) ?> home"><?= e($name) ?></a>
         <nav aria-label="Primary">
-            <a href="/newsletter">Newsletter</a>
             <a href="/archive">Archive</a>
+            <a href="/newsletter">Newsletter</a>
         </nav>
     </header>
 
     <main class="home-editorial">
+        <?php if ($tagline !== ''): ?><p class="home-intro"><?= e($tagline) ?></p><?php endif; ?>
+
         <?php if ($lead === null): ?>
             <section class="home-empty" aria-labelledby="latest-writing">
                 <p class="home-eyebrow">Latest</p>
@@ -50,24 +52,30 @@ foreach ($posts as $post) {
                 <p class="home-eyebrow">Latest</p>
                 <h1 id="latest-writing"><a href="<?= e($lead->url()) ?>"><?= e($lead->title) ?></a></h1>
                 <?php if ($lead->excerpt !== null): ?><p class="home-dek"><?= e($lead->excerpt) ?></p><?php endif; ?>
-                <p class="home-actions"><a href="<?= e($lead->url()) ?>">Read</a></p>
+                <p class="home-lead-meta"><time datetime="<?= e($lead->date->format('Y-m-d')) ?>"><?= e($lead->date->format('F j, Y')) ?></time></p>
             </article>
 
             <?php if ($previous !== []): ?>
-                <section class="home-index" aria-label="Previous writing">
+                <section class="home-index" aria-labelledby="recent-writing">
+                    <h2 class="home-index-heading" id="recent-writing">Recent</h2>
                     <ol>
                         <?php foreach ($previous as $post): ?>
                             <?php $author = $authors[$post->slug] ?? null; ?>
                             <li>
-                                <a class="home-index-title" href="<?= e($post->url()) ?>"><?= e($post->title) ?></a>
-                                <p class="home-index-meta">
-                                    <?php if ($author !== null): ?>
-                                        <a href="/authors/<?= e($author->slug) ?>"><?= e($author->name) ?></a>
-                                    <?php elseif ($post->author !== null): ?>
-                                        <?= e($post->author) ?>
+                                <time class="home-index-date" datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('F j')) ?></time>
+                                <div class="home-index-copy">
+                                    <a class="home-index-title" href="<?= e($post->url()) ?>"><?= e($post->title) ?></a>
+                                    <?php if ($post->excerpt !== null): ?><p class="home-index-excerpt"><?= e($post->excerpt) ?></p><?php endif; ?>
+                                    <?php if ($author !== null || $post->author !== null): ?>
+                                        <p class="home-index-author">
+                                            <?php if ($author !== null): ?>
+                                                <a href="/authors/<?= e($author->slug) ?>"><?= e($author->name) ?></a>
+                                            <?php else: ?>
+                                                <?= e((string) $post->author) ?>
+                                            <?php endif; ?>
+                                        </p>
                                     <?php endif; ?>
-                                    <time datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('Y m d')) ?></time>
-                                </p>
+                                </div>
                             </li>
                         <?php endforeach; ?>
                     </ol>
@@ -75,12 +83,12 @@ foreach ($posts as $post) {
             <?php endif; ?>
 
             <?php if ($archiveYear !== null): ?>
-                <p class="home-previous-edition"><a href="/archive#year-<?= e($archiveYear) ?>"><?= e($archiveYear) ?> Edition →</a></p>
+                <p class="home-previous-edition"><a href="/archive#year-<?= e($archiveYear) ?>">Earlier editions →</a></p>
             <?php endif; ?>
         <?php endif; ?>
 
         <form class="home-search" method="get" action="/archive" role="search">
-            <label for="home-search-query">Search editions</label>
+            <label for="home-search-query">Search the archive</label>
             <input id="home-search-query" name="q" type="search" autocomplete="off">
         </form>
     </main>

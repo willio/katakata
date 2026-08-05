@@ -53,7 +53,8 @@ final class CampaignDraftRouteContractTest extends TestCase
         self::assertIsString($view);
         self::assertIsString($script);
         self::assertStringContainsString("storagePath('mail/campaign-drafts')", $bootstrap);
-        self::assertStringContainsString('class="editor-page mail-draft-editor-page campaign-draft-editor-page"', $view);
+        self::assertStringContainsString('campaign-draft-editor-page', $view);
+        self::assertStringContainsString('focused-mail-editor', $view);
         self::assertStringContainsString('data-campaign-draft', $view);
         self::assertStringContainsString('data-server-version=', $view);
         self::assertStringContainsString('/assets/js/editor-autosave.js', $view);

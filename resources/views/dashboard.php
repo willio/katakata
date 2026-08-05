@@ -9,20 +9,89 @@
 /** @var list<array{id: string, post_slug: string, text: string, username: string, timestamp: string, permalink: string, avatar_url: ?string}>|null $buzz */
 /** @var string $csrf */
 $recentVisits = array_slice($recentVisits, 0, 5);
+$counts = [];
+foreach ($cards as $card) {
+    $counts[strtolower($card['label'])] = $card['count'];
+}
+$isFirstLogin = ($counts['posts'] ?? 0) === 0
+    && ($counts['drafts'] ?? 0) === 0
+    && ($counts['inbox'] ?? 0) === 0
+    && (($counts['visits'] ?? 0) === 0 || ($counts['visits'] ?? '—') === '—');
 ?>
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Dashboard — <?= e($siteName) ?></title><link rel="stylesheet" href="/assets/css/site.css"><link rel="stylesheet" href="/assets/css/boundary.css"></head>
-<body class="dashboard-page">
-<header class="dashboard-header"><a class="site-name" href="/dashboard"><?= e($siteName) ?></a><nav aria-label="Dashboard actions"><a class="button" href="/editor/new">New post</a><a href="/dashboard/settings">Settings</a></nav></header>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard — <?= e($siteName) ?></title>
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <link rel="stylesheet" href="/assets/css/boundary.css">
+    <link rel="stylesheet" href="/assets/css/dashboard-redesign.css">
+</head>
+<body class="dashboard-page<?= $isFirstLogin ? ' dashboard-page--first-login' : ' dashboard-page--mature' ?>">
+<header class="dashboard-header">
+    <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
+    <nav aria-label="Dashboard actions"><a class="button" href="/editor/new">New post</a><a href="/dashboard/settings">Settings</a></nav>
+</header>
 <main class="dashboard-shell">
-<header class="dashboard-intro"><p class="eyebrow">Owner's view</p><h1>Dashboard</h1></header>
-<section class="dashboard-stats" aria-label="Site summary"><?php foreach ($cards as $card): ?><a class="dashboard-stat-card" href="<?= e($card['href']) ?>"><strong><?= e((string) $card['count']) ?></strong><span><?= e($card['label']) ?></span><?php if ($card['detail'] !== null): ?><small><?= e($card['detail']) ?></small><?php endif; ?></a><?php endforeach; ?></section>
-<div class="dashboard-columns">
-<section aria-labelledby="recent-drafts"><h2 id="recent-drafts">Recent drafts</h2><?php if ($recentDrafts === []): ?><p class="quiet">Nothing in progress. <a href="/editor/new">Start a new post</a>.</p><?php else: ?><ol class="dashboard-list"><?php foreach ($recentDrafts as $draft): ?><li><a href="/editor/drafts/<?= e($draft->slug) ?>"><?= e($draft->title) ?></a><?php if ($draft->updatedAt !== null): ?><time datetime="<?= e($draft->updatedAt->format(DATE_ATOM)) ?>"><?= e($draft->updatedAt->format('M j, Y')) ?></time><?php endif; ?></li><?php endforeach; ?></ol><?php endif; ?></section>
-<section aria-labelledby="latest-posts"><h2 id="latest-posts">Latest posts</h2><?php if ($latestPosts === []): ?><p class="quiet">No published posts yet.</p><?php else: ?><ol class="dashboard-list"><?php foreach ($latestPosts as $post): ?><li><a href="<?= e($post->url()) ?>"><?= e($post->title) ?></a><time datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('M j, Y')) ?></time></li><?php endforeach; ?></ol><?php endif; ?></section>
-</div>
-<section class="dashboard-visits" aria-labelledby="recent-visits"><div class="dashboard-section-heading"><h2 id="recent-visits">Recent visits</h2><?php if ($analytics !== null): ?><a href="/analytics">View analytics</a><?php endif; ?></div><?php if ($analytics === null): ?><p class="quiet">Analytics is unavailable.</p><?php elseif ($recentVisits === []): ?><p class="quiet">No visits recorded yet.</p><?php else: ?><ol class="dashboard-list"><?php foreach ($recentVisits as $visit): ?><li><strong><?= e($visit['page']) ?></strong><time datetime="<?= e($visit['at']->format(DATE_ATOM)) ?>"><?= e($visit['at']->format('M j, H:i')) ?> UTC</time><?php if ($visit['referrer'] !== null): ?><span class="quiet">via <?= e(parse_url($visit['referrer'], PHP_URL_HOST) ?: 'direct') ?></span><?php endif; ?></li><?php endforeach; ?></ol><?php endif; ?></section>
-<?php if ($buzz !== null): ?><section class="dashboard-buzz" aria-labelledby="dashboard-buzz"><h2 id="dashboard-buzz">The Buzz</h2><?php if ($buzz === []): ?><p class="quiet">No synced replies yet.</p><?php else: ?><ol class="dashboard-list"><?php foreach ($buzz as $reply): ?><li><a href="<?= e($reply['permalink']) ?>" rel="noreferrer"><strong>@<?= e($reply['username']) ?></strong><span><?= e($reply['text']) ?></span></a><time datetime="<?= e($reply['timestamp']) ?>"><?= e((new DateTimeImmutable($reply['timestamp']))->format('M j, H:i')) ?> UTC</time><span class="quiet">on <?= e($reply['post_slug']) ?></span></li><?php endforeach; ?></ol><?php endif; ?></section><?php endif; ?>
-<form class="form-actions" method="post" action="/logout"><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><button type="submit">Sign out</button></form>
-</main></body></html>
+    <?php if ($isFirstLogin): ?>
+        <section class="dashboard-onboarding" aria-labelledby="dashboard-ready-title">
+            <p class="eyebrow">Owner workspace</p>
+            <h1 id="dashboard-ready-title">Your publication is ready.</h1>
+            <p>Begin with one post. Everything else can wait until the publication has something to say.</p>
+            <p><a class="button" href="/editor/new">Create your first post</a></p>
+        </section>
+    <?php else: ?>
+        <header class="dashboard-intro"><p class="eyebrow">Owner workspace</p><h1>Dashboard</h1></header>
+    <?php endif; ?>
+
+    <section class="dashboard-stats" aria-label="Site summary">
+        <?php foreach ($cards as $card): ?>
+            <a class="dashboard-stat-card" href="<?= e($card['href']) ?>">
+                <span><?= e($card['label']) ?></span>
+                <strong><?= e((string) $card['count']) ?></strong>
+                <?php if ($card['detail'] !== null): ?><small><?= e($card['detail']) ?></small><?php endif; ?>
+            </a>
+        <?php endforeach; ?>
+    </section>
+
+    <?php if ($isFirstLogin): ?>
+        <section class="dashboard-getting-started" aria-labelledby="getting-started-title">
+            <h2 id="getting-started-title">Getting started</h2>
+            <ol>
+                <li><a href="/editor/new">Write your first post</a></li>
+                <li><a href="/dashboard/settings">Set the publication name and description</a></li>
+                <li><a href="/dashboard/settings#mailboxes">Connect reader correspondence</a></li>
+            </ol>
+        </section>
+    <?php else: ?>
+        <div class="dashboard-columns">
+            <section aria-labelledby="recent-drafts">
+                <h2 id="recent-drafts">Recent drafts</h2>
+                <?php if ($recentDrafts === []): ?><p class="quiet">Nothing in progress. <a href="/editor/new">Start a new post</a>.</p><?php else: ?><ol class="dashboard-list"><?php foreach ($recentDrafts as $draft): ?><li><a href="/editor/drafts/<?= e($draft->slug) ?>"><?= e($draft->title) ?></a><?php if ($draft->updatedAt !== null): ?><time datetime="<?= e($draft->updatedAt->format(DATE_ATOM)) ?>"><?= e($draft->updatedAt->format('M j, Y')) ?></time><?php endif; ?></li><?php endforeach; ?></ol><?php endif; ?>
+            </section>
+            <section aria-labelledby="latest-posts">
+                <h2 id="latest-posts">Latest posts</h2>
+                <?php if ($latestPosts === []): ?><p class="quiet">No published posts yet.</p><?php else: ?><ol class="dashboard-list"><?php foreach ($latestPosts as $post): ?><li><a href="<?= e($post->url()) ?>"><?= e($post->title) ?></a><time datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('M j, Y')) ?></time></li><?php endforeach; ?></ol><?php endif; ?>
+            </section>
+        </div>
+
+        <?php if ($analytics !== null && $recentVisits !== []): ?>
+            <section class="dashboard-visits" aria-labelledby="recent-visits">
+                <div class="dashboard-section-heading"><h2 id="recent-visits">Recent visits</h2><a href="/analytics">View analytics</a></div>
+                <ol class="dashboard-list"><?php foreach ($recentVisits as $visit): ?><li><strong><?= e($visit['page']) ?></strong><time datetime="<?= e($visit['at']->format(DATE_ATOM)) ?>"><?= e($visit['at']->format('M j, H:i')) ?> UTC</time><?php if ($visit['referrer'] !== null): ?><span class="quiet">via <?= e(parse_url($visit['referrer'], PHP_URL_HOST) ?: 'direct') ?></span><?php endif; ?></li><?php endforeach; ?></ol>
+            </section>
+        <?php endif; ?>
+
+        <?php if ($buzz !== null && $buzz !== []): ?>
+            <section class="dashboard-buzz" aria-labelledby="dashboard-buzz">
+                <h2 id="dashboard-buzz">The Buzz</h2>
+                <ol class="dashboard-list"><?php foreach ($buzz as $reply): ?><li><a href="<?= e($reply['permalink']) ?>" rel="noreferrer"><strong>@<?= e($reply['username']) ?></strong><span><?= e($reply['text']) ?></span></a><time datetime="<?= e($reply['timestamp']) ?>"><?= e((new DateTimeImmutable($reply['timestamp']))->format('M j, H:i')) ?> UTC</time><span class="quiet">on <?= e($reply['post_slug']) ?></span></li><?php endforeach; ?></ol>
+            </section>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <form class="form-actions dashboard-signout" method="post" action="/logout"><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><button type="submit">Sign out</button></form>
+</main>
+</body>
+</html>
