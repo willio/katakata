@@ -74,12 +74,12 @@ XML,
         );
     }
 
-    public static function byline(string $path, string $byline, string $creator): string
+    public static function byline(string $path, string $byline, string $creator, string $prefix = ''): string
     {
         return self::create(
             $path,
             '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-            . '<w:body><w:p><w:r><w:t>ExampleCategory By ' . htmlspecialchars($byline, ENT_XML1) . '</w:t></w:r></w:p>'
+            . '<w:body><w:p><w:r><w:t>' . htmlspecialchars($prefix, ENT_XML1) . 'ExampleCategory By ' . htmlspecialchars($byline, ENT_XML1) . '</w:t></w:r></w:p>'
             . '<w:p><w:r><w:t>Imported body.</w:t></w:r></w:p></w:body></w:document>',
             self::core('Byline example', $creator, '2024-02-29T10:30:00Z'),
         );

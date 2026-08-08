@@ -85,4 +85,15 @@ MARKDOWN . "\n", $document->body);
         self::assertSame('high', $document->confidence['author']);
         self::assertStringNotContainsString('ExampleCategory By Example Byline', $document->body);
     }
+
+    public function testDecoratedDocumentBylineOverridesWordCreatorMetadata(): void
+    {
+        $path = DocxFixture::byline($this->root . '/decorated-byline.docx', 'Example Writer', 'Example Editor', '1');
+
+        $document = (new DocxDocumentParser())->parse($path);
+
+        self::assertSame('Example Writer', $document->author);
+        self::assertSame('high', $document->confidence['author']);
+        self::assertSame('ExampleCategory', $document->originalCategory);
+    }
 }
