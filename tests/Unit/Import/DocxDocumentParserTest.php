@@ -74,4 +74,15 @@ MARKDOWN . "\n", $document->body);
 
         (new DocxDocumentParser())->parse($path);
     }
+
+    public function testDocumentBylineOverridesWordCreatorMetadata(): void
+    {
+        $path = DocxFixture::byline($this->root . '/byline.docx', 'Example Byline', 'Example Editor');
+
+        $document = (new DocxDocumentParser())->parse($path);
+
+        self::assertSame('Example Byline', $document->author);
+        self::assertSame('high', $document->confidence['author']);
+        self::assertStringNotContainsString('ExampleCategory By Example Byline', $document->body);
+    }
 }

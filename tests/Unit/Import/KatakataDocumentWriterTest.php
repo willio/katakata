@@ -95,6 +95,7 @@ final class KatakataDocumentWriterTest extends TestCase
             '2024-02-29',
             'Imported body.',
             'original.docx',
+            null,
             ['title' => 'high', 'author' => 'medium', 'date' => 'low'],
         );
     }

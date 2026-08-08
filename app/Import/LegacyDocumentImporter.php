@@ -43,6 +43,7 @@ final class LegacyDocumentImporter
                     $document->date,
                     $document->body,
                     basename($path),
+                    $document->originalCategory,
                     $document->confidence,
                     $document->metadata,
                 );
