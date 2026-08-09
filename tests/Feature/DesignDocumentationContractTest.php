@@ -26,7 +26,11 @@ final class DesignDocumentationContractTest extends TestCase
         $design = file_get_contents(dirname(__DIR__, 2) . '/docs/design_specification.md');
 
         self::assertIsString($design);
-        self::assertStringContainsString('Public body copy is at least 19px.', $design);
+        self::assertStringContainsString(
+            'Public display expression comes from scale, measure, weight, rhythm, and restrained italics, not a replacement typeface. Public body copy is at least 19px.',
+            $design
+        );
+        self::assertStringNotContainsString('Body copy is Public', $design);
     }
 
     public function testHomepageFocusUsesTheInteractionToken(): void
