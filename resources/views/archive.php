@@ -35,10 +35,12 @@
                     <h2 id="year-<?= e($year) ?>"><?= e($year) ?></h2>
                     <ol class="post-list">
                         <?php foreach ($posts as $post): ?>
-                            <li>
-                                <time datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('Y m d')) ?></time>
-                                <h2><a class="publication-index-title" href="<?= e($post->url()) ?>"><?= e($post->title) ?></a></h2>
-                                <?php if ($post->excerpt !== null): ?><p><?= e($post->excerpt) ?></p><?php endif; ?>
+                            <li class="archive-entry">
+                                <time class="archive-entry-date" datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('Y m d')) ?></time>
+                                <div class="archive-entry-copy">
+                                    <h2><a class="publication-index-title" href="<?= e($post->url()) ?>"><?= e($post->title) ?></a></h2>
+                                    <?php if ($post->excerpt !== null): ?><p><?= e($post->excerpt) ?></p><?php endif; ?>
+                                </div>
                             </li>
                         <?php endforeach; ?>
                     </ol>

@@ -95,6 +95,22 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
 .post-list li { padding: 1.5rem 0; border-top: 1px solid var(--border); }
 .post-list h2 { margin: .25rem 0 .4rem; font-size: 1.45rem; }
 .post-list p { margin: .4rem 0 0; color: var(--ink-muted); }
+.archive-entry {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+    padding: 1.15rem 0;
+    border-top: 1px solid var(--border);
+}
+.archive-entry-date {
+    padding-top: .2rem;
+    color: var(--ink-muted);
+    font: .72rem/1.35 var(--font-sans);
+    letter-spacing: .04em;
+}
+.archive-entry-copy h2 { margin: 0; font-size: clamp(1.2rem, 2.8vw, 1.45rem); line-height: 1.15; }
+.archive-entry-copy p { margin: .35rem 0 0; color: var(--ink-muted); }
 .archive-search { max-width: 28rem; margin-top: 1.8rem; }
 .archive-search label { display: block; margin-bottom: .45rem; color: var(--ink-muted); font: .72rem/1 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
 .archive-search input { width: 100%; padding: .35rem 0; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; outline: 0; background: transparent; font-family: var(--font-serif); }
@@ -485,6 +501,7 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
 @media (max-width: 34rem) {
     html { font-size: 18px; }
     .page-shell, .article-shell { margin-top: 3rem; }
+    .archive-entry { grid-template-columns: 1fr; gap: .4rem; }
     .editor-writing { width: min(100% - 1.5rem, 68ch); padding-top: 4.5rem; }
     .home-header, .home-footer, .home-editorial { width: min(100% - 1.25rem, 54rem); }
     .home-header { padding-top: 1rem; }
