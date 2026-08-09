@@ -40,11 +40,15 @@ final class MailEditorialListRedesignContractTest extends TestCase
 
     public function testMailControlsUseRestrainedRadiusWhileStatusRemainsPillShaped(): void
     {
+        $boundary = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/boundary.css');
         $css = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/mail.css');
 
+        self::assertIsString($boundary);
         self::assertIsString($css);
         self::assertStringContainsString('.mail-refresh-button', $css);
-        self::assertStringContainsString('border-radius: 6px', $css);
+        self::assertStringContainsString('.mail-page button', $boundary);
+        self::assertStringContainsString('border-radius: var(--radius-control)', $boundary);
+        self::assertStringNotContainsString('border-radius: 6px', $css);
         self::assertStringContainsString('.mail-status-pill', $css);
         self::assertStringContainsString('border-radius: 999px', $css);
     }

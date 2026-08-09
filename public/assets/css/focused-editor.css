@@ -67,17 +67,6 @@
 .focused-mail-editor .mail-compose-actions > a,
 .focused-mail-editor .mail-draft-editor-actions > a { margin-right: auto; }
 
-.focused-mail-editor .mail-compose-actions button,
-.focused-mail-editor .mail-draft-editor-actions button,
-.focused-mail-editor .mail-readiness button {
-    border-radius: 6px;
-}
-
-.focused-mail-editor .mail-readiness,
-.focused-mail-editor .campaign-review {
-    border-radius: 6px;
-}
-
 @media (max-width: 42rem) {
     .focused-mail-editor-header {
         width: min(100% - 1.25rem, 64rem);

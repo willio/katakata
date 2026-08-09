@@ -11,18 +11,24 @@ final class OwnerVisualTokenContractTest extends TestCase
     public function testOwnerSurfacesUseOneRestrainedControlRadius(): void
     {
         $boundary = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/boundary.css');
+        $dashboard = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/dashboard-redesign.css');
         $posts = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/posts.css');
         $mail = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/mail.css');
 
         self::assertIsString($boundary);
+        self::assertIsString($dashboard);
         self::assertIsString($posts);
         self::assertIsString($mail);
         self::assertStringContainsString('--radius-control: 6px', $boundary);
         self::assertStringContainsString('border-radius: var(--radius-control)', $boundary);
-        self::assertStringContainsString('.owner-header .button', $posts);
-        self::assertStringContainsString('border-radius: 6px', $posts);
         self::assertStringContainsString('.mail-refresh-button', $mail);
-        self::assertStringContainsString('border-radius: 6px', $mail);
+        self::assertStringContainsString('.mail-page button', $boundary);
+        self::assertStringContainsString('.editor-page button:not(.editor-settings-toggle):not(.editor-panel-close)', $boundary);
+        self::assertStringContainsString('.mail-readiness', $boundary);
+        self::assertStringNotContainsString('--workspace-radius', $dashboard);
+        self::assertStringNotContainsString('border-radius: var(--workspace-radius)', $dashboard);
+        self::assertStringNotContainsString('border-radius: 6px', $posts);
+        self::assertStringNotContainsString('border-radius: 6px', $mail);
     }
 
     public function testPillsRemainLimitedToCompactFiltersAndStateBadges(): void
@@ -47,7 +53,9 @@ final class OwnerVisualTokenContractTest extends TestCase
         self::assertIsString($posts);
         self::assertStringContainsString(':focus-visible', $boundary);
         self::assertStringContainsString('outline: 2px solid var(--accent)', $boundary);
-        self::assertStringContainsString(':focus-visible', $posts);
+        self::assertStringContainsString('.mail-page a:focus-visible', $boundary);
+        self::assertStringContainsString('.focused-mail-editor a:focus-visible', $boundary);
+        self::assertStringNotContainsString('outline: 2px solid var(--accent)', $posts);
     }
 
     public function testExistingOwnerSafetyContractsRemainVisible(): void

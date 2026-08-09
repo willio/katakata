@@ -46,3 +46,10 @@ server confirms the exact client version, that buffer is removed.
 
 Concurrent tabs and devices remain last-write-wins for v1. This is an explicit
 limit, not a claim of collaborative editing.
+
+## Owner presentation layers
+
+Owner and owner-authentication views load `site.css`, then `boundary.css`, then
+any route-specific stylesheet. The boundary layer owns the canonical 6px
+control radius and visible focus outline. Route stylesheets retain only their
+layout, responsive, sticky-action, panel, and state-badge responsibilities.
