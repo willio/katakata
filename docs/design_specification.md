@@ -46,7 +46,7 @@ Reading and interface typography use deliberately different voices:
 Fonts are self-hosted or system-provided, never render-blocking external
 requests. Source Serif 4 remains Katakata’s editorial serif; no new font
 dependency is introduced. Public display expression comes from scale, measure, weight, rhythm, and restrained italics, not a replacement typeface. Body copy is
-at least 19–20px at typical viewport widths.
+Public body copy is at least 19px.
 
 ### Public editorial roles
 

@@ -543,7 +543,7 @@ All interactive elements require a visible focus treatment.
 Preferred:
 
 ```css
-outline: 2px solid var(--katakata);
+outline: 2px solid var(--accent);
 outline-offset: 4px;
 ```
 

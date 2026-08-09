@@ -20,4 +20,20 @@ final class DesignDocumentationContractTest extends TestCase
         self::assertStringContainsString('Normal owner controls use a 6px radius', $components);
         self::assertStringContainsString('Full pills are reserved for compact filters and state badges', $components);
     }
+
+    public function testPublicBodyCopyHasAnUnqualified19pxMinimum(): void
+    {
+        $design = file_get_contents(dirname(__DIR__, 2) . '/docs/design_specification.md');
+
+        self::assertIsString($design);
+        self::assertStringContainsString('Public body copy is at least 19px.', $design);
+    }
+
+    public function testHomepageFocusUsesTheInteractionToken(): void
+    {
+        $homepage = file_get_contents(dirname(__DIR__, 2) . '/docs/design/home-editorial-hierarchy.md');
+
+        self::assertIsString($homepage);
+        self::assertStringContainsString('outline: 2px solid var(--accent);', $homepage);
+    }
 }
