@@ -3,6 +3,21 @@
 The canonical visual and interaction contract is `docs/design_specification.md`.
 This subsystem note records implementation choices without replacing that contract.
 
+## Public and owner roles
+
+Source Serif 4 remains Katakata’s editorial serif; public display expression
+comes from scale, measure, weight, rhythm, and restrained italics rather than
+a new font dependency. Home lead titles may be large serif display text with
+rare italic emphasis. Article titles are serif-led but quieter than the Home
+lead, capped by measure and scale. Archive and author entry titles use the
+editorial serif, while years, labels, dates, and navigation use sans-serif.
+
+Newsletter is a public editorial conversion surface, not an owner
+authentication surface, even where it shares field primitives. Normal owner
+controls use a 6px radius; full pills are reserved for compact filters and
+state badges. The canonical colour vocabulary is `--bg`, `--surface`, `--ink`,
+`--ink-muted`, `--border`, `--accent`, and `--katakata`.
+
 ## Reader
 
 `public/assets/css/site.css` exposes the canonical light and Nord dark tokens and

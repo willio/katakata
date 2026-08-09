@@ -1,6 +1,6 @@
 # Home Editorial Hierarchy
 
-> Status: Draft design specification
+> Status: Accepted design specification
 >
 > Scope: `/home`
 >
@@ -89,10 +89,10 @@ Characteristics:
 Preferred direction:
 
 - Source Serif 4
-- Newsreader
-- Literata
-- Charter
-- a similarly restrained editorial serif
+
+Source Serif 4 remains Katakata’s editorial serif. Do not introduce a new
+editorial font dependency; express the homepage display treatment through
+scale, measure, weight, rhythm, and rare italic emphasis.
 
 ### Neutral Sans-Serif
 
@@ -167,6 +167,9 @@ Purpose: dominant editorial focus.
 - Max width: `11–14ch`
 - Colour: Katakata accent
 
+Large serif display text is reserved for the Home lead. Italic emphasis is
+rare and must not become a decorative default.
+
 The title is the primary brand carrier. It should be visually distinctive enough that the page remains identifiable even when the wordmark is not prominent.
 
 ## Level 2 — Lead Summary / Dek
@@ -193,6 +196,12 @@ Purpose: form the current edition's table of contents.
 - Colour: primary ink
 
 Previous titles must remain noticeably quieter than the lead title but more prominent than metadata.
+
+## Article, Archive, and Author Titles
+
+Article titles are serif-led but quieter than the Home lead, capped by measure
+and scale. Archive and author entry titles use the editorial serif; years,
+labels, dates, and navigation use the sans-serif stack.
 
 ## Level 4 — Navigation and Article Actions
 
@@ -259,28 +268,22 @@ Purpose: remain available without entering the reading hierarchy.
 
 # Colour System
 
-Use a warm paper background, near-black brown ink, and one restrained red-orange accent derived from the Nord family.
-
-Nord itself does not include a direct red-orange brand tone, so Katakata should use a calibrated warm variant that remains compatible with Nord's muted character.
+Use the canonical `--bg`, `--surface`, `--ink`, `--ink-muted`, `--border`,
+`--accent`, and `--katakata` tokens. `--katakata` is the restrained
+red-orange editorial identity accent; `--accent` remains the interaction
+colour.
 
 ## Core palette
 
 ```css
 :root {
-    --km-paper: #F7F3EC;
-    --km-paper-deep: #EEE8DE;
-
-    --km-ink: #2E2926;
-    --km-ink-soft: #5D554F;
-    --km-ink-muted: #81776F;
-    --km-rule: #D8D0C6;
-
-    --km-accent: #BF5A43;
-    --km-accent-hover: #A94B37;
-    --km-accent-soft: #E4B5A8;
-
-    --km-link: #4C665A;
-    --km-link-hover: #354B42;
+    --bg: #FAF9F6;
+    --surface: #F3F1EC;
+    --ink: #2B2A27;
+    --ink-muted: #6B6963;
+    --border: #E4E1D8;
+    --accent: #3D6E5C;
+    --katakata: #BF5A43;
 }
 ```
 
@@ -289,7 +292,7 @@ Nord itself does not include a direct red-orange brand tone, so Katakata should 
 Primary accent:
 
 ```text
-#BF5A43
+var(--katakata)
 ```
 
 Character:
@@ -322,7 +325,7 @@ The accent should be memorable because it is scarce.
 ### Primary ink
 
 ```text
-#2E2926
+var(--ink)
 ```
 
 Use for:
@@ -335,7 +338,7 @@ Use for:
 ### Secondary ink
 
 ```text
-#5D554F
+var(--ink-muted)
 ```
 
 Use for:
@@ -347,7 +350,7 @@ Use for:
 ### Tertiary ink
 
 ```text
-#81776F
+var(--ink-muted)
 ```
 
 Use for:
@@ -359,7 +362,7 @@ Use for:
 ### Rules
 
 ```text
-#D8D0C6
+var(--border)
 ```
 
 Use sparingly between rows and major sections.
@@ -367,7 +370,7 @@ Use sparingly between rows and major sections.
 ### Links
 
 ```text
-#4C665A
+var(--accent)
 ```
 
 A restrained Nord-adjacent green separates interaction from editorial emphasis.
@@ -378,7 +381,7 @@ The accent red-orange marks identity. The green marks interaction.
 
 # Contrast Requirements
 
-- Standard body text must meet WCAG AA contrast against `--km-paper`.
+- Standard body text must meet WCAG AA contrast against `--bg`.
 - Metadata must not be lighter than needed for AA at its rendered size.
 - Accent title colour must meet large-text contrast requirements.
 - Never communicate active state through colour alone.
@@ -540,7 +543,7 @@ All interactive elements require a visible focus treatment.
 Preferred:
 
 ```css
-outline: 2px solid var(--km-accent);
+outline: 2px solid var(--katakata);
 outline-offset: 4px;
 ```
 
@@ -567,35 +570,17 @@ outline-offset: 4px;
 
 ```css
 :root {
-    --km-font-editorial: "Source Serif 4", "Newsreader", Georgia, serif;
-    --km-font-ui: Inter, "IBM Plex Sans", system-ui, sans-serif;
-    --km-font-utility: "IBM Plex Mono", ui-monospace, monospace;
+    --font-serif: "Source Serif 4", "Charter", Georgia, serif;
+    --font-sans: "Inter", -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "iA Writer Mono", "JetBrains Mono", "SF Mono", Menlo, monospace;
 
-    --km-paper: #F7F3EC;
-    --km-paper-deep: #EEE8DE;
-    --km-ink: #2E2926;
-    --km-ink-soft: #5D554F;
-    --km-ink-muted: #81776F;
-    --km-rule: #D8D0C6;
-    --km-accent: #BF5A43;
-    --km-accent-hover: #A94B37;
-    --km-accent-soft: #E4B5A8;
-    --km-link: #4C665A;
-    --km-link-hover: #354B42;
-
-    --km-leading-tight: 0.98;
-    --km-leading-title: 1.15;
-    --km-leading-body: 1.58;
-
-    --km-space-1: 0.25rem;
-    --km-space-2: 0.5rem;
-    --km-space-3: 0.75rem;
-    --km-space-4: 1rem;
-    --km-space-6: 1.5rem;
-    --km-space-8: 2rem;
-    --km-space-12: 3rem;
-    --km-space-16: 4rem;
-    --km-space-24: 6rem;
+    --bg: #FAF9F6;
+    --surface: #F3F1EC;
+    --ink: #2B2A27;
+    --ink-muted: #6B6963;
+    --border: #E4E1D8;
+    --accent: #3D6E5C;
+    --katakata: #BF5A43;
 }
 ```
 

@@ -79,7 +79,7 @@ clickable element or the action hierarchy disappears.
 
 ### Shape and proportions
 
-- Text buttons use a full pill: `border-radius: 999px`.
+- Normal owner controls use a 6px radius. Full pills are reserved for compact filters and state badges.
 - Vertical padding is always substantially smaller than horizontal padding.
 - The default proportion is approximately 1:3 so buttons render slim and wide,
   never fat.
@@ -90,7 +90,7 @@ clickable element or the action hierarchy disappears.
 button,
 .button {
   padding: 0.55em 1.5em;
-  border-radius: 999px;
+  border-radius: 6px;
 }
 ```
 
