@@ -21,15 +21,15 @@ $title = match ($mode) {
     <title><?= e($title) ?> — <?= e($siteName) ?></title>
     <link rel="stylesheet" href="/assets/css/site.css">
 </head>
-<body>
+<body class="publication-page">
 <header class="site-header">
     <a class="site-name" href="/"><?= e($siteName) ?></a>
     <nav aria-label="Primary"><a href="/archive">Archive</a></nav>
 </header>
-<main class="auth-shell">
+<main class="auth-shell publication-form">
     <article>
         <p class="eyebrow">Newsletter</p>
-        <h1><?= e($title) ?></h1>
+        <h1 class="publication-title"><?= e($title) ?></h1>
         <?php if ($message !== null): ?><p><?= e($message) ?></p><?php endif; ?>
         <?php if ($error !== null): ?><p class="field-error" role="alert"><?= e($error) ?></p><?php endif; ?>
 
