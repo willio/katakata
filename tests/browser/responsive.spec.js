@@ -1,36 +1,78 @@
-const { test, expect } = require('@playwright/test');
+let playwright;
+try {
+  playwright = require('@playwright/test');
+} catch (error) {
+  if (error.code !== 'MODULE_NOT_FOUND') throw error;
+  playwright = require('playwright/test');
+}
+
+const { test, expect } = playwright;
+const { signIn } = require('./helpers/auth');
+const {
+  assertNoHorizontalOverflow,
+  assertReadableMeasure,
+  assertStylesLoaded,
+} = require('./helpers/visual-contract');
 
 test.use({
   baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000',
 });
 
 const routes = [
-  { name: 'home', path: '/' },
-  { name: 'login', path: '/login' },
-  { name: 'dashboard', path: '/dashboard', auth: true },
-  { name: 'posts', path: '/posts', auth: true },
-  { name: 'mail', path: '/mail', auth: true },
-  { name: 'settings', path: '/dashboard/settings', auth: true },
+  { name: 'home', path: '/', family: 'home' },
+  { name: 'login', path: '/login', family: 'owner' },
+  { name: 'article', path: '/2026/02/calm-software', family: 'public', measure: '.article-shell' },
+  { name: 'archive', path: '/archive', family: 'public', measure: '.page-shell' },
+  { name: 'author', path: '/authors/jane-doe', family: 'public', measure: '.page-shell' },
+  { name: 'newsletter', path: '/newsletter', family: 'public', measure: '.publication-form' },
+  { name: 'dashboard', path: '/dashboard', family: 'owner', auth: true },
+  { name: 'posts', path: '/posts', family: 'owner', auth: true },
+  { name: 'analytics', path: '/analytics', family: 'owner', auth: true },
+  { name: 'mail', path: '/mail?area=inbox', family: 'owner', auth: true },
+  { name: 'mailboxes', path: '/dashboard/settings/mailboxes', family: 'owner', auth: true },
+  { name: 'mailbox-import', path: '/dashboard/settings/mailboxes/import', family: 'owner', auth: true },
+  { name: 'mail-archive', path: '/mail/archive', family: 'owner', auth: true },
+  { name: 'sent-mail', path: '/mail/sent', family: 'owner', auth: true },
+  { name: 'campaign-workspace', path: '/mail?area=campaigns', family: 'owner', auth: true },
+  { name: 'campaigns', path: '/mail/campaigns', family: 'owner', auth: true },
+  { name: 'settings', path: '/dashboard/settings', family: 'owner', auth: true },
 ];
 
-async function assertStylesLoaded(page) {
-  const styles = await page.evaluate(() => Array.from(document.styleSheets).map((sheet) => {
-    let ruleCount = -1;
-    try { ruleCount = sheet.cssRules.length; } catch {}
-    return { href: sheet.href, ruleCount };
-  }));
-  expect(styles.length, JSON.stringify(styles)).toBeGreaterThan(0);
-  for (const style of styles) expect(style.ruleCount, JSON.stringify(styles)).toBeGreaterThan(0);
-}
+const fixtureStates = [
+  {
+    name: 'selected-message',
+    listingPath: '/mail?area=inbox',
+    link: '[data-mail-message-link]',
+    ready: '[data-mail-reader] .mail-message',
+    fixture: 'a cached reader message',
+  },
+  {
+    name: 'correspondence-editor',
+    listingPath: '/mail?area=inbox#mail-drafts',
+    link: '#mail-drafts a[href^="/mail/drafts/"][href$="/edit"]',
+    ready: '[data-mail-draft-editor]',
+    fixture: 'a correspondence draft',
+    font: { selector: '#mail-text', token: '--font-serif' },
+  },
+  {
+    name: 'campaign-editor',
+    listingPath: '/mail?area=campaigns#campaign-drafts',
+    link: '#campaign-drafts a[href^="/mail/campaign-drafts/"]',
+    ready: '[data-campaign-draft]',
+    fixture: 'a campaign draft',
+    font: { selector: '#campaign-body', token: '--font-serif' },
+  },
+];
 
-async function assertNoHorizontalOverflow(page) {
-  const dimensions = await page.evaluate(() => ({
-    viewport: document.documentElement.clientWidth,
-    document: document.documentElement.scrollWidth,
-    body: document.body.scrollWidth,
-  }));
-  expect(dimensions.document, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
-  expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
+async function assertFontRole(page, selector, token) {
+  const families = await page.locator(selector).first().evaluate((element, property) => {
+    const normalize = (value) => value.split(',').map((family) => family.trim().replace(/^['"]|['"]$/g, '').toLowerCase());
+    return {
+      actual: normalize(getComputedStyle(element).fontFamily),
+      expected: normalize(getComputedStyle(document.documentElement).getPropertyValue(property)),
+    };
+  }, token);
+  expect(families.actual, `${selector} should resolve to ${token}`).toEqual(families.expected);
 }
 
 async function assertActiveMailDestinationVisible(page) {
@@ -52,14 +94,23 @@ async function assertActiveMailDestinationVisible(page) {
   expect(geometry.activeRight, JSON.stringify(geometry)).toBeLessThanOrEqual(geometry.sidebarRight + 1);
 }
 
-async function signIn(page) {
-  await page.goto('/login');
-  await page.locator('input[name="email"]').fill('ci-owner@example.test');
-  await page.locator('input[name="password"]').fill('BrowserTestPassword123!');
-  await Promise.all([
-    page.waitForURL(/\/dashboard/),
-    page.getByRole('button', { name: 'Sign in', exact: true }).click(),
-  ]);
+async function openFixtureState(page, state) {
+  await page.goto(state.listingPath);
+  const link = page.locator(state.link).first();
+  await expect(link, `Browser fixtures must provide ${state.fixture}`).toHaveCount(1);
+  await link.click();
+  await expect(page.locator(state.ready)).toBeVisible();
+}
+
+async function blockAutosaveWrites(page) {
+  await page.route('**/autosave', (route) => route.abort('blockedbyclient'));
+}
+
+async function capture(page, testInfo, name) {
+  await page.screenshot({
+    path: testInfo.outputPath(`${name}.png`),
+    fullPage: true,
+  });
 }
 
 for (const viewport of [
@@ -76,14 +127,39 @@ for (const viewport of [
         await expect(page.locator('body')).toBeVisible();
         await assertStylesLoaded(page);
         await assertNoHorizontalOverflow(page);
-        if (route.name === 'mail' && viewport.width === 320) {
-          await assertActiveMailDestinationVisible(page);
-        }
-        await page.screenshot({
-          path: testInfo.outputPath(`${route.name}.png`),
-          fullPage: true,
-        });
+
+        if (route.measure) await assertReadableMeasure(page, route.measure);
+        if (route.family === 'home') await assertFontRole(page, '.home-lead h1', '--font-serif');
+        if (route.family === 'public') await assertFontRole(page, '.publication-title', '--font-serif');
+        if (route.family === 'owner') await assertFontRole(page, 'h1', '--font-sans');
+        if (route.name === 'mail' && viewport.width === 320) await assertActiveMailDestinationVisible(page);
+
+        await capture(page, testInfo, route.name);
       });
     }
+
+    for (const state of fixtureStates) {
+      test(`${state.name} has styled responsive layout`, async ({ page }, testInfo) => {
+        await signIn(page);
+        if (state.font) await blockAutosaveWrites(page);
+        await openFixtureState(page, state);
+        await assertStylesLoaded(page);
+        await assertNoHorizontalOverflow(page);
+        if (state.font) await assertFontRole(page, state.font.selector, state.font.token);
+        await capture(page, testInfo, state.name);
+      });
+    }
+
+    test('editor settings-open state has styled responsive layout', async ({ page }, testInfo) => {
+      await signIn(page);
+      await blockAutosaveWrites(page);
+      await page.goto('/editor/drafts/an-idea-in-progress');
+      await page.locator('[data-settings-toggle]').click();
+      await expect(page.locator('[data-editor-panel]')).toBeVisible();
+      await assertStylesLoaded(page);
+      await assertNoHorizontalOverflow(page);
+      await assertFontRole(page, 'textarea[name="body"]', '--font-mono');
+      await capture(page, testInfo, 'editor-settings-open');
+    });
   });
 }
