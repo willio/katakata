@@ -2,6 +2,9 @@
 
 The canonical visual and interaction contract is `docs/design_specification.md`.
 This subsystem note records implementation choices without replacing that contract.
+The accepted refinement review, including the final route matrix and deferred
+interactive accessibility follow-up, is
+`docs/design-reviews/2026-08-09-design-contract-refinement.md`.
 
 ## Public and owner roles
 
