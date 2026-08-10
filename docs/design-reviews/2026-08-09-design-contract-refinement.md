@@ -35,46 +35,58 @@ The implementation continues to distinguish three rooms:
 
 ## Visual-review record
 
-The final browser matrix captured every route/state below at **1440 x 1000**
-and **320 x 844** using approved disposable fixtures. The review considered
-the light and Nord-dark token treatments together: content contrast, hierarchy,
-and restrained surfaces remain distinct without adding a second visual
-signature. The raw full-page captures are disposable test output; this record
-is the durable evidence summary.
+Task 5's controller ran the browser matrix at **1440 x 1000** and **320 x
+844** using approved disposable fixtures. Task 6 did not rerun this matrix;
+`42/42` is inherited Task 5 controller evidence. Each case generated a
+full-page Playwright screenshot, but those captures were not retained as
+durable review evidence or manually inspected for Task 6.
 
-| Family | Routes and states checked | Desktop outcome | 320px outcome |
-|---|---|---|---|
-| Public | Home, login, article, archive, author, newsletter | Serif public titles, loaded styles, and bounded reading/form measures; Home retains its deliberately wider editorial index. | No horizontal overflow or clipped page width; long Indonesian titles wrap in the column rather than forcing a horizontal scroll. |
-| Owner orientation | Dashboard, Posts, Analytics, settings, mailbox management, mailbox import | Sans owner headings and route-specific layouts remain inside the shared `site.css` then `boundary.css` composition. | Controls and content stack without clipping; the settings folio remains a single-column, scrollable surface. |
-| Mail workspace | Inbox, selected cached message, Mail archive, Sent Mail, campaign workspace, campaign history | The multi-panel workspace preserves its destination, list, and reader hierarchy; selected and state-badge treatments remain restrained. | Destination/list progression remains legible; the active Mail destination stays within its visible sidebar bounds and the reader flows below without horizontal overflow. |
-| Focused rooms | Correspondence editor, campaign editor, Markdown editor with settings open | Writing surfaces retain their intended serif or monospace role, paper treatment, status placement, and action rhythm. | Sticky actions remain visually reachable, panels do not clip, and the open Markdown settings panel coexists with the writing surface without horizontal overflow. |
+| Family | Routes and states exercised | Assertions at both viewports |
+|---|---|---|
+| Public | Home, login, article, archive, author, newsletter | Loaded stylesheets, document-wide horizontal overflow, and computed serif font roles for the Home lead and public titles. Article, archive, author, and newsletter also had a maximum 75ch measure on the selected public secondary surfaces; Home was deliberately excluded. |
+| Owner orientation | Dashboard, Posts, Analytics, settings, mailbox management, mailbox import | Loaded stylesheets, document-wide horizontal overflow, and computed sans font roles for `h1` headings. |
+| Mail workspace | Inbox, selected cached message, Mail archive, Sent Mail, campaign workspace, campaign history | Loaded stylesheets and document-wide horizontal overflow. At 320px, the Inbox case also asserted that the active Mail destination remained within its sidebar bounds. |
+| Focused rooms | Correspondence editor, campaign editor, Markdown editor with settings open | Loaded stylesheets and document-wide horizontal overflow. Computed font-role comparisons covered serif correspondence and campaign bodies and the monospace Markdown textarea; the settings panel was asserted visible before its editor checks. |
 
-The 42 browser cases also asserted loaded stylesheets and horizontal-overflow
-limits for every capture. Public secondary surfaces asserted a maximum 75ch
-measure. Computed styles confirmed the serif public-title role, sans owner
-headings, monospace Markdown editor, and serif correspondence/campaign bodies.
+Here, loaded stylesheets means the browser exposed at least one stylesheet and
+each exposed stylesheet had a nonzero accessible rule count. Document-wide
+horizontal overflow means `documentElement` and `body` scroll widths were at
+most one pixel wider than the viewport. These are layout and computed-style
+assertions; they do not establish visual hierarchy, clipping of individual
+controls, touch reachability, or the appearance of selected-state treatments.
 
 ## Restraint pass
 
-No visual treatment was removed. The checked surfaces do not accumulate more
-than one signature device: public pages use editorial serif hierarchy with
-scarce red-orange emphasis, while owner pages use functional sans-serif
-controls, hairlines, and modest state treatment. Full pills remain confined to
-compact filters and state badges.
+No visual treatment was removed. The retained type and token contract continues
+to specify one public signature—editorial serif hierarchy with scarce
+red-orange emphasis—and reserves full pills for compact filters and state
+badges. Because Task 6 did not manually inspect retained captures, this is a
+contract decision rather than a visual conclusion about every exercised route.
 
 ## Deferred follow-up
 
-The capture matrix proves layout, type roles, selected states, measure, and
-overflow at desktop and 320px. It does not perform an interactive keyboard
-traversal or measure touch-target hit areas. Visible owner focus styling is
-covered by the shared boundary contract, but a future manual accessibility pass
-should record focused controls and touch reachability across the same route
-matrix.
+Dark-mode visual assessment is deferred. The `42/42` matrix is viewport-only:
+it did not emulate or assert `prefers-color-scheme: dark`, so it cannot support
+a conclusion about Nord-dark contrast, hierarchy, or surfaces.
+
+Long Indonesian-title wrapping and empty-state presentation are deferred. Task
+5 has no assertion or dedicated fixture for either condition, and Task 6 has
+no retained, manually inspected evidence for them. The selected cached-message
+fixture is evidence only that a selected message route could be exercised; it
+does not demonstrate selected-state styling or an empty reader.
+
+An interactive keyboard and touch-target pass also remains deferred. Visible
+owner focus styling is covered by the shared boundary contract, but a future
+manual accessibility pass should retain and inspect evidence for focused
+controls, touch reachability, dark mode, long Indonesian titles, empty states,
+and selected states across the same route matrix.
 
 ## Verification evidence
 
-- PHP suite: `344 tests, 1532 assertions` passed.
-- Responsive browser matrix: `42/42` passed across desktop and 320px using
-  approved disposable fixtures; focused editors blocked autosave writes.
+- Original Task 6 PHP suite: `344 tests, 1532 assertions` passed. The
+  documentation-correction suite later passed with `346 tests, 1541 assertions`.
+- Task 5 controller browser matrix: `42/42` passed across desktop and 320px
+  using approved disposable fixtures; Task 6 did not rerun it. Focused editors
+  blocked autosave writes.
 - No production, remote-mail, canonical-content, or package state was mutated
   for the visual review.
