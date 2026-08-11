@@ -17,6 +17,7 @@ use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\Rendering\Archive;
 use Katakata\Rendering\AuthorArchive;
+use Katakata\Rendering\AuthorResolver;
 use Katakata\Rendering\Feed;
 use Katakata\Rendering\Home;
 use Katakata\Rendering\Markdown;
@@ -36,7 +37,7 @@ $router->get('/', function (Request $request) use ($app, $recordVisit): Response
     $repository = $app->make(Repository::class);
     $layout = $app->make(Home::class)->layout($repository->posts());
     $lead = $layout['lead'];
-    $leadAuthor = $lead?->author === null ? null : $repository->findAuthor($lead->author);
+    $leadAuthor = $lead === null ? null : $app->make(AuthorResolver::class)->forPost($lead, $repository);
 
     return Response::html($app->make(View::class)->render('home', [
         'name' => (string) $app->config()->get('app.name', 'Katakata'),

@@ -8,6 +8,7 @@ use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\Rendering\Markdown;
 use Katakata\Rendering\ArticleNavigation;
+use Katakata\Rendering\AuthorResolver;
 use Katakata\View;
 
 /**
@@ -63,7 +64,7 @@ $router->get('/{year}/{month}/{slug}', function (
         return Response::notFound();
     }
 
-    $author = $post->author === null ? null : $app->make(Repository::class)->findAuthor($post->author);
+    $author = $app->make(AuthorResolver::class)->forPost($post, $app->make(Repository::class));
     $discussion = $app->make(NativeDiscussionService::class)->forPost($post);
     $app->make(\Katakata\Analytics\VisitRecorder::class)->record($request);
 
