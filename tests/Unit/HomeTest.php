@@ -56,16 +56,35 @@ final class HomeTest extends TestCase
         $layout = (new Home())->layout($posts);
 
         self::assertSame('lead', $layout['lead']?->slug);
-        self::assertSame(
-            ['recent-one', 'recent-two', 'recent-three', 'recent-four', 'recent-five', 'recent-six'],
-            array_map(static fn (Post $post): string => $post->slug, $layout['recent']),
-        );
-        self::assertSame(['2026-06', '2026-05'], array_keys($layout['earlierThisYear']));
-        self::assertSame(
-            ['june-one', 'june-two'],
-            array_map(static fn (Post $post): string => $post->slug, $layout['earlierThisYear']['2026-06']),
-        );
-        self::assertSame('2025', $layout['archiveYear']);
+        self::assertSame(['2026-08', '2026-07', '2026-06', '2026-05', '2025-12'], array_keys($layout['months']));
+    }
+
+    public function testItBuildsBoundedWeeklyRotatingMonthShelves(): void
+    {
+        $posts = [$this->post('lead', '2026-08-10', 'published')];
+        foreach ([['july', '2026-07', 13], ['june', '2026-06', 10], ['may', '2026-05', 7], ['april', '2026-04', 4]] as [$prefix, $month, $count]) {
+            for ($index = 1; $index <= $count; $index++) {
+                $posts[] = $this->post("{$prefix}-{$index}", "{$month}-" . str_pad((string) $index, 2, '0', STR_PAD_LEFT), 'published');
+            }
+        }
+
+        $layout = (new Home())->layout(new Collection($posts), new DateTimeImmutable('2026-08-10T12:00:00+07:00'));
+
+        self::assertSame('lead', $layout['lead']?->slug);
+        self::assertArrayHasKey('months', $layout);
+        self::assertSame(['2026-07', '2026-06', '2026-05', '2026-04'], array_keys($layout['months']));
+        self::assertContains(count($layout['months']['2026-07']['posts']), [1, 12]);
+        self::assertLessThanOrEqual(9, count($layout['months']['2026-06']['posts']));
+        self::assertLessThanOrEqual(6, count($layout['months']['2026-05']['posts']));
+        self::assertLessThanOrEqual(3, count($layout['months']['2026-04']['posts']));
+        self::assertTrue($layout['months']['2026-07']['has_more']);
+        self::assertSame('/archive?year=2026&month=07', $layout['months']['2026-07']['browse_url']);
+
+        $nextWeek = (new Home())->layout(new Collection($posts), new DateTimeImmutable('2026-08-17T12:00:00+07:00'));
+        self::assertSame(13, count(array_unique(array_merge(
+            array_map(static fn (Post $post): string => $post->slug, $layout['months']['2026-07']['posts']),
+            array_map(static fn (Post $post): string => $post->slug, $nextWeek['months']['2026-07']['posts']),
+        ))));
     }
 
     private function post(string $slug, string $date, string $status): Post

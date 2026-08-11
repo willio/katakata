@@ -4,9 +4,7 @@
 /** @var string $siteUrl */
 /** @var \Katakata\Content\Post|null $lead */
 /** @var \Katakata\Content\Author|null $leadAuthor */
-/** @var array<int, \Katakata\Content\Post> $recent */
-/** @var array<string, array<int, \Katakata\Content\Post>> $earlierThisYear */
-/** @var string|null $archiveYear */
+/** @var array<string, array{label:string,posts:list<\Katakata\Content\Post>,has_more:bool,browse_url:string,show_author:bool}> $months */
 ?>
 <!doctype html>
 <html lang="en">
@@ -48,41 +46,17 @@
                 </p>
             </article>
 
-            <?php if ($recent !== []): ?>
-                <section class="home-index" aria-labelledby="recent-writing">
-                    <h2 class="home-index-heading" id="recent-writing">Recent</h2>
-                    <ol>
-                        <?php foreach ($recent as $post): ?>
-                            <li>
-                                <time class="home-index-date" datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('F d')) ?></time>
-                                <a class="home-index-title" href="<?= e($post->url()) ?>"><?= e($post->title) ?></a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ol>
+            <?php if ($months !== []): ?>
+                <section class="home-months" aria-labelledby="monthly-writing">
+                    <h2 class="home-index-heading" id="monthly-writing">More writing</h2>
+                    <?php foreach ($months as $shelf): ?>
+                        <section class="home-month-shelf">
+                            <h3><a href="<?= e($shelf['browse_url']) ?>"><?= e($shelf['label']) ?></a></h3>
+                            <ol><?php foreach ($shelf['posts'] as $post): ?><li><a href="<?= e($post->url()) ?>"><?= e($post->title) ?></a><?php if (($shelf['show_author'] ?? false) && $post->author !== null): ?><span class="home-shelf-author"><?= e(mb_strtoupper($post->author)) ?></span><?php endif; ?></li><?php endforeach; ?></ol>
+                            <?php if ($shelf['has_more']): ?><p><a href="<?= e($shelf['browse_url']) ?>">Browse <?= e(explode(' ', $shelf['label'])[0]) ?> →</a></p><?php endif; ?>
+                        </section>
+                    <?php endforeach; ?>
                 </section>
-            <?php endif; ?>
-
-            <?php if ($earlierThisYear !== []): ?>
-                <section class="home-months" aria-labelledby="earlier-this-year">
-                    <h2 class="home-index-heading" id="earlier-this-year">Earlier This Year</h2>
-                    <ol>
-                        <?php foreach ($earlierThisYear as $monthPosts): ?>
-                            <li>
-                                <span class="home-month-label"><?= e($monthPosts[0]->date->format('M')) ?></span>
-                                <span class="home-month-titles">
-                                    <?php foreach ($monthPosts as $index => $post): ?>
-                                        <?php if ($index > 0): ?><span class="home-title-separator" aria-hidden="true">·</span><?php endif; ?>
-                                        <a href="<?= e($post->url()) ?>"><?= e($post->title) ?></a>
-                                    <?php endforeach; ?>
-                                </span>
-                            </li>
-                        <?php endforeach; ?>
-                    </ol>
-                </section>
-            <?php endif; ?>
-
-            <?php if ($archiveYear !== null): ?>
-                <p class="home-previous-edition"><a href="/archive#year-<?= e($archiveYear) ?>">Earlier editions →</a></p>
             <?php endif; ?>
         <?php endif; ?>
 

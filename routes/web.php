@@ -55,8 +55,10 @@ $router->get('/archive', function (Request $request) use ($app, $recordVisit): R
 
     return Response::html($app->make(View::class)->render('archive', [
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
-        'years' => $app->make(Archive::class)->years($repository->posts(), $query),
+        'years' => $app->make(Archive::class)->years($repository->posts(), $query, $request->query['year'] ?? null, $request->query['month'] ?? null),
         'query' => $query,
+        'year' => $request->query['year'] ?? null,
+        'month' => $request->query['month'] ?? null,
     ]));
 });
 

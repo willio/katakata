@@ -28,6 +28,12 @@
                 </p>
             </header>
             <div class="article-body"><?= $bodyHtml ?></div>
+            <?php if ($navigation['newer'] !== null || $navigation['older'] !== null): ?>
+                <nav class="article-reading-nav" aria-label="Continue reading">
+                    <?php if ($navigation['newer'] !== null): ?><a href="<?= e($navigation['newer']->url()) ?>">Newer: <?= e($navigation['newer']->title) ?></a><?php endif; ?>
+                    <?php if ($navigation['older'] !== null): ?><a href="<?= e($navigation['older']->url()) ?>">Earlier: <?= e($navigation['older']->title) ?></a><?php endif; ?>
+                </nav>
+            <?php endif; ?>
             <footer class="article-footer">
                 <?php if ($author !== null): ?>
                     <p><strong><a href="/authors/<?= e($author->slug) ?>"><?= e($author->name) ?></a></strong></p>

@@ -2,6 +2,8 @@
 /** @var string $siteName */
 /** @var array<int, array<int, \Katakata\Content\Post>> $years */
 /** @var string $query */
+/** @var string|null $year */
+/** @var string|null $month */
 ?>
 <!doctype html>
 <html lang="en">
@@ -23,6 +25,8 @@
             <p class="eyebrow"><?= $query === '' ? 'All writing' : 'Search results' ?></p>
             <h1 class="publication-title"><?= $query === '' ? 'Archive' : 'Results for “' . e($query) . '”' ?></h1>
             <form class="archive-search" method="get" action="/archive" role="search">
+                <?php if ($year !== null): ?><input type="hidden" name="year" value="<?= e($year) ?>"><?php endif; ?>
+                <?php if ($month !== null): ?><input type="hidden" name="month" value="<?= e($month) ?>"><?php endif; ?>
                 <label for="archive-query">Search editions</label>
                 <input id="archive-query" name="q" type="search" value="<?= e($query) ?>" autocomplete="off">
             </form>

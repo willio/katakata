@@ -23,23 +23,20 @@ final class HomeRedesignContractTest extends TestCase
         self::assertIsString($routes);
         self::assertStringContainsString('/assets/css/home-redesign.css', $view);
         self::assertStringContainsString('class="home-eyebrow">Latest', $view);
-        self::assertStringContainsString('id="recent-writing">Recent', $view);
-        self::assertStringContainsString('class="home-index-date"', $view);
+        self::assertStringContainsString('id="monthly-writing">More writing', $view);
+        self::assertStringContainsString('class="home-month-shelf"', $view);
         self::assertStringContainsString('class="home-lead-byline"', $view);
-        self::assertStringContainsString('id="earlier-this-year">Earlier This Year', $view);
-        self::assertStringContainsString('class="home-month-titles"', $view);
-        self::assertStringContainsString('class="home-title-separator" aria-hidden="true">·</span>', $view);
+        self::assertStringContainsString('Browse <?= e(explode', $view);
         self::assertStringContainsString('Search the archive', $view);
-        self::assertStringContainsString('Earlier editions →', $view);
         self::assertStringContainsString('grid-template-columns: 6.4rem minmax(0, 1fr)', $css);
-        self::assertStringContainsString('grid-template-columns: 3rem minmax(0, 1fr)', $css);
+        self::assertStringContainsString('.home-month-shelf li {', $css);
         self::assertStringContainsString('border-top: 0', $css);
         self::assertStringContainsString('@media (max-width: 32rem)', $css);
         self::assertStringContainsString('grid-template-columns: 1fr', $css);
         self::assertStringContainsString('->layout($repository->posts())', $routes);
     }
 
-    public function testHomepageRendersLeadSixRecentPostsAndMonthlyEarlierTitles(): void
+    public function testHomepageRendersBoundedMonthlyShelves(): void
     {
         $posts = [
             $this->post('lead', 'Lead Story', '2026-08-10', 'will'),
@@ -61,22 +58,17 @@ final class HomeRedesignContractTest extends TestCase
             'siteUrl' => 'https://katakata.test',
             'lead' => $posts[0],
             'leadAuthor' => new Author('will', 'Will', null, null, [], ''),
-            'recent' => array_slice($posts, 1, 6),
-            'earlierThisYear' => [
-                '2026-06' => array_slice($posts, 7, 2),
-                '2026-05' => array_slice($posts, 9, 1),
+            'months' => [
+                '2026-06' => ['label' => 'June 2026', 'posts' => array_slice($posts, 7, 2), 'has_more' => true, 'browse_url' => '/archive?year=2026&month=06'],
             ],
-            'archiveYear' => '2025',
         ]);
 
         self::assertStringContainsString('August 10, 2026</time>, by', $html);
         self::assertStringContainsString('/authors/will">Will</a>', $html);
-        self::assertSame(6, substr_count($html, 'class="home-index-title"'));
-        self::assertStringContainsString('<span class="home-month-label">Jun</span>', $html);
+        self::assertStringContainsString('June 2026', $html);
         self::assertStringContainsString('June One</a>', $html);
         self::assertStringContainsString('June Two</a>', $html);
-        self::assertStringContainsString('<span class="home-month-label">May</span>', $html);
-        self::assertStringContainsString('/archive#year-2025">Earlier editions →</a>', $html);
+        self::assertStringContainsString('Browse June →', $html);
         self::assertStringNotContainsString('Older Edition</a>', $html);
     }
 
@@ -100,13 +92,55 @@ final class HomeRedesignContractTest extends TestCase
             'siteUrl' => 'https://katakata.test',
             'lead' => $this->post('lead', 'Lead Story', '2026-08-10'),
             'leadAuthor' => null,
-            'recent' => [],
-            'earlierThisYear' => [],
-            'archiveYear' => null,
+            'months' => [],
         ]);
 
         self::assertStringContainsString('August 10, 2026</time>, by', $html);
         self::assertStringContainsString('<span class="home-lead-byline">Katakata</span>', $html);
+    }
+
+    public function testHomepageRendersAQuietMonthShelfWithoutInventoryCounts(): void
+    {
+        $post = $this->post('june-one', 'June One', '2018-06-27');
+        $html = (new View(dirname(__DIR__, 2) . '/resources/views'))->render('home', [
+            'name' => 'Katakata',
+            'tagline' => '',
+            'siteUrl' => 'https://katakata.test',
+            'lead' => $this->post('lead', 'Lead Story', '2026-08-10'),
+            'leadAuthor' => null,
+            'recent' => [],
+            'earlierThisYear' => [],
+            'archiveYear' => null,
+            'months' => [
+                '2018-06' => [
+                    'label' => 'June 2018',
+                    'posts' => [$post],
+                    'has_more' => true,
+                    'browse_url' => '/archive?year=2018&month=06',
+                ],
+            ],
+        ]);
+
+        self::assertStringContainsString('June 2018', $html);
+        self::assertStringContainsString('June One</a>', $html);
+        self::assertStringContainsString('Browse June →</a>', $html);
+        self::assertStringNotContainsString('286 articles', $html);
+    }
+
+    public function testHomepageRendersUppercaseAuthorMetadataOnlyForPriorityShelves(): void
+    {
+        $post = $this->post('june-one', 'June One', '2018-06-27', 'writer');
+        $html = (new View(dirname(__DIR__, 2) . '/resources/views'))->render('home', [
+            'name' => 'Katakata', 'tagline' => '', 'siteUrl' => 'https://katakata.test',
+            'lead' => $this->post('lead', 'Lead Story', '2026-08-10'), 'leadAuthor' => null,
+            'months' => [
+                '2018-06' => ['label' => 'June 2018', 'posts' => [$post], 'has_more' => false, 'browse_url' => '/archive?year=2018&month=06', 'show_author' => true],
+                '2018-05' => ['label' => 'May 2018', 'posts' => [$post], 'has_more' => false, 'browse_url' => '/archive?year=2018&month=05', 'show_author' => false],
+            ],
+        ]);
+
+        self::assertSame(1, substr_count($html, 'class="home-shelf-author"'));
+        self::assertStringContainsString('WRITER', $html);
     }
 
     private function post(string $slug, string $title, string $date, ?string $author = null): Post

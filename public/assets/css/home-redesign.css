@@ -69,27 +69,15 @@
 }
 
 .home-months { margin-top: clamp(4.5rem, 11vw, 7rem); }
-.home-months ol { margin: 0; padding: 0; list-style: none; }
-.home-months li {
-    display: grid;
-    grid-template-columns: 3rem minmax(0, 1fr);
-    gap: 1.25rem;
-    align-items: baseline;
-    padding: .65rem 0;
-}
-.home-month-label {
-    color: var(--ink-muted);
-    font: .68rem/1.45 var(--font-sans);
-    letter-spacing: .08em;
-    text-transform: uppercase;
-}
-.home-month-titles {
-    font: 1rem/1.7 var(--font-serif);
-}
-.home-month-titles a { color: var(--ink); text-decoration: none; }
-.home-month-titles a:hover,
-.home-month-titles a:focus-visible { color: var(--katakata); }
-.home-title-separator { padding-inline: .12em; color: var(--ink-muted); }
+.home-month-shelf { margin-top: 2.25rem; }
+.home-month-shelf h3 { margin: 0; font: 700 .78rem/1.2 var(--font-sans); letter-spacing: .06em; text-transform: uppercase; }
+.home-month-shelf h3 a { color: var(--ink-muted); text-decoration: none; }
+.home-month-shelf ol { margin: .7rem 0 0; padding: 0; list-style: none; }
+.home-month-shelf li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: baseline; padding: .32rem 0; font: 1.05rem/1.35 var(--font-serif); }
+.home-month-shelf li a { color: var(--ink); text-decoration: none; }
+.home-month-shelf li a:hover, .home-month-shelf li a:focus-visible { color: var(--katakata); }
+.home-shelf-author { color: var(--ink-muted); font: 700 .62rem/1.25 var(--font-sans); letter-spacing: .08em; text-align: right; }
+.home-month-shelf p { margin: .8rem 0 0; font: .75rem/1.3 var(--font-sans); }
 
 .home-previous-edition { margin-top: clamp(4.5rem, 11vw, 7rem); }
 .home-search { margin-top: clamp(5rem, 12vw, 8rem); }
@@ -121,9 +109,5 @@
         padding-top: 0;
     }
 
-    .home-months li {
-        grid-template-columns: 2.5rem minmax(0, 1fr);
-        gap: .75rem;
-        align-items: start;
-    }
+    .home-month-shelf { margin-top: 2rem; }
 }
