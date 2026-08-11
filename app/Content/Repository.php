@@ -268,7 +268,22 @@ final class Repository
             avatar: isset($meta['avatar']) ? (string) $meta['avatar'] : null,
             meta: $meta,
             path: $path,
+            social: $this->safeSocialUrls($meta['social'] ?? []),
         );
+    }
+
+    /**
+     * @param mixed $social
+     * @return list<string>
+     */
+    private function safeSocialUrls(mixed $social): array
+    {
+        return array_values(array_filter(
+            array_map('strval', is_array($social) ? $social : []),
+            static fn (string $url): bool => filter_var($url, FILTER_VALIDATE_URL) !== false
+                && str_starts_with(strtolower($url), 'https://')
+                && parse_url($url, PHP_URL_HOST) !== null,
+        ));
     }
 
     /**

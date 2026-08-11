@@ -16,6 +16,7 @@ final class Author
 {
     /**
      * @param array<string, mixed> $meta
+     * @param list<string> $social
      */
     public function __construct(
         public readonly string $slug,
@@ -24,6 +25,7 @@ final class Author
         public readonly ?string $avatar,
         public readonly array $meta,
         public readonly string $path,
+        public readonly array $social = [],
     ) {
     }
 }

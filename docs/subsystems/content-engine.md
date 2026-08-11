@@ -43,13 +43,18 @@ Filesystem → Discovery → Validation → Front Matter → Markdown → Post O
 |---|---|---|
 | `Post` | `title` | `date`, `slug`, `author`, `tags`, `excerpt`, `status` (defaults to `published`) |
 | `Draft` | `title` | `updated_at` (falls back to the file's mtime) |
-| `Author` | `name` | `avatar`; `bio` falls back to the file's Markdown body if no `bio` front matter field is set |
+| `Author` | `name` | `avatar`; flat `social` HTTPS URL list; `bio` falls back to the file's Markdown body if no `bio` front matter field is set |
 | `Asset` | — (no front matter; discovered by presence) | — |
 
 A `Post`'s `date` and `slug` can be overridden by front matter; if
 absent, both are derived from the filename
 (`content/posts/2026/01/260115_hello-world.md` → date `2026-01-15`,
 slug `hello-world`).
+
+Author `social` values are deliberately a flat list, in line with ADR 0005.
+Only well-formed HTTPS URLs with a host are exposed by the repository; callers
+must derive their display label from the URL rather than store a nested social
+network object.
 
 `Collection` (`Katakata\Content\Collection`) is a small, immutable,
 typed collection — `filter()`, `sort()`, and `first()` all return new
