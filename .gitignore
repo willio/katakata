@@ -36,12 +36,9 @@
 .env.*
 !.env.example
 
-# Local working artifacts that are not repository content.
-/content/drafts/hello-hello.md
-/content/drafts/hello.md
-/content/drafts/this-is-a-title.md
-/content/drafts/wolves-and-bears.md
-/content/revisions/
+# Canonical publication content is a local/deployment volume, never Git data.
+/content/*
+!/content/README.md
 /storage/backups/
 /graphify-out/
 
