@@ -19,7 +19,9 @@
 .dashboard-shell .button,
 .dashboard-shell button:not(.field-clear):not(.editor-panel-close),
 .settings-section button,
-.auth-shell .button {
+.auth-shell .button,
+.mail-page button,
+.editor-page button:not(.editor-settings-toggle):not(.editor-panel-close) {
     border-radius: var(--radius-control);
 }
 
@@ -28,6 +30,10 @@
 .dashboard-shell button:focus-visible,
 .settings-section a:focus-visible,
 .settings-section button:focus-visible,
+.mail-page a:focus-visible,
+.mail-page button:focus-visible,
+.focused-mail-editor a:focus-visible,
+.editor-page button:focus-visible,
 .auth-shell a:focus-visible,
 .auth-shell button:focus-visible,
 .auth-shell input:focus-visible {
@@ -40,7 +46,8 @@
 }
 
 .settings-feedback,
-.readiness {
+.readiness,
+.mail-readiness {
     border-radius: var(--radius-control);
 }
 

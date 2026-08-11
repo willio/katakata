@@ -2,6 +2,27 @@
 
 The canonical visual and interaction contract is `docs/design_specification.md`.
 This subsystem note records implementation choices without replacing that contract.
+The accepted refinement review, including the final route matrix and deferred
+interactive accessibility follow-up, is
+`docs/design-reviews/2026-08-09-design-contract-refinement.md`.
+
+## Public and owner roles
+
+Source Serif 4 remains Katakata’s editorial serif; public display expression
+comes from scale, measure, weight, rhythm, and restrained italics rather than
+a new font dependency. Home lead titles may be large serif display text with
+rare italic emphasis. Article titles are serif-led but quieter than the Home
+lead, capped by measure and scale. Archive and author entry titles use the
+editorial serif, while years, labels, dates, and navigation use sans-serif.
+The Home index presents one lead, six recent posts, then same-year posts in
+month-led title arrays with centered-dot separators; these groups always come
+from the canonical published collection.
+
+Newsletter is a public editorial conversion surface, not an owner
+authentication surface, even where it shares field primitives. Normal owner
+controls use a 6px radius; full pills are reserved for compact filters and
+state badges. The canonical colour vocabulary is `--bg`, `--surface`, `--ink`,
+`--ink-muted`, `--border`, `--accent`, and `--katakata`.
 
 ## Reader
 
@@ -31,3 +52,10 @@ server confirms the exact client version, that buffer is removed.
 
 Concurrent tabs and devices remain last-write-wins for v1. This is an explicit
 limit, not a claim of collaborative editing.
+
+## Owner presentation layers
+
+Owner and owner-authentication views load `site.css`, then `boundary.css`, then
+any route-specific stylesheet. The boundary layer owns the canonical 6px
+control radius and visible focus outline. Route stylesheets retain only their
+layout, responsive, sticky-action, panel, and state-badge responsibilities.

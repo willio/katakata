@@ -19,7 +19,7 @@
 .mail-panel-header > p { margin: .55rem 0 0; color: var(--ink-muted); font: .75rem/1.45 var(--font-sans); }
 .mail-panel-header-title-row { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
 .mail-panel-header-title-row form { flex: 0 0 auto; }
-.mail-refresh-button { padding: .42rem .68rem; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--ink-muted); font: 600 .68rem/1 var(--font-sans); white-space: nowrap; }
+.mail-refresh-button { padding: .42rem .68rem; border: 1px solid var(--border); background: transparent; color: var(--ink-muted); font: 600 .68rem/1 var(--font-sans); white-space: nowrap; }
 .mail-refresh-button:hover,.mail-refresh-button:focus-visible { border-color: var(--accent); color: var(--ink); }
 .mail-refresh-notice { margin: 0 0 1rem; color: var(--ink-muted); font: .72rem/1.45 var(--font-sans); }
 .mail-item-list { margin: 0; padding: 0; list-style: none; }
@@ -52,7 +52,7 @@
 .mail-message-body { max-width: 68ch; font-size: 1rem; line-height: 1.68; overflow-wrap: anywhere; }
 .mail-message-panel .form-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 2rem; }
 .mail-message-panel .form-actions form { margin: 0; }
-.mail-readiness { margin: 0 0 1rem; padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 6px; background: transparent; }
+.mail-readiness { margin: 0 0 1rem; padding: .85rem 1rem; border: 1px solid var(--border); background: transparent; }
 .mail-readiness h2,.mail-readiness h3 { margin: 0 0 .35rem; font-size: .9rem; }
 .mail-readiness p { margin: .2rem 0; font-size: .78rem; }
 .mail-compose-shell { width: min(100% - 2rem, 58rem); }
@@ -67,7 +67,7 @@
 .mail-compose-body textarea { min-height: 22rem; padding: .85rem 0 0; resize: vertical; font: 1rem/1.65 var(--font-serif); }
 .mail-compose-alert,.mail-compose-error { margin: 0 0 1rem; padding: .75rem .9rem; background: var(--surface); color: var(--error); font: .78rem/1.45 var(--font-sans); }
 .mail-compose-actions { justify-content: flex-end; }
-.mail-compose-actions button,.mail-compose-form .form-actions button { display: inline-flex; align-items: center; justify-content: center; padding: .5em 1.5em; border: 0; border-radius: 6px; background: var(--btn-bg); color: var(--btn-ink); font-family: var(--font-sans); }
+.mail-compose-actions button,.mail-compose-form .form-actions button { display: inline-flex; align-items: center; justify-content: center; padding: .5em 1.5em; border: 0; background: var(--btn-bg); color: var(--btn-ink); font-family: var(--font-sans); }
 .mail-compose-form .form-actions button:first-of-type { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--border); }
 .mail-draft-editor-frame { width: min(100% - 2rem, 64rem); margin-inline: auto; padding-block: clamp(2rem, 7vh, 5rem); }
 .mail-draft-editor .mail-compose-paper { min-height: min(72vh, 52rem); border: 0; box-shadow: none; }

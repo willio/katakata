@@ -44,14 +44,25 @@ Reading and interface typography use deliberately different voices:
 ```
 
 Fonts are self-hosted or system-provided, never render-blocking external
-requests. Body copy is at least 19–20px at typical viewport widths.
+requests. Source Serif 4 remains Katakata’s editorial serif; no new font
+dependency is introduced. Public display expression comes from scale, measure, weight, rhythm, and restrained italics, not a replacement typeface. Public body copy is at least 19px.
+
+### Public editorial roles
+
+- Home lead titles may use large serif display text with rare italic emphasis.
+- Article titles are serif-led but quieter than the Home lead, capped by
+  measure and scale.
+- Archive and author entry titles use the editorial serif; years, labels,
+  dates, and navigation use the sans-serif stack.
+- Newsletter is a public editorial conversion surface, not an owner
+  authentication surface, even when it shares field primitives.
 
 ### Chrome
 
 Reader chrome contains only:
 
 - One consistently positioned site name or mark.
-- A quiet sans-serif article title, date, and author block.
+- A quiet serif-led article title with a sans-serif date and author block.
 - A minimal footer containing an author bio, a Threads continuation when
   one exists, and previous/next or archive navigation.
 
@@ -65,8 +76,9 @@ Tabler Icons illustrate function and never decorate. They inherit
 
 ## Color System
 
-Content ink remains high-contrast in both modes. Accent color is reserved for
-links and active states.
+Content ink remains high-contrast in both modes. `--accent` is reserved for
+links and active states; `--katakata` is reserved for rare editorial identity
+emphasis.
 
 ### Light mode
 
@@ -78,6 +90,7 @@ links and active states.
 | `--ink-muted` | `#6B6963` | Secondary text |
 | `--border` | `#E4E1D8` | Hairlines |
 | `--accent` | `#3D6E5C` | Links and active states |
+| `--katakata` | `#BF5A43` | Rare editorial identity emphasis |
 
 ### Dark mode — Nord
 
@@ -144,9 +157,9 @@ v1. CRDT or operational-transform collaboration is deferred.
 ### Controls and warnings
 
 - Fields use a dotted bottom border only, with no box or background.
-- Text buttons render as slim, wide pills whose vertical padding is
-  substantially smaller than their horizontal padding. Icon-only close
-  controls remain circular.
+- Text buttons render as slim, wide controls whose vertical padding is
+  substantially smaller than their horizontal padding. Icon-only close controls
+  remain circular.
 - Action rows provide deliberate separation from fields and surrounding
   content; buttons never collide with field underlines or container edges.
 - Routine persistence has no permanent status label.

@@ -10,6 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Analytics — <?= e($siteName) ?></title>
     <link rel="stylesheet" href="/assets/css/site.css">
+    <link rel="stylesheet" href="/assets/css/boundary.css">
 </head>
 <body class="dashboard-page">
 <header class="dashboard-header">

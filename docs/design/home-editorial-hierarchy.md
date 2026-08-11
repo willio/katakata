@@ -1,6 +1,6 @@
 # Home Editorial Hierarchy
 
-> Status: Draft design specification
+> Status: Accepted design specification
 >
 > Scope: `/home`
 >
@@ -33,27 +33,37 @@ No card system, widget language, or decorative chrome should compete with the wr
 # Homepage Structure
 
 ```text
-Katakata                                      Newsletter  Archive
+Katakata                                      Archive  Newsletter
 
 LATEST
 Latest Post Title
-Short summary or dek.
-Listen · Read
+Date, by Author
 
-Previous Post Title                   Author · 2026 02 03
-Previous Post Title                   Author · 2026 01 15
-Previous Post Title                   Author · 2025 12 28
-Previous Post Title                   Author · 2025 12 11
-Previous Post Title                   Author · 2025 11 30
+RECENT
+Month DD          Post Title
+Month DD          Post Title
+Month DD          Post Title
+Month DD          Post Title
+Month DD          Post Title
+Month DD          Post Title
 
-2025 Edition →
+EARLIER THIS YEAR
+MON               Post Title · Post Title · Post Title
+MON               Post Title · Post Title · Post Title
 
-Search editions
+Earlier editions →
+
+Search the archive
 
 Footer
 ```
 
-The lead story establishes tone. The previous-story rows form the current edition index. Archive, search, newsletter, and footer remain quiet secondary structures.
+The lead story establishes tone. Six recent-story rows provide a quick current
+index. Older posts from the lead story's calendar year are grouped by month in
+compact title arrays; centered dots separate links without turning the section
+into a dense archive table. Earlier editions, archive search, newsletter, and
+footer remain quiet secondary structures. All sections are derived from the
+real published Markdown collection rather than a curated homepage fixture.
 
 ---
 
@@ -74,8 +84,8 @@ The mix should feel intentional rather than ornamental.
 Use for:
 
 - lead article title
-- lead summary
-- previous article titles
+- recent article titles
+- monthly title arrays
 - selected archive headings
 
 Characteristics:
@@ -89,10 +99,10 @@ Characteristics:
 Preferred direction:
 
 - Source Serif 4
-- Newsreader
-- Literata
-- Charter
-- a similarly restrained editorial serif
+
+Source Serif 4 remains Katakata’s editorial serif. Do not introduce a new
+editorial font dependency; express the homepage display treatment through
+scale, measure, weight, rhythm, and rare italic emphasis.
 
 ### Neutral Sans-Serif
 
@@ -167,32 +177,43 @@ Purpose: dominant editorial focus.
 - Max width: `11–14ch`
 - Colour: Katakata accent
 
+Large serif display text is reserved for the Home lead. Italic emphasis is
+rare and must not become a decorative default.
+
 The title is the primary brand carrier. It should be visually distinctive enough that the page remains identifiable even when the wordmark is not prominent.
 
-## Level 2 — Lead Summary / Dek
+## Level 2 — Recent Article Titles
 
-Purpose: explain the lead article without competing with the title.
-
-- Typeface: editorial serif
-- Weight: 400
-- Size: `1.2rem–1.5rem`
-- Line height: `1.45–1.6`
-- Max width: `42–58ch`
-- Colour: secondary ink
-
-Limit to two or three short lines on desktop.
-
-## Level 3 — Previous Article Titles
-
-Purpose: form the current edition's table of contents.
+Purpose: form the current edition's quick reading index.
 
 - Typeface: editorial serif
 - Weight: 500–650
-- Size: `1.3rem–1.75rem`
+- Size: `1.1rem–1.4rem`
 - Line height: `1.15–1.3`
 - Colour: primary ink
 
-Previous titles must remain noticeably quieter than the lead title but more prominent than metadata.
+Recent titles remain noticeably quieter than the lead title. Their dates occupy
+a narrow utility column on desktop and stack above the title on small screens.
+
+## Level 3 — Monthly Title Arrays
+
+Purpose: keep the rest of the current calendar year browsable without turning
+the homepage into a full archive.
+
+- Typeface: editorial serif
+- Weight: 400–600
+- Size: `0.95rem–1.1rem`
+- Line height: `1.6–1.8`
+- Colour: primary ink
+
+Month labels use the utility sans-serif. Title links flow inline and use centered
+dots as separators, wrapping naturally without clipping or horizontal scroll.
+
+## Article, Archive, and Author Titles
+
+Article titles are serif-led but quieter than the Home lead, capped by measure
+and scale. Archive and author entry titles use the editorial serif; years,
+labels, dates, and navigation use the sans-serif stack.
 
 ## Level 4 — Navigation and Article Actions
 
@@ -259,28 +280,22 @@ Purpose: remain available without entering the reading hierarchy.
 
 # Colour System
 
-Use a warm paper background, near-black brown ink, and one restrained red-orange accent derived from the Nord family.
-
-Nord itself does not include a direct red-orange brand tone, so Katakata should use a calibrated warm variant that remains compatible with Nord's muted character.
+Use the canonical `--bg`, `--surface`, `--ink`, `--ink-muted`, `--border`,
+`--accent`, and `--katakata` tokens. `--katakata` is the restrained
+red-orange editorial identity accent; `--accent` remains the interaction
+colour.
 
 ## Core palette
 
 ```css
 :root {
-    --km-paper: #F7F3EC;
-    --km-paper-deep: #EEE8DE;
-
-    --km-ink: #2E2926;
-    --km-ink-soft: #5D554F;
-    --km-ink-muted: #81776F;
-    --km-rule: #D8D0C6;
-
-    --km-accent: #BF5A43;
-    --km-accent-hover: #A94B37;
-    --km-accent-soft: #E4B5A8;
-
-    --km-link: #4C665A;
-    --km-link-hover: #354B42;
+    --bg: #FAF9F6;
+    --surface: #F3F1EC;
+    --ink: #2B2A27;
+    --ink-muted: #6B6963;
+    --border: #E4E1D8;
+    --accent: #3D6E5C;
+    --katakata: #BF5A43;
 }
 ```
 
@@ -289,7 +304,7 @@ Nord itself does not include a direct red-orange brand tone, so Katakata should 
 Primary accent:
 
 ```text
-#BF5A43
+var(--katakata)
 ```
 
 Character:
@@ -322,32 +337,31 @@ The accent should be memorable because it is scarce.
 ### Primary ink
 
 ```text
-#2E2926
+var(--ink)
 ```
 
 Use for:
 
 - wordmark
-- previous article titles
+- recent and monthly article titles
 - body copy
 - high-priority navigation
 
 ### Secondary ink
 
 ```text
-#5D554F
+var(--ink-muted)
 ```
 
 Use for:
 
-- summaries
 - archive descriptions
 - secondary editorial text
 
 ### Tertiary ink
 
 ```text
-#81776F
+var(--ink-muted)
 ```
 
 Use for:
@@ -359,7 +373,7 @@ Use for:
 ### Rules
 
 ```text
-#D8D0C6
+var(--border)
 ```
 
 Use sparingly between rows and major sections.
@@ -367,7 +381,7 @@ Use sparingly between rows and major sections.
 ### Links
 
 ```text
-#4C665A
+var(--accent)
 ```
 
 A restrained Nord-adjacent green separates interaction from editorial emphasis.
@@ -378,7 +392,7 @@ The accent red-orange marks identity. The green marks interaction.
 
 # Contrast Requirements
 
-- Standard body text must meet WCAG AA contrast against `--km-paper`.
+- Standard body text must meet WCAG AA contrast against `--bg`.
 - Metadata must not be lighter than needed for AA at its rendered size.
 - Accent title colour must meet large-text contrast requirements.
 - Never communicate active state through colour alone.
@@ -416,7 +430,7 @@ Recommended scale:
 8px   label-to-title
 12px  metadata grouping
 16px  compact row spacing
-24px  title-to-summary
+24px  title-to-metadata
 32px  row rhythm
 48px  section spacing
 72px  major separation
@@ -432,16 +446,21 @@ Recommended scale:
 ## Lead story
 
 - Eyebrow to title: `0.75rem`
-- Title to summary: `1.5rem–2rem`
-- Summary to actions: `1.25rem–1.75rem`
+- Title to metadata: `1rem–1.5rem`
 - Lead story to edition index: `4rem–6rem`
 
-## Previous article rows
+## Recent article rows
 
-- Padding block: `1.1rem–1.5rem`
-- One subtle bottom rule
-- Title and metadata align to separate grid columns on desktop
-- Stack on mobile
+- Padding block: `0.65rem–1rem`
+- No decorative row rules
+- Date and title align to separate grid columns on desktop
+- Date stacks above title on mobile
+
+## Monthly title arrays
+
+- Month and titles align to separate grid columns
+- Centered dots separate title links
+- Arrays wrap naturally at narrow widths
 
 ## Archive link
 
@@ -470,21 +489,21 @@ Search should appear as a quiet inline field or disclosure, not a boxed module.
 Use a two-column editorial row:
 
 ```text
-Article title                        Author · Date
+Month DD                            Article title
 ```
 
 Suggested proportions:
 
 ```css
-.edition-row {
+.recent-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 6.4rem minmax(0, 1fr);
     gap: 2rem;
     align-items: baseline;
 }
 ```
 
-The metadata column should not set the visual width of the page.
+The date column should not set the visual width of the page.
 
 ---
 
@@ -493,11 +512,12 @@ The metadata column should not set the visual width of the page.
 Below approximately `42rem`:
 
 ```text
-Previous Post Title
-Author · 2026 02 03
+Month DD
+Post Title
 ```
 
-- Stack metadata beneath title
+- Stack the date above the title
+- Keep month-led title arrays in a narrow two-column grid and allow titles to wrap
 - Reduce lead title scale without compressing line height excessively
 - Preserve generous section spacing
 - Keep header navigation on one line when possible
@@ -540,7 +560,7 @@ All interactive elements require a visible focus treatment.
 Preferred:
 
 ```css
-outline: 2px solid var(--km-accent);
+outline: 2px solid var(--accent);
 outline-offset: 4px;
 ```
 
@@ -550,7 +570,7 @@ outline-offset: 4px;
 
 - The homepage is the current edition, not an infinite feed.
 - The lead article receives the strongest typographic and colour emphasis.
-- Previous articles are rows, never cards.
+- Recent articles are rows and same-year articles are compact title arrays, never cards.
 - Newsletter subscription does not dominate `/home`.
 - Search remains visually quiet.
 - Metadata is functional, never decorative.
@@ -567,35 +587,17 @@ outline-offset: 4px;
 
 ```css
 :root {
-    --km-font-editorial: "Source Serif 4", "Newsreader", Georgia, serif;
-    --km-font-ui: Inter, "IBM Plex Sans", system-ui, sans-serif;
-    --km-font-utility: "IBM Plex Mono", ui-monospace, monospace;
+    --font-serif: "Source Serif 4", "Charter", Georgia, serif;
+    --font-sans: "Inter", -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "iA Writer Mono", "JetBrains Mono", "SF Mono", Menlo, monospace;
 
-    --km-paper: #F7F3EC;
-    --km-paper-deep: #EEE8DE;
-    --km-ink: #2E2926;
-    --km-ink-soft: #5D554F;
-    --km-ink-muted: #81776F;
-    --km-rule: #D8D0C6;
-    --km-accent: #BF5A43;
-    --km-accent-hover: #A94B37;
-    --km-accent-soft: #E4B5A8;
-    --km-link: #4C665A;
-    --km-link-hover: #354B42;
-
-    --km-leading-tight: 0.98;
-    --km-leading-title: 1.15;
-    --km-leading-body: 1.58;
-
-    --km-space-1: 0.25rem;
-    --km-space-2: 0.5rem;
-    --km-space-3: 0.75rem;
-    --km-space-4: 1rem;
-    --km-space-6: 1.5rem;
-    --km-space-8: 2rem;
-    --km-space-12: 3rem;
-    --km-space-16: 4rem;
-    --km-space-24: 6rem;
+    --bg: #FAF9F6;
+    --surface: #F3F1EC;
+    --ink: #2B2A27;
+    --ink-muted: #6B6963;
+    --border: #E4E1D8;
+    --accent: #3D6E5C;
+    --katakata: #BF5A43;
 }
 ```
 
@@ -609,7 +611,8 @@ The `/home` implementation is conformant when:
 - type, colour, and spacing establish a clear hierarchy without cards
 - the eyebrow and lead title use the Katakata accent
 - interaction links use the separate link colour
-- previous posts render as compact editorial rows
+- six recent posts render as compact editorial rows
+- remaining same-year posts render as month-led title arrays with centered-dot separators
 - metadata remains legible but quiet
 - the newsletter no longer dominates the homepage
 - search is reduced to a minimal editorial control

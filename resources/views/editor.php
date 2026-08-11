@@ -15,6 +15,7 @@ $discussionEnabled = filter_var($draft?->meta['discussion_enabled'] ?? false, FI
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $hasDraft ? e($draft->title) : 'New draft' ?> — Katakata</title>
     <link rel="stylesheet" href="/assets/css/site.css">
+    <link rel="stylesheet" href="/assets/css/boundary.css">
 </head>
 <body class="editor-page">
 <p class="editor-status" data-save-status role="status" aria-live="polite"></p>

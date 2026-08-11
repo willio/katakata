@@ -9,7 +9,7 @@
     <link rel="alternate" type="application/feed+json" title="<?= e($siteName) ?> JSON Feed" href="/feed.json">
     <link rel="stylesheet" href="/assets/css/site.css">
 </head>
-<body>
+<body class="publication-page">
     <header class="site-header">
         <a class="site-name" href="/"><?= e($siteName) ?></a>
         <nav aria-label="Primary"><a href="/archive">Archive</a></nav>
@@ -17,7 +17,7 @@
     <main class="article-shell">
         <article>
             <header class="article-header">
-                <h1><?= e($post->title) ?></h1>
+                <h1 class="publication-title"><?= e($post->title) ?></h1>
                 <p class="article-meta">
                     <time datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('F j, Y')) ?></time>
                     <?php if ($author !== null): ?>

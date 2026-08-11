@@ -11,6 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Compose — <?= e($siteName) ?></title>
     <link rel="stylesheet" href="/assets/css/site.css">
+    <link rel="stylesheet" href="/assets/css/boundary.css">
     <link rel="stylesheet" href="/assets/css/mail.css">
 </head>
 <body class="dashboard-page mail-page mail-compose-page">

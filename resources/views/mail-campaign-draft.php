@@ -12,6 +12,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($draft->subject !== '' ? $draft->subject : 'Campaign draft') ?> — <?= e($siteName) ?></title>
     <link rel="stylesheet" href="/assets/css/site.css">
+    <link rel="stylesheet" href="/assets/css/boundary.css">
     <link rel="stylesheet" href="/assets/css/mail.css">
     <link rel="stylesheet" href="/assets/css/focused-editor.css">
 </head>

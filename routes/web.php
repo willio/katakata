@@ -34,21 +34,16 @@ $recordVisit = static function (Request $request) use ($app): void {
 $router->get('/', function (Request $request) use ($app, $recordVisit): Response {
     $recordVisit($request);
     $repository = $app->make(Repository::class);
-    $posts = $app->make(Home::class)->latest($repository->posts());
-    $authors = [];
-
-    foreach ($posts as $post) {
-        if ($post->author !== null) {
-            $authors[$post->slug] = $repository->findAuthor($post->author);
-        }
-    }
+    $layout = $app->make(Home::class)->layout($repository->posts());
+    $lead = $layout['lead'];
+    $leadAuthor = $lead?->author === null ? null : $repository->findAuthor($lead->author);
 
     return Response::html($app->make(View::class)->render('home', [
         'name' => (string) $app->config()->get('app.name', 'Katakata'),
         'tagline' => (string) $app->config()->get('app.tagline', ''),
         'siteUrl' => rtrim((string) $app->config()->get('app.url', 'http://localhost:8000'), '/'),
-        'posts' => $posts,
-        'authors' => $authors,
+        ...$layout,
+        'leadAuthor' => $leadAuthor,
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
