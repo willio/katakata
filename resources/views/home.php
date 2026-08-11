@@ -2,18 +2,11 @@
 /** @var string $name */
 /** @var string $tagline */
 /** @var string $siteUrl */
-/** @var array<int, \Katakata\Content\Post> $posts */
-/** @var array<string, \Katakata\Content\Author|null> $authors */
-$lead = $posts[0] ?? null;
-$previous = array_slice($posts, 1, 5);
-$archiveYear = null;
-
-foreach ($posts as $post) {
-    if ($lead !== null && $post->date->format('Y') !== $lead->date->format('Y')) {
-        $archiveYear = $post->date->format('Y');
-        break;
-    }
-}
+/** @var \Katakata\Content\Post|null $lead */
+/** @var \Katakata\Content\Author|null $leadAuthor */
+/** @var array<int, \Katakata\Content\Post> $recent */
+/** @var array<string, array<int, \Katakata\Content\Post>> $earlierThisYear */
+/** @var string|null $archiveYear */
 ?>
 <!doctype html>
 <html lang="en">
@@ -38,8 +31,6 @@ foreach ($posts as $post) {
     </header>
 
     <main class="home-editorial">
-        <?php if ($tagline !== ''): ?><p class="home-intro"><?= e($tagline) ?></p><?php endif; ?>
-
         <?php if ($lead === null): ?>
             <section class="home-empty" aria-labelledby="latest-writing">
                 <p class="home-eyebrow">Latest</p>
@@ -51,31 +42,39 @@ foreach ($posts as $post) {
             <article class="home-lead" aria-labelledby="latest-writing">
                 <p class="home-eyebrow">Latest</p>
                 <h1 id="latest-writing"><a href="<?= e($lead->url()) ?>"><?= e($lead->title) ?></a></h1>
-                <?php if ($lead->excerpt !== null): ?><p class="home-dek"><?= e($lead->excerpt) ?></p><?php endif; ?>
-                <p class="home-lead-meta"><time datetime="<?= e($lead->date->format('Y-m-d')) ?>"><?= e($lead->date->format('F j, Y')) ?></time></p>
+                <p class="home-lead-meta">
+                    <time datetime="<?= e($lead->date->format('Y-m-d')) ?>"><?= e($lead->date->format('F j, Y')) ?></time>, by
+                    <span class="home-lead-byline"><?php if ($leadAuthor !== null): ?><a href="/authors/<?= e($leadAuthor->slug) ?>"><?= e($leadAuthor->name) ?></a><?php else: ?><?= e($lead->author ?? $name) ?><?php endif; ?></span>
+                </p>
             </article>
 
-            <?php if ($previous !== []): ?>
+            <?php if ($recent !== []): ?>
                 <section class="home-index" aria-labelledby="recent-writing">
                     <h2 class="home-index-heading" id="recent-writing">Recent</h2>
                     <ol>
-                        <?php foreach ($previous as $post): ?>
-                            <?php $author = $authors[$post->slug] ?? null; ?>
+                        <?php foreach ($recent as $post): ?>
                             <li>
-                                <time class="home-index-date" datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('F j')) ?></time>
-                                <div class="home-index-copy">
-                                    <a class="home-index-title" href="<?= e($post->url()) ?>"><?= e($post->title) ?></a>
-                                    <?php if ($post->excerpt !== null): ?><p class="home-index-excerpt"><?= e($post->excerpt) ?></p><?php endif; ?>
-                                    <?php if ($author !== null || $post->author !== null): ?>
-                                        <p class="home-index-author">
-                                            <?php if ($author !== null): ?>
-                                                <a href="/authors/<?= e($author->slug) ?>"><?= e($author->name) ?></a>
-                                            <?php else: ?>
-                                                <?= e((string) $post->author) ?>
-                                            <?php endif; ?>
-                                        </p>
-                                    <?php endif; ?>
-                                </div>
+                                <time class="home-index-date" datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('F d')) ?></time>
+                                <a class="home-index-title" href="<?= e($post->url()) ?>"><?= e($post->title) ?></a>
+                            </li>
+                        <?php endforeach; ?>
+                    </ol>
+                </section>
+            <?php endif; ?>
+
+            <?php if ($earlierThisYear !== []): ?>
+                <section class="home-months" aria-labelledby="earlier-this-year">
+                    <h2 class="home-index-heading" id="earlier-this-year">Earlier This Year</h2>
+                    <ol>
+                        <?php foreach ($earlierThisYear as $monthPosts): ?>
+                            <li>
+                                <span class="home-month-label"><?= e($monthPosts[0]->date->format('M')) ?></span>
+                                <span class="home-month-titles">
+                                    <?php foreach ($monthPosts as $index => $post): ?>
+                                        <?php if ($index > 0): ?><span class="home-title-separator" aria-hidden="true">·</span><?php endif; ?>
+                                        <a href="<?= e($post->url()) ?>"><?= e($post->title) ?></a>
+                                    <?php endforeach; ?>
+                                </span>
                             </li>
                         <?php endforeach; ?>
                     </ol>

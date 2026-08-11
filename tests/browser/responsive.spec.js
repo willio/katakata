@@ -7,6 +7,8 @@ try {
 }
 
 const { test, expect } = playwright;
+const { execFileSync } = require('node:child_process');
+const path = require('node:path');
 const { signIn } = require('./helpers/auth');
 const {
   assertNoHorizontalOverflow,
@@ -113,6 +115,12 @@ async function capture(page, testInfo, name) {
   });
 }
 
+function renderHomeMonthFixture() {
+  return execFileSync(process.env.KATAKATA_PHP_BINARY || 'php', [path.join(__dirname, 'fixtures/render-home.php')], {
+    encoding: 'utf8',
+  });
+}
+
 for (const viewport of [
   { label: 'desktop', width: 1440, height: 1000 },
   { label: 'mobile-320', width: 320, height: 844 },
@@ -149,6 +157,18 @@ for (const viewport of [
         await capture(page, testInfo, state.name);
       });
     }
+
+    test('home month ledger wraps long Indonesian titles without overflow', async ({ page }, testInfo) => {
+      const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000';
+      const html = renderHomeMonthFixture().replace('<head>', `<head><base href="${baseURL}/">`);
+      await page.goto('/');
+      await page.setContent(html, { waitUntil: 'load' });
+      await expect(page.locator('.home-months')).toBeVisible();
+      await expect(page.locator('.home-months li')).toHaveCount(2);
+      await assertStylesLoaded(page);
+      await assertNoHorizontalOverflow(page);
+      await capture(page, testInfo, 'home-month-ledger');
+    });
 
     test('editor settings-open state has styled responsive layout', async ({ page }, testInfo) => {
       await signIn(page);

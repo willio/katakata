@@ -33,27 +33,37 @@ No card system, widget language, or decorative chrome should compete with the wr
 # Homepage Structure
 
 ```text
-Katakata                                      Newsletter  Archive
+Katakata                                      Archive  Newsletter
 
 LATEST
 Latest Post Title
-Short summary or dek.
-Listen · Read
+Date, by Author
 
-Previous Post Title                   Author · 2026 02 03
-Previous Post Title                   Author · 2026 01 15
-Previous Post Title                   Author · 2025 12 28
-Previous Post Title                   Author · 2025 12 11
-Previous Post Title                   Author · 2025 11 30
+RECENT
+Month DD          Post Title
+Month DD          Post Title
+Month DD          Post Title
+Month DD          Post Title
+Month DD          Post Title
+Month DD          Post Title
 
-2025 Edition →
+EARLIER THIS YEAR
+MON               Post Title · Post Title · Post Title
+MON               Post Title · Post Title · Post Title
 
-Search editions
+Earlier editions →
+
+Search the archive
 
 Footer
 ```
 
-The lead story establishes tone. The previous-story rows form the current edition index. Archive, search, newsletter, and footer remain quiet secondary structures.
+The lead story establishes tone. Six recent-story rows provide a quick current
+index. Older posts from the lead story's calendar year are grouped by month in
+compact title arrays; centered dots separate links without turning the section
+into a dense archive table. Earlier editions, archive search, newsletter, and
+footer remain quiet secondary structures. All sections are derived from the
+real published Markdown collection rather than a curated homepage fixture.
 
 ---
 
@@ -74,8 +84,8 @@ The mix should feel intentional rather than ornamental.
 Use for:
 
 - lead article title
-- lead summary
-- previous article titles
+- recent article titles
+- monthly title arrays
 - selected archive headings
 
 Characteristics:
@@ -172,30 +182,32 @@ rare and must not become a decorative default.
 
 The title is the primary brand carrier. It should be visually distinctive enough that the page remains identifiable even when the wordmark is not prominent.
 
-## Level 2 — Lead Summary / Dek
+## Level 2 — Recent Article Titles
 
-Purpose: explain the lead article without competing with the title.
-
-- Typeface: editorial serif
-- Weight: 400
-- Size: `1.2rem–1.5rem`
-- Line height: `1.45–1.6`
-- Max width: `42–58ch`
-- Colour: secondary ink
-
-Limit to two or three short lines on desktop.
-
-## Level 3 — Previous Article Titles
-
-Purpose: form the current edition's table of contents.
+Purpose: form the current edition's quick reading index.
 
 - Typeface: editorial serif
 - Weight: 500–650
-- Size: `1.3rem–1.75rem`
+- Size: `1.1rem–1.4rem`
 - Line height: `1.15–1.3`
 - Colour: primary ink
 
-Previous titles must remain noticeably quieter than the lead title but more prominent than metadata.
+Recent titles remain noticeably quieter than the lead title. Their dates occupy
+a narrow utility column on desktop and stack above the title on small screens.
+
+## Level 3 — Monthly Title Arrays
+
+Purpose: keep the rest of the current calendar year browsable without turning
+the homepage into a full archive.
+
+- Typeface: editorial serif
+- Weight: 400–600
+- Size: `0.95rem–1.1rem`
+- Line height: `1.6–1.8`
+- Colour: primary ink
+
+Month labels use the utility sans-serif. Title links flow inline and use centered
+dots as separators, wrapping naturally without clipping or horizontal scroll.
 
 ## Article, Archive, and Author Titles
 
@@ -331,7 +343,7 @@ var(--ink)
 Use for:
 
 - wordmark
-- previous article titles
+- recent and monthly article titles
 - body copy
 - high-priority navigation
 
@@ -343,7 +355,6 @@ var(--ink-muted)
 
 Use for:
 
-- summaries
 - archive descriptions
 - secondary editorial text
 
@@ -419,7 +430,7 @@ Recommended scale:
 8px   label-to-title
 12px  metadata grouping
 16px  compact row spacing
-24px  title-to-summary
+24px  title-to-metadata
 32px  row rhythm
 48px  section spacing
 72px  major separation
@@ -435,16 +446,21 @@ Recommended scale:
 ## Lead story
 
 - Eyebrow to title: `0.75rem`
-- Title to summary: `1.5rem–2rem`
-- Summary to actions: `1.25rem–1.75rem`
+- Title to metadata: `1rem–1.5rem`
 - Lead story to edition index: `4rem–6rem`
 
-## Previous article rows
+## Recent article rows
 
-- Padding block: `1.1rem–1.5rem`
-- One subtle bottom rule
-- Title and metadata align to separate grid columns on desktop
-- Stack on mobile
+- Padding block: `0.65rem–1rem`
+- No decorative row rules
+- Date and title align to separate grid columns on desktop
+- Date stacks above title on mobile
+
+## Monthly title arrays
+
+- Month and titles align to separate grid columns
+- Centered dots separate title links
+- Arrays wrap naturally at narrow widths
 
 ## Archive link
 
@@ -473,21 +489,21 @@ Search should appear as a quiet inline field or disclosure, not a boxed module.
 Use a two-column editorial row:
 
 ```text
-Article title                        Author · Date
+Month DD                            Article title
 ```
 
 Suggested proportions:
 
 ```css
-.edition-row {
+.recent-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 6.4rem minmax(0, 1fr);
     gap: 2rem;
     align-items: baseline;
 }
 ```
 
-The metadata column should not set the visual width of the page.
+The date column should not set the visual width of the page.
 
 ---
 
@@ -496,11 +512,12 @@ The metadata column should not set the visual width of the page.
 Below approximately `42rem`:
 
 ```text
-Previous Post Title
-Author · 2026 02 03
+Month DD
+Post Title
 ```
 
-- Stack metadata beneath title
+- Stack the date above the title
+- Keep month-led title arrays in a narrow two-column grid and allow titles to wrap
 - Reduce lead title scale without compressing line height excessively
 - Preserve generous section spacing
 - Keep header navigation on one line when possible
@@ -553,7 +570,7 @@ outline-offset: 4px;
 
 - The homepage is the current edition, not an infinite feed.
 - The lead article receives the strongest typographic and colour emphasis.
-- Previous articles are rows, never cards.
+- Recent articles are rows and same-year articles are compact title arrays, never cards.
 - Newsletter subscription does not dominate `/home`.
 - Search remains visually quiet.
 - Metadata is functional, never decorative.
@@ -594,7 +611,8 @@ The `/home` implementation is conformant when:
 - type, colour, and spacing establish a clear hierarchy without cards
 - the eyebrow and lead title use the Katakata accent
 - interaction links use the separate link colour
-- previous posts render as compact editorial rows
+- six recent posts render as compact editorial rows
+- remaining same-year posts render as month-led title arrays with centered-dot separators
 - metadata remains legible but quiet
 - the newsletter no longer dominates the homepage
 - search is reduced to a minimal editorial control

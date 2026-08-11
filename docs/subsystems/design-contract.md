@@ -14,6 +14,9 @@ a new font dependency. Home lead titles may be large serif display text with
 rare italic emphasis. Article titles are serif-led but quieter than the Home
 lead, capped by measure and scale. Archive and author entry titles use the
 editorial serif, while years, labels, dates, and navigation use sans-serif.
+The Home index presents one lead, six recent posts, then same-year posts in
+month-led title arrays with centered-dot separators; these groups always come
+from the canonical published collection.
 
 Newsletter is a public editorial conversion surface, not an owner
 authentication surface, even where it shares field primitives. Normal owner
