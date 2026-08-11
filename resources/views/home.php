@@ -4,7 +4,9 @@
 /** @var string $siteUrl */
 /** @var \Katakata\Content\Post|null $lead */
 /** @var \Katakata\Content\Author|null $leadAuthor */
+/** @var array<string, \Katakata\Content\Author> $authors */
 /** @var array<string, array{label:string,posts:list<\Katakata\Content\Post>,has_more:bool,browse_url:string,show_author:bool}> $months */
+$authors ??= [];
 ?>
 <!doctype html>
 <html lang="en">
@@ -52,7 +54,7 @@
                     <?php foreach ($months as $shelf): ?>
                         <section class="home-month-shelf">
                             <h3><a href="<?= e($shelf['browse_url']) ?>"><?= e($shelf['label']) ?></a></h3>
-                            <ol><?php foreach ($shelf['posts'] as $post): ?><li><a href="<?= e($post->url()) ?>"><?= e($post->title) ?></a><?php if (($shelf['show_author'] ?? false) && $post->author !== null): ?><span class="home-shelf-author"><?= e(mb_strtoupper($post->author)) ?></span><?php endif; ?></li><?php endforeach; ?></ol>
+                            <ol><?php foreach ($shelf['posts'] as $post): ?><?php $shelfAuthor = $post->author === null ? null : ($authors[$post->author] ?? null); ?><li><a href="<?= e($post->url()) ?>"><?= e($post->title) ?></a><?php if (($shelf['show_author'] ?? false) && $post->author !== null): ?><span class="home-shelf-author"><?php if ($shelfAuthor !== null): ?><a href="/authors/<?= e($shelfAuthor->slug) ?>"><?= e(mb_strtoupper($shelfAuthor->name)) ?></a><?php else: ?><?= e(mb_strtoupper($post->author)) ?><?php endif; ?></span><?php endif; ?></li><?php endforeach; ?></ol>
                             <?php if ($shelf['has_more']): ?><p><a href="<?= e($shelf['browse_url']) ?>">Browse <?= e(explode(' ', $shelf['label'])[0]) ?> →</a></p><?php endif; ?>
                         </section>
                     <?php endforeach; ?>

@@ -116,7 +116,10 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
 .archive-search label { display: block; margin-bottom: .45rem; color: var(--ink-muted); font: .72rem/1 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; }
 .archive-search input { width: 100%; padding: .35rem 0; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; outline: 0; background: transparent; font-family: var(--font-serif); }
 .archive-search input:focus { border-bottom-color: var(--katakata); }
-.author-bio { max-width: 60ch; font-size: 1.1rem; }
+.author-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 1.5rem; }
+.author-social { display: flex; flex-wrap: wrap; gap: .8rem; padding-bottom: .25rem; font: .68rem/1.2 var(--font-sans); letter-spacing: .06em; text-transform: uppercase; }
+.author-social a { color: var(--ink-muted); }
+.author-bio { width: 100%; max-width: 60ch; margin-top: .5rem; font-size: 1.1rem; }
 
 .home-page { min-height: 100svh; }
 .home-header, .home-footer {
@@ -500,6 +503,8 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
 }
 
 @media (max-width: 34rem) {
+    .author-header { display: block; }
+    .author-social { margin-top: 1.25rem; }
     html { font-size: 18px; }
     .page-shell, .article-shell { margin-top: 3rem; }
     .archive-entry { grid-template-columns: 1fr; gap: .4rem; }

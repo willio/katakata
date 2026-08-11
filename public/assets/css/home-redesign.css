@@ -77,6 +77,8 @@
 .home-month-shelf li a { color: var(--ink); text-decoration: none; }
 .home-month-shelf li a:hover, .home-month-shelf li a:focus-visible { color: var(--katakata); }
 .home-shelf-author { color: var(--ink-muted); font: 700 .62rem/1.25 var(--font-sans); letter-spacing: .08em; text-align: right; }
+.home-shelf-author a { color: inherit; text-decoration: none; }
+.home-shelf-author a:hover, .home-shelf-author a:focus-visible { color: var(--katakata); text-decoration: underline; }
 .home-month-shelf p { margin: .8rem 0 0; font: .75rem/1.3 var(--font-sans); }
 
 .home-previous-edition { margin-top: clamp(4.5rem, 11vw, 7rem); }

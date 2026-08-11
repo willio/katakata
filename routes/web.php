@@ -37,7 +37,17 @@ $router->get('/', function (Request $request) use ($app, $recordVisit): Response
     $repository = $app->make(Repository::class);
     $layout = $app->make(Home::class)->layout($repository->posts());
     $lead = $layout['lead'];
-    $leadAuthor = $lead === null ? null : $app->make(AuthorResolver::class)->forPost($lead, $repository);
+    $authors = [];
+    $authorResolver = $app->make(AuthorResolver::class);
+    $leadAuthor = $lead === null ? null : $authorResolver->forPost($lead, $repository);
+    foreach ($layout['months'] as $shelf) {
+        foreach ($shelf['posts'] as $post) {
+            $author = $authorResolver->forPost($post, $repository);
+            if ($author !== null) {
+                $authors[$author->slug] = $author;
+            }
+        }
+    }
 
     return Response::html($app->make(View::class)->render('home', [
         'name' => (string) $app->config()->get('app.name', 'Katakata'),
@@ -45,6 +55,7 @@ $router->get('/', function (Request $request) use ($app, $recordVisit): Response
         'siteUrl' => rtrim((string) $app->config()->get('app.url', 'http://localhost:8000'), '/'),
         ...$layout,
         'leadAuthor' => $leadAuthor,
+        'authors' => $authors,
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
