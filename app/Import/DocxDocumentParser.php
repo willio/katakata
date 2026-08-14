@@ -258,6 +258,21 @@ final class DocxDocumentParser
     /** @param array<string,string> $metadata @param list<array{text:string,markdown:string,style:string,list:bool,quote:bool}> $paragraphs @return array{string,string,?int} */
     private function detectDate(array $metadata, array $paragraphs, string $path): array
     {
+        foreach ($paragraphs as $index => $paragraph) {
+            if (!preg_match('/\bpublished\s+on\b/iu', $paragraph['text'])) {
+                continue;
+            }
+            $date = $this->parseDate($paragraph['text']);
+            if ($date !== null) {
+                return [$date, 'high', (int) $index];
+            }
+        }
+        foreach (array_slice($paragraphs, 0, 10, true) as $index => $paragraph) {
+            $date = $this->parseDate($paragraph['text']);
+            if ($date !== null) {
+                return [$date, 'high', (int) $index];
+            }
+        }
         if (($metadata['created'] ?? '') !== '') {
             try {
                 $date = new DateTimeImmutable($metadata['created']);
@@ -265,12 +280,6 @@ final class DocxDocumentParser
                     return [$date->format('Y-m-d'), 'medium', null];
                 }
             } catch (\Throwable) {
-            }
-        }
-        foreach (array_slice($paragraphs, 0, 10, true) as $index => $paragraph) {
-            $date = $this->parseDate($paragraph['text']);
-            if ($date !== null) {
-                return [$date, 'high', (int) $index];
             }
         }
         if (preg_match('/(19|20)\d{2}[-_.](0[1-9]|1[0-2])[-_.](0[1-9]|[12]\d|3[01])/', basename($path), $matches) === 1) {
@@ -285,6 +294,12 @@ final class DocxDocumentParser
 
     private function parseDate(string $value): ?string
     {
+        if (preg_match('/\b(0?[1-9]|[12]\d|3[01])\s+([A-Za-z]+)\s+((?:19|20)\d{2})\b/', $value, $matches) === 1) {
+            $date = DateTimeImmutable::createFromFormat('!j F Y', $matches[0]);
+            if ($date instanceof DateTimeImmutable && $this->dateHasNoErrors()) {
+                return $date->format('Y-m-d');
+            }
+        }
         $patterns = [
             '/\b(19|20)\d{2}[-\/.](0?[1-9]|1[0-2])[-\/.](0?[1-9]|[12]\d|3[01])\b/',
             '/\b(0?[1-9]|[12]\d|3[01])[-\/.](0?[1-9]|1[0-2])[-\/.](19|20)\d{2}\b/',
@@ -346,6 +361,7 @@ final class DocxDocumentParser
     private function cleanText(string $text): string
     {
         $text = str_replace(["\u{00A0}", "\u{200B}", "\r"], [' ', '', ''], $text);
+        $text = preg_replace('/\\\\(?=\d)/u', '', $text) ?? $text;
         $text = preg_replace('/[ \t]+/u', ' ', $text) ?? $text;
         return trim($text);
     }

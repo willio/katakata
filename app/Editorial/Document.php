@@ -37,6 +37,10 @@ final class Document
             return $value;
         }
 
+        if (str_contains($value, '"') && !str_contains($value, "'")) {
+            return "'" . $value . "'";
+        }
+
         return '"' . str_replace(['\\', '"', "\n"], ['\\\\', '\\"', '\\n'], $value) . '"';
     }
 }
