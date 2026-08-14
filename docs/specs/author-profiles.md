@@ -1,6 +1,6 @@
 # Author Profiles
 
-Author profiles are canonical Markdown in the local `content/authors/` volume.
+Author profiles are canonical Markdown in `content/authors/`.
 Posts reference a profile by its lowercase URL-safe slug in `author`; the
 profile owns the public name, bio, avatar, and social URLs. Its public route is
 `/authors/{slug}`.
