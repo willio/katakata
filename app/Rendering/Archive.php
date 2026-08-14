@@ -12,10 +12,12 @@ final class Archive
      * @param Collection<Post> $posts
      * @return array<int, array<int, Post>>
      */
-    public function years(Collection $posts, ?string $query = null, ?string $year = null, ?string $month = null): array
+    public function years(Collection $posts, ?string $query = null, mixed $year = null, mixed $month = null): array
     {
         $years = [];
         $query = trim((string) $query);
+        $year = is_string($year) ? $year : null;
+        $month = is_string($month) ? $month : null;
 
         foreach ($posts as $post) {
             if (!$post->isPublished() || !$this->matches($post, $query)
