@@ -35,17 +35,21 @@ final class DashboardProgressiveRedesignContractTest extends TestCase
         self::assertStringNotContainsString('Top posts', $view);
     }
 
-    public function testDashboardUsesSelectiveCardsAndSingleRadiusToken(): void
+    public function testDashboardUsesSelectiveCardsAndSharedRadiusToken(): void
     {
         $view = file_get_contents(dirname(__DIR__, 2) . '/resources/views/dashboard.php');
+        $boundary = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/boundary.css');
         $css = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/dashboard-redesign.css');
 
         self::assertIsString($view);
+        self::assertIsString($boundary);
         self::assertIsString($css);
         self::assertStringContainsString('/assets/css/dashboard-redesign.css', $view);
-        self::assertStringContainsString('--workspace-radius: 6px', $css);
+        self::assertStringContainsString('--radius-control: 6px', $boundary);
+        self::assertStringContainsString('.dashboard-stat-card', $boundary);
         self::assertStringContainsString('.dashboard-stat-card', $css);
-        self::assertStringContainsString('border-radius: var(--workspace-radius)', $css);
+        self::assertStringNotContainsString('--workspace-radius', $css);
+        self::assertStringNotContainsString('border-radius: var(--workspace-radius)', $css);
         self::assertStringContainsString('@media (max-width: 20rem)', $css);
     }
 }

@@ -9,7 +9,7 @@
     <link rel="alternate" type="application/feed+json" title="<?= e($siteName) ?> JSON Feed" href="/feed.json">
     <link rel="stylesheet" href="/assets/css/site.css">
 </head>
-<body>
+<body class="publication-page">
     <header class="site-header">
         <a class="site-name" href="/"><?= e($siteName) ?></a>
         <nav aria-label="Primary"><a href="/archive">Archive</a></nav>
@@ -17,7 +17,7 @@
     <main class="article-shell">
         <article>
             <header class="article-header">
-                <h1><?= e($post->title) ?></h1>
+                <h1 class="publication-title"><?= e($post->title) ?></h1>
                 <p class="article-meta">
                     <time datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('F j, Y')) ?></time>
                     <?php if ($author !== null): ?>
@@ -28,6 +28,12 @@
                 </p>
             </header>
             <div class="article-body"><?= $bodyHtml ?></div>
+            <?php if ($navigation['newer'] !== null || $navigation['older'] !== null): ?>
+                <nav class="article-reading-nav" aria-label="Continue reading">
+                    <?php if ($navigation['newer'] !== null): ?><a href="<?= e($navigation['newer']->url()) ?>">Newer: <?= e($navigation['newer']->title) ?></a><?php endif; ?>
+                    <?php if ($navigation['older'] !== null): ?><a href="<?= e($navigation['older']->url()) ?>">Earlier: <?= e($navigation['older']->title) ?></a><?php endif; ?>
+                </nav>
+            <?php endif; ?>
             <footer class="article-footer">
                 <?php if ($author !== null): ?>
                     <p><strong><a href="/authors/<?= e($author->slug) ?>"><?= e($author->name) ?></a></strong></p>

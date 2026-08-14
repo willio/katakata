@@ -40,6 +40,8 @@ final class DocxDocumentParser
 
             [$title, $titleConfidence, $titleIndex] = $this->detectTitle($metadata, $paragraphs, $path);
             [$author, $authorConfidence, $authorIndex] = $this->detectAuthor($metadata, $paragraphs, $fallbackAuthor);
+            $originalCategory = $this->detectOriginalCategory($paragraphs)
+                ?? $this->originalCategory($fallbackSourcePath ?? $path);
             [$date, $dateConfidence, $dateIndex] = $this->detectDate(
                 $metadata,
                 $paragraphs,
@@ -55,6 +57,7 @@ final class DocxDocumentParser
                 $date,
                 $body,
                 basename($path),
+                $originalCategory,
                 [
                     'title' => $titleConfidence,
                     'author' => $authorConfidence,
@@ -65,6 +68,27 @@ final class DocxDocumentParser
         } finally {
             $zip->close();
         }
+    }
+
+    private function originalCategory(string $path): ?string
+    {
+        $category = basename(dirname($path));
+
+        return in_array(strtolower($category), ['', '.', 'legacy', 'import'], true)
+            ? null
+            : $category;
+    }
+
+    /** @param list<array{text:string,markdown:string,style:string,list:bool,quote:bool}> $paragraphs */
+    private function detectOriginalCategory(array $paragraphs): ?string
+    {
+        foreach (array_slice($paragraphs, 0, 8) as $paragraph) {
+            if (preg_match('/^(?:.{0,2})?(kama\p{L}*)\s+by\s+.+$/iu', $paragraph['text'], $matches) === 1) {
+                return $matches[1];
+            }
+        }
+
+        return null;
     }
 
     private function xmlEntry(ZipArchive $zip, string $name, bool $required): ?string
@@ -215,13 +239,15 @@ final class DocxDocumentParser
     /** @param array<string,string> $metadata @param list<array{text:string,markdown:string,style:string,list:bool,quote:bool}> $paragraphs @return array{string,string,?int} */
     private function detectAuthor(array $metadata, array $paragraphs, ?string $fallback): array
     {
-        if (($metadata['creator'] ?? '') !== '') {
-            return [$metadata['creator'], 'medium', null];
-        }
         foreach (array_slice($paragraphs, 0, 8, true) as $index => $paragraph) {
-            if (preg_match('/^(?:by|oleh|written by|author)\s*[:\-]?\s*(.+)$/iu', $paragraph['text'], $matches) === 1) {
+            if (preg_match('/^(?:(?:.{0,2})?(?:kama\p{L}*\s+)?by|oleh|written by|author)\s*[:\-]?\s*(.+)$/iu', $paragraph['text'], $matches) === 1) {
+                // The document's explicit byline identifies the contributor;
+                // Word's creator field commonly identifies the editor/publisher.
                 return [trim($matches[1]), 'high', (int) $index];
             }
+        }
+        if (($metadata['creator'] ?? '') !== '') {
+            return [$metadata['creator'], 'medium', null];
         }
         if ($fallback !== null && trim($fallback) !== '') {
             return [trim($fallback), 'low', null];

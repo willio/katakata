@@ -17,6 +17,7 @@ use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\Rendering\Archive;
 use Katakata\Rendering\AuthorArchive;
+use Katakata\Rendering\AuthorResolver;
 use Katakata\Rendering\Feed;
 use Katakata\Rendering\Home;
 use Katakata\Rendering\Markdown;
@@ -34,12 +35,17 @@ $recordVisit = static function (Request $request) use ($app): void {
 $router->get('/', function (Request $request) use ($app, $recordVisit): Response {
     $recordVisit($request);
     $repository = $app->make(Repository::class);
-    $posts = $app->make(Home::class)->latest($repository->posts());
+    $layout = $app->make(Home::class)->layout($repository->posts());
+    $lead = $layout['lead'];
     $authors = [];
-
-    foreach ($posts as $post) {
-        if ($post->author !== null) {
-            $authors[$post->slug] = $repository->findAuthor($post->author);
+    $authorResolver = $app->make(AuthorResolver::class);
+    $leadAuthor = $lead === null ? null : $authorResolver->forPost($lead, $repository);
+    foreach ($layout['months'] as $shelf) {
+        foreach ($shelf['posts'] as $post) {
+            $author = $authorResolver->forPost($post, $repository);
+            if ($author !== null) {
+                $authors[$author->slug] = $author;
+            }
         }
     }
 
@@ -47,7 +53,8 @@ $router->get('/', function (Request $request) use ($app, $recordVisit): Response
         'name' => (string) $app->config()->get('app.name', 'Katakata'),
         'tagline' => (string) $app->config()->get('app.tagline', ''),
         'siteUrl' => rtrim((string) $app->config()->get('app.url', 'http://localhost:8000'), '/'),
-        'posts' => $posts,
+        ...$layout,
+        'leadAuthor' => $leadAuthor,
         'authors' => $authors,
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
@@ -60,8 +67,10 @@ $router->get('/archive', function (Request $request) use ($app, $recordVisit): R
 
     return Response::html($app->make(View::class)->render('archive', [
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
-        'years' => $app->make(Archive::class)->years($repository->posts(), $query),
+        'years' => $app->make(Archive::class)->years($repository->posts(), $query, $request->query['year'] ?? null, $request->query['month'] ?? null),
         'query' => $query,
+        'year' => $request->query['year'] ?? null,
+        'month' => $request->query['month'] ?? null,
     ]));
 });
 

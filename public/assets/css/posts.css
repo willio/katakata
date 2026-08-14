@@ -4,17 +4,6 @@
 
 .posts-intro { margin-bottom: 1.5rem; }
 
-.owner-header .button {
-    border-radius: 6px;
-}
-
-.owner-header a:focus-visible,
-.posts-filters a:focus-visible,
-.posts-index-title:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
-}
-
 .posts-filters {
     display: flex;
     gap: .5rem;

@@ -16,6 +16,7 @@ final class ImportedDocument
         public readonly string $date,
         public readonly string $body,
         public readonly string $sourceFile,
+        public readonly ?string $originalCategory = null,
         public readonly array $confidence = [],
         public readonly array $metadata = [],
     ) {

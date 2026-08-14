@@ -49,6 +49,23 @@ final class ArchiveTest extends TestCase
         ));
     }
 
+    public function testItFiltersAnArchiveToOneEditorialMonth(): void
+    {
+        $posts = new Collection([
+            $this->post('june', '2018-06-27'),
+            $this->post('may', '2018-05-31'),
+            $this->post('older', '2017-06-27'),
+        ]);
+
+        $years = (new Archive())->years($posts, '', '2018', '06');
+
+        self::assertSame([2018], array_keys($years));
+        self::assertSame(['june'], array_map(
+            static fn (Post $post): string => $post->slug,
+            $years['2018'],
+        ));
+    }
+
     private function post(
         string $slug,
         string $date,

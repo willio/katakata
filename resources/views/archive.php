@@ -2,6 +2,10 @@
 /** @var string $siteName */
 /** @var array<int, array<int, \Katakata\Content\Post>> $years */
 /** @var string $query */
+/** @var mixed $year */
+/** @var mixed $month */
+$yearFilter = is_string($year) ? $year : null;
+$monthFilter = is_string($month) ? $month : null;
 ?>
 <!doctype html>
 <html lang="en">
@@ -13,7 +17,7 @@
     <link rel="alternate" type="application/feed+json" title="<?= e($siteName) ?> JSON Feed" href="/feed.json">
     <link rel="stylesheet" href="/assets/css/site.css">
 </head>
-<body>
+<body class="publication-page">
     <header class="site-header">
         <a class="site-name" href="/"><?= e($siteName) ?></a>
         <nav aria-label="Primary"><a href="/newsletter">Newsletter</a><a href="/feed.xml">RSS</a></nav>
@@ -21,8 +25,10 @@
     <main class="page-shell archive-shell">
         <header class="page-header">
             <p class="eyebrow"><?= $query === '' ? 'All writing' : 'Search results' ?></p>
-            <h1><?= $query === '' ? 'Archive' : 'Results for “' . e($query) . '”' ?></h1>
+            <h1 class="publication-title"><?= $query === '' ? 'Archive' : 'Results for “' . e($query) . '”' ?></h1>
             <form class="archive-search" method="get" action="/archive" role="search">
+                <?php if ($yearFilter !== null): ?><input type="hidden" name="year" value="<?= e($yearFilter) ?>"><?php endif; ?>
+                <?php if ($monthFilter !== null): ?><input type="hidden" name="month" value="<?= e($monthFilter) ?>"><?php endif; ?>
                 <label for="archive-query">Search editions</label>
                 <input id="archive-query" name="q" type="search" value="<?= e($query) ?>" autocomplete="off">
             </form>
@@ -35,10 +41,12 @@
                     <h2 id="year-<?= e($year) ?>"><?= e($year) ?></h2>
                     <ol class="post-list">
                         <?php foreach ($posts as $post): ?>
-                            <li>
-                                <time datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('Y m d')) ?></time>
-                                <h2><a href="<?= e($post->url()) ?>"><?= e($post->title) ?></a></h2>
-                                <?php if ($post->excerpt !== null): ?><p><?= e($post->excerpt) ?></p><?php endif; ?>
+                            <li class="archive-entry">
+                                <time class="archive-entry-date" datetime="<?= e($post->date->format('Y-m-d')) ?>"><?= e($post->date->format('Y m d')) ?></time>
+                                <div class="archive-entry-copy">
+                                    <h2><a class="publication-index-title" href="<?= e($post->url()) ?>"><?= e($post->title) ?></a></h2>
+                                    <?php if ($post->excerpt !== null): ?><p><?= e($post->excerpt) ?></p><?php endif; ?>
+                                </div>
                             </li>
                         <?php endforeach; ?>
                     </ol>

@@ -1,7 +1,3 @@
-.dashboard-page {
-    --workspace-radius: 6px;
-}
-
 .dashboard-onboarding {
     max-width: 42rem;
     margin-bottom: 2.5rem;
@@ -32,7 +28,6 @@
     min-width: 0;
     padding: 1rem;
     border: 1px solid var(--border);
-    border-radius: var(--workspace-radius);
     background: color-mix(in srgb, var(--surface) 72%, transparent);
     color: var(--ink);
     text-decoration: none;
@@ -99,10 +94,6 @@
 .dashboard-signout {
     padding-top: 1rem;
     border-top: 1px solid var(--border);
-}
-
-.dashboard-signout button {
-    border-radius: var(--workspace-radius);
 }
 
 @media (max-width: 42rem) {

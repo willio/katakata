@@ -71,6 +71,7 @@ usort($rows, static function (array $left, array $right): int {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Posts — <?= e($siteName) ?></title>
     <link rel="stylesheet" href="/assets/css/site.css">
+    <link rel="stylesheet" href="/assets/css/boundary.css">
     <link rel="stylesheet" href="/assets/css/posts.css">
 </head>
 <body class="dashboard-page posts-page">

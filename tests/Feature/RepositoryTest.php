@@ -74,6 +74,7 @@ final class RepositoryTest extends TestCase
         $this->assertNotNull($author);
         $this->assertSame('Test Author', $author->name);
         $this->assertSame('/assets/test.png', $author->avatar);
+        $this->assertSame(['https://example.com/test-author'], $author->social);
     }
 
     public function test_it_discovers_assets(): void

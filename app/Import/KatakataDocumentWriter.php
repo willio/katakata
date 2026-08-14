@@ -51,7 +51,7 @@ final class KatakataDocumentWriter
     /** @return array<string, string> */
     private function metadata(ImportedDocument $document): array
     {
-        return [
+        $metadata = [
             'author' => $document->author,
             'status' => 'draft',
             'source_file' => $document->sourceFile,
@@ -61,6 +61,13 @@ final class KatakataDocumentWriter
             'import_confidence_author' => $document->confidence['author'] ?? 'low',
             'import_confidence_date' => $document->confidence['date'] ?? 'low',
         ];
+
+        if ($document->originalCategory !== null) {
+            $metadata['original_category'] = $document->originalCategory;
+            $metadata['original_published'] = $document->date;
+        }
+
+        return $metadata;
     }
 
     private function slug(string $value): string
