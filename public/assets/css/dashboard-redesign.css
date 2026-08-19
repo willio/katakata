@@ -107,10 +107,6 @@
         gap: .6rem;
     }
 
-    .dashboard-header .button {
-        padding-inline: .9rem;
-    }
-
     .dashboard-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
