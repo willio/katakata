@@ -18,7 +18,7 @@ $statusLabel = static function (\Katakata\Email\MailboxAccount $account, array $
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reader inboxes — <?= e($siteName) ?></title><link rel="stylesheet" href="/assets/css/site.css"><link rel="stylesheet" href="/assets/css/boundary.css"></head>
-<body class="dashboard-page dashboard-settings-page">
+<body class="dashboard-page dashboard-settings-page<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
 <header class="dashboard-header"><a class="site-name" href="/dashboard"><?= e($siteName) ?></a><nav><a href="/dashboard/settings">Settings</a><a href="/mail">Mail</a></nav></header>
 <main class="dashboard-shell settings-mailboxes-shell">
 <header class="dashboard-intro"><p class="eyebrow">Settings</p><h1>Reader inboxes</h1><p>Connect and name the inboxes used for reader correspondence.</p><?php if (count($accounts) < $limit): ?><div class="form-actions"><a class="button" href="#add-mailbox">Add inbox</a><a href="/dashboard/settings/mailboxes/import">Import profile</a></div><?php endif; ?></header>

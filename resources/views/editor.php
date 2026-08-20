@@ -17,7 +17,7 @@ $discussionEnabled = filter_var($draft?->meta['discussion_enabled'] ?? false, FI
     <link rel="stylesheet" href="/assets/css/site.css">
     <link rel="stylesheet" href="/assets/css/boundary.css">
 </head>
-<body class="editor-page">
+<body class="editor-page<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
 <p class="editor-status" data-save-status role="status" aria-live="polite"></p>
 <button class="editor-settings-toggle" type="button" data-settings-toggle aria-label="Open settings" aria-controls="editor-panel" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

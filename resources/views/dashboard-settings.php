@@ -11,6 +11,7 @@ $publication = $settings['publication'] ?? [];
 $newsletter = $settings['newsletter'] ?? [];
 $discussion = $settings['discussion'] ?? [];
 $analytics = $settings['analytics'] ?? [];
+$appearance = $settings['appearance'] ?? [];
 $mailbox = $readiness['mailbox'] ?? [];
 $feedbackRole = $error === null ? 'status' : 'alert';
 $feedback = $error ?? ($saved ? 'Settings saved.' : null);
@@ -37,7 +38,7 @@ $mailboxProductDetail = match ($mailboxProductStatus) {
     <link rel="stylesheet" href="/assets/css/site.css">
     <link rel="stylesheet" href="/assets/css/boundary.css">
 </head>
-<body class="dashboard-page dashboard-settings-page">
+<body class="dashboard-page dashboard-settings-page<?= (($settings['appearance']['button_style'] ?? 'regular') === 'pill') ? ' buttons-pill' : '' ?>">
 <header class="dashboard-header">
     <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
     <nav aria-label="Settings actions"><a class="button" href="/editor/new">New post</a><a aria-current="page" href="/dashboard/settings">Settings</a></nav>
@@ -56,6 +57,7 @@ $mailboxProductDetail = match ($mailboxProductStatus) {
             <a href="#mailbox">Reader inbox</a>
             <a href="#discussion">Discussion</a>
             <a href="#analytics">Analytics</a>
+            <a href="#appearance">Appearance</a>
         </nav>
 
         <div class="settings-sections">
@@ -108,6 +110,18 @@ $mailboxProductDetail = match ($mailboxProductStatus) {
                     <label for="analytics-period">Dashboard period</label>
                     <select id="analytics-period" name="dashboard_period"><?php foreach (['7d' => '7 days', '30d' => '30 days', '90d' => '90 days'] as $value => $label): ?><option value="<?= e($value) ?>"<?= ($analytics['dashboard_period'] ?? '30d') === $value ? ' selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select>
                     <button type="submit">Save analytics</button>
+                </form>
+            </section>
+
+            <section id="appearance" class="settings-section">
+                <header><h2>Appearance</h2><p class="quiet">Button shape for owner pages.</p></header>
+                <p class="readiness"><strong><?= e($readiness['appearance']['status']) ?></strong> — <?= e($readiness['appearance']['detail']) ?></p>
+                <form method="post" action="/dashboard/settings">
+                    <input type="hidden" name="csrf" value="<?= e($csrf) ?>"><input type="hidden" name="section" value="appearance">
+                    <input type="hidden" name="theme" value="<?= e((string) ($appearance['theme'] ?? 'default')) ?>">
+                    <label for="appearance-button-style">Button shape</label>
+                    <select id="appearance-button-style" name="button_style"><?php foreach (['regular' => 'Regular', 'pill' => 'Pill'] as $value => $label): ?><option value="<?= e($value) ?>"<?= ($appearance['button_style'] ?? 'regular') === $value ? ' selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select>
+                    <button type="submit">Save appearance</button>
                 </form>
             </section>
         </div>

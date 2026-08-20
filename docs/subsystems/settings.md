@@ -61,6 +61,12 @@ host's secret manager.
 
 Passwords, passkeys, sessions, invitations, and account identity remain owned by the authentication subsystem. The settings page links to those controls rather than storing security data in the application settings file.
 
+## Appearance settings
+
+The `appearance` section holds presentation preferences, persisted in `storage/settings/application.json`:
+
+- `button_style`: owner action-button shape. `regular` (default) renders the standard 6px radius; `pill` opts into the pill variant defined by [the fields & buttons styleguide](../fields-buttons-styleguide.md). When `pill` is active, owner pages render a `buttons-pill` class on `<body>` and the overrides in `public/assets/css/boundary.css` apply. Applies to owner pages only — the views that load `boundary.css`; public views (home, article, archive, author, newsletter) are unaffected.
+
 ## Persistence contract
 
 Runtime settings are stored atomically in `storage/settings/application.json`.

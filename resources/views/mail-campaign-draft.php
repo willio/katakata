@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="/assets/css/mail.css">
     <link rel="stylesheet" href="/assets/css/focused-editor.css">
 </head>
-<body class="editor-page mail-draft-editor-page campaign-draft-editor-page focused-mail-editor">
+<body class="editor-page mail-draft-editor-page campaign-draft-editor-page focused-mail-editor<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
 <p class="editor-status" id="campaign-save-state" data-save-status role="status" aria-live="polite">Saved version <?= $draft->version ?>.</p>
 <header class="focused-mail-editor-header mail-draft-editor-header">
     <a href="/mail?area=campaigns">Back to campaigns</a>

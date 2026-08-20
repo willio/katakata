@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="/assets/css/mail.css">
     <link rel="stylesheet" href="/assets/css/focused-editor.css">
 </head>
-<body class="editor-page mail-draft-editor focused-mail-editor">
+<body class="editor-page mail-draft-editor focused-mail-editor<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
 <p class="editor-status" data-save-status role="status" aria-live="polite"></p>
 <header class="focused-mail-editor-header">
     <a href="/mail?area=inbox">Back to Inbox</a>

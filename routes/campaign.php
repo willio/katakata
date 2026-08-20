@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Katakata\Auth\Session;
+use Katakata\Dashboard\DashboardSettings;
 use Katakata\Distribution\SubscriberStore;
 use Katakata\Email\DraftStore;
 use Katakata\Email\Mailbox;
@@ -40,7 +41,11 @@ $authorizeMail = static function () use ($app): array|Response {
     return $user;
 };
 
-$router->get('/mail', function (Request $request) use ($app, $authorizeMail): Response {
+$mailButtonStyle = static function () use ($app): string {
+    return (string) ($app->make(DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular');
+};
+
+$router->get('/mail', function (Request $request) use ($app, $authorizeMail, $mailButtonStyle): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) {
         return $user;
@@ -57,6 +62,7 @@ $router->get('/mail', function (Request $request) use ($app, $authorizeMail): Re
     return Response::html($app->make(View::class)->render('mail', [
         'user' => $user,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'buttonStyle' => $mailButtonStyle(),
         'area' => $area,
         'attention' => $attention->summary(),
         'mailboxReadiness' => $mailbox->readiness(),
@@ -85,7 +91,7 @@ $router->post('/mail/refresh', function (Request $request) use ($app, $authorize
     return Response::redirect('/mail?area=inbox&refresh=requested', 303);
 });
 
-$router->get('/mail/campaign-drafts/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+$router->get('/mail/campaign-drafts/{id}', function (Request $request, string $id) use ($app, $authorizeMail, $mailButtonStyle): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) {
         return $user;
@@ -104,6 +110,7 @@ $router->get('/mail/campaign-drafts/{id}', function (Request $request, string $i
     return Response::html($app->make(View::class)->render('mail-campaign-draft', [
         'draft' => $draft,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'buttonStyle' => $mailButtonStyle(),
         'csrf' => $app->make(Session::class)->csrf(),
         'review' => $review,
         'error' => trim((string) ($request->query['error'] ?? '')),
@@ -331,7 +338,7 @@ $router->post('/mail/campaign/{id}/drafts', function (Request $request, string $
     return Response::redirect('/mail/campaign-drafts/' . rawurlencode($draft->id), 303);
 });
 
-$router->get('/mail/campaigns', function (Request $request) use ($app, $authorizeMail): Response {
+$router->get('/mail/campaigns', function (Request $request) use ($app, $authorizeMail, $mailButtonStyle): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) {
         return $user;
@@ -349,12 +356,13 @@ $router->get('/mail/campaigns', function (Request $request) use ($app, $authoriz
     return Response::html($app->make(View::class)->render('mail-campaigns', [
         'user' => $user,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'buttonStyle' => $mailButtonStyle(),
         'campaigns' => $campaigns,
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
 
-$router->get('/mail/confirm', function (Request $request) use ($app, $authorizeMail): Response {
+$router->get('/mail/confirm', function (Request $request) use ($app, $authorizeMail, $mailButtonStyle): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) {
         return $user;
@@ -368,6 +376,7 @@ $router->get('/mail/confirm', function (Request $request) use ($app, $authorizeM
     return Response::html($app->make(View::class)->render('mail-confirm', [
         'user' => $user,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'buttonStyle' => $mailButtonStyle(),
         'proof' => $proof,
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
@@ -416,7 +425,7 @@ $router->post('/mail/campaign/{id}/retry', function (Request $request, string $i
     return Response::redirect('/mail/campaign/' . rawurlencode($id), 303);
 });
 
-$router->get('/mail/campaign/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+$router->get('/mail/campaign/{id}', function (Request $request, string $id) use ($app, $authorizeMail, $mailButtonStyle): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) {
         return $user;
@@ -435,6 +444,7 @@ $router->get('/mail/campaign/{id}', function (Request $request, string $id) use 
     return Response::html($app->make(View::class)->render('mail-campaign', [
         'user' => $user,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'buttonStyle' => $mailButtonStyle(),
         'campaign' => $campaign,
         'delivery' => $app->make(CampaignStatus::class)->summarize($campaign),
         'csrf' => $app->make(Session::class)->csrf(),

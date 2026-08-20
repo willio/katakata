@@ -84,6 +84,7 @@ $router->get('/dashboard/settings/mailboxes', function (Request $request) use ($
         'error' => $request->query['error'] ?? null,
         'csrf' => $app->make(Session::class)->csrf(),
         'limit' => MailboxAccountStore::MAX_ACCOUNTS,
+        'buttonStyle' => (string) ($app->make(\Katakata\Dashboard\DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular'),
     ]));
 });
 

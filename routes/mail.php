@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Katakata\Auth\Session;
+use Katakata\Dashboard\DashboardSettings;
 use Katakata\Email\Draft;
 use Katakata\Email\DraftComposer;
 use Katakata\Email\DraftConflict;
@@ -31,6 +32,10 @@ $validMailCsrf = static function (Request $request) use ($app): bool {
     return $app->make(Session::class)->validCsrf($request->body['csrf'] ?? null);
 };
 
+$mailButtonStyle = static function () use ($app): string {
+    return (string) ($app->make(DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular');
+};
+
 $draftPayload = static fn (Draft $draft): array => [
     'id' => $draft->id,
     'to' => $draft->to,
@@ -41,11 +46,12 @@ $draftPayload = static fn (Draft $draft): array => [
     'updated_at' => $draft->updatedAt->format(DATE_ATOM),
 ];
 
-$renderDraftEditor = static function (array $user, Draft $draft, ?string $error = null) use ($app): Response {
+$renderDraftEditor = static function (array $user, Draft $draft, ?string $error = null) use ($app, $mailButtonStyle): Response {
     return Response::html($app->make(View::class)->render('mail-draft-editor', [
         'user' => $user,
         'draft' => $draft,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'buttonStyle' => $mailButtonStyle(),
         'csrf' => $app->make(Session::class)->csrf(),
         'error' => $error,
     ]), $error === null ? 200 : 422);
@@ -56,31 +62,33 @@ $router->get('/dashboard/mail', function (Request $request) use ($authorizeMail)
     return $user instanceof Response ? $user : Response::redirect('/mail', 302);
 });
 
-$router->get('/mail/sent', function (Request $request) use ($app, $authorizeMail): Response {
+$router->get('/mail/sent', function (Request $request) use ($app, $authorizeMail, $mailButtonStyle): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) return $user;
     return Response::html($app->make(View::class)->render('mail-sent', [
         'user' => $user,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'buttonStyle' => $mailButtonStyle(),
         'messages' => $app->make(SentMessageStore::class)->recent(),
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
 
-$router->get('/mail/archive', function (Request $request) use ($app, $authorizeMail): Response {
+$router->get('/mail/archive', function (Request $request) use ($app, $authorizeMail, $mailButtonStyle): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) return $user;
     $mailbox = $app->make(Mailbox::class);
     return Response::html($app->make(View::class)->render('mail-archive', [
         'user' => $user,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'buttonStyle' => $mailButtonStyle(),
         'messages' => $mailbox->archived(),
         'mailboxReadiness' => $mailbox->readiness(),
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });
 
-$router->get('/mail/messages/{id}', function (Request $request, string $id) use ($app, $authorizeMail): Response {
+$router->get('/mail/messages/{id}', function (Request $request, string $id) use ($app, $authorizeMail, $mailButtonStyle): Response {
     $user = $authorizeMail();
     if ($user instanceof Response) return $user;
     $message = $app->make(Mailbox::class)->message($id);
@@ -88,6 +96,7 @@ $router->get('/mail/messages/{id}', function (Request $request, string $id) use 
     return Response::html($app->make(View::class)->render('mail-message', [
         'message' => $message,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
+        'buttonStyle' => $mailButtonStyle(),
         'csrf' => $app->make(Session::class)->csrf(),
     ]));
 });

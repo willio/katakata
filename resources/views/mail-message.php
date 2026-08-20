@@ -14,7 +14,7 @@ $messagePath = '/mail/messages/' . rawurlencode($message->sourceAccountId) . '/'
     <link rel="stylesheet" href="/assets/css/boundary.css">
     <link rel="stylesheet" href="/assets/css/mail.css">
 </head>
-<body class="dashboard-page mail-page">
+<body class="dashboard-page mail-page<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
 <header class="dashboard-header">
     <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
     <nav aria-label="Message actions">

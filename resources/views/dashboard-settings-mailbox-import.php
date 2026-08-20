@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="/assets/css/site.css">
     <link rel="stylesheet" href="/assets/css/boundary.css">
 </head>
-<body class="dashboard-page dashboard-settings-page">
+<body class="dashboard-page dashboard-settings-page<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
 <header class="dashboard-header">
     <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
     <nav aria-label="Mailbox import actions"><a href="/dashboard/settings/mailboxes">Mailbox accounts</a><a href="/dashboard/settings">Settings</a></nav>

@@ -85,6 +85,60 @@ final class DashboardSettingsTest extends TestCase
         $settings->update('appearance', ['theme' => 'neon']);
     }
 
+    public function testItPersistsValidAppearanceButtonStyles(): void
+    {
+        $settings = $this->settings();
+
+        self::assertSame([
+            'theme' => 'default',
+            'button_style' => 'pill',
+        ], $settings->update('appearance', [
+            'theme' => 'default',
+            'button_style' => 'pill',
+        ]));
+        self::assertSame('pill', $settings->section('appearance')['button_style']);
+
+        $settings->update('appearance', [
+            'theme' => 'default',
+            'button_style' => 'regular',
+        ]);
+        self::assertSame('regular', $settings->section('appearance')['button_style']);
+    }
+
+    public function testItRejectsAnInvalidAppearanceButtonStyle(): void
+    {
+        $settings = $this->settings();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Appearance button style is invalid.');
+        $settings->update('appearance', ['button_style' => 'square']);
+    }
+
+    public function testAppearanceButtonStyleDefaultsToRegular(): void
+    {
+        $settings = $this->settings();
+
+        self::assertSame([
+            'theme' => 'warm',
+            'button_style' => 'regular',
+        ], $settings->update('appearance', ['theme' => 'warm']));
+    }
+
+    public function testAppearancePreservesTheStoredThemeWhenItIsOmitted(): void
+    {
+        $settings = $this->settings();
+        $settings->update('appearance', [
+            'theme' => 'warm',
+            'button_style' => 'regular',
+        ]);
+
+        self::assertSame([
+            'theme' => 'warm',
+            'button_style' => 'pill',
+        ], $settings->update('appearance', ['button_style' => 'pill']));
+        self::assertSame('warm', $settings->section('appearance')['theme']);
+    }
+
     public function testThreadsCannotBeEnabledWithoutDeploymentCredentials(): void
     {
         $settings = $this->settings();
@@ -129,7 +183,7 @@ final class DashboardSettingsTest extends TestCase
                     'enabled_by_default' => false,
                 ],
                 'analytics' => ['dashboard_period' => '30d'],
-                'appearance' => ['theme' => 'default'],
+                'appearance' => ['theme' => 'default', 'button_style' => 'regular'],
             ],
             $threadsConfigured,
         );

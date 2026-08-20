@@ -44,6 +44,28 @@ final class OwnerVisualTokenContractTest extends TestCase
         self::assertStringContainsString('border-radius: 999px', $mail);
     }
 
+    public function testPillVariantOverridesStayScopedToButtonsPill(): void
+    {
+        $boundary = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/boundary.css');
+
+        self::assertIsString($boundary);
+        self::assertStringContainsString('body.buttons-pill .button,', $boundary);
+        self::assertStringContainsString('body.buttons-pill .dashboard-shell button:not(.field-clear):not(.editor-panel-close),', $boundary);
+        self::assertStringContainsString('body.buttons-pill .settings-section button,', $boundary);
+        self::assertStringContainsString('body.buttons-pill .auth-shell .button,', $boundary);
+        self::assertStringContainsString('body.buttons-pill .mail-page button,', $boundary);
+        self::assertStringContainsString('body.buttons-pill .editor-page button:not(.editor-settings-toggle):not(.editor-panel-close) {', $boundary);
+        self::assertStringContainsString('border-radius: 999px', $boundary);
+        self::assertStringContainsString('body.buttons-pill .field-clear', $boundary);
+        self::assertStringContainsString('width: 32px', $boundary);
+        self::assertStringContainsString('height: 32px', $boundary);
+        self::assertStringContainsString('border-radius: 50%', $boundary);
+        // Default 6px control radius stays intact outside pill mode.
+        self::assertStringContainsString('--radius-control: 6px', $boundary);
+        self::assertStringContainsString('border-radius: var(--radius-control)', $boundary);
+        self::assertStringNotContainsString('border-radius: 999px', substr($boundary, 0, (int) strpos($boundary, 'body.buttons-pill')));
+    }
+
     public function testKeyboardFocusIsVisibleAcrossOwnerRoutes(): void
     {
         $boundary = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/boundary.css');

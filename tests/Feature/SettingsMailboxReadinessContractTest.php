@@ -64,7 +64,7 @@ final class SettingsMailboxReadinessContractTest extends TestCase
         $view = file_get_contents(dirname(__DIR__, 2) . '/resources/views/dashboard-settings.php');
 
         self::assertIsString($view);
-        self::assertStringNotContainsString('>Appearance<', $view);
+        self::assertStringContainsString('>Appearance<', $view);
         self::assertStringNotContainsString('>Account &amp; Security<', $view);
         self::assertStringNotContainsString('>System<', $view);
     }

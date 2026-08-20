@@ -12,6 +12,8 @@
 
 - No box, background, or full border. At rest, a field uses only
   `border-bottom: 1px dotted var(--border)`.
+- Fields never get corner rounding, even in the pill-button variant below.
+  `border-radius: 0` always.
 - Fields sit inline in the surrounding form without a separate visible label
   row. The placeholder is the visible label and disappears when content is
   entered.
@@ -91,6 +93,25 @@ button,
 .button {
   padding: 0.55em 1.5em;
   border-radius: 6px;
+}
+```
+
+### Pill variant
+
+- Normal owner controls use `border-radius: 999px` (full pill) instead of 6px.
+  All other proportions, color, and state rules stay the same.
+- The field clear control's icon-only circle is `32px` by `32px`. The icon
+  inside stays at its normal size (14px); only the circle shrinks.
+
+```css
+.button--pill {
+  border-radius: 999px;
+}
+
+.field-clear {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
 }
 ```
 
