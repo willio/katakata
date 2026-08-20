@@ -55,6 +55,9 @@ config/nginx/ssl/*
 # Runtime
 # --------------------------------------------------
 
+/storage/settings/*
+!/storage/settings/.gitkeep
+
 /storage/cache/*
 !/storage/cache/.gitkeep
 

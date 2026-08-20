@@ -46,6 +46,60 @@ final class OptionalIntegrationBootstrapTest extends TestCase
         self::assertSame('none', $manager->resolve('threads')->key());
     }
 
+    public function testSettingsSuppliedThreadsIdentityActivatesTheProvider(): void
+    {
+        $this->environment([
+            'THREADS_ENABLED' => 'true',
+            'THREADS_USER_ID' => '',
+            'THREADS_ACCESS_TOKEN' => '',
+            'KATAKATA_TEST_THREADS_TOKEN' => 'settings-referenced-token',
+        ]);
+
+        $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
+        $app->instance(DashboardSettings::class, new DashboardSettings(
+            new SettingsStore(
+                sys_get_temp_dir() . '/katakata-missing-settings-' . bin2hex(random_bytes(6)) . '/application.json',
+                new AtomicFile(),
+            ),
+            ['discussion' => [
+                'provider' => 'threads',
+                'enabled_by_default' => false,
+                'threads_user_id' => 'settings-user',
+                'threads_token_secret' => 'KATAKATA_TEST_THREADS_TOKEN',
+            ]],
+        ));
+        $manager = $app->make(DiscussionManager::class);
+
+        self::assertSame('threads', $manager->resolve('threads')->key());
+    }
+
+    public function testEnabledThreadsStaysInertWithoutAnyCredentials(): void
+    {
+        $this->environment([
+            'THREADS_ENABLED' => 'true',
+            'THREADS_USER_ID' => '',
+            'THREADS_ACCESS_TOKEN' => '',
+            'KATAKATA_TEST_UNSET_THREADS_TOKEN' => '',
+        ]);
+
+        $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
+        $app->instance(DashboardSettings::class, new DashboardSettings(
+            new SettingsStore(
+                sys_get_temp_dir() . '/katakata-missing-settings-' . bin2hex(random_bytes(6)) . '/application.json',
+                new AtomicFile(),
+            ),
+            ['discussion' => [
+                'provider' => 'threads',
+                'enabled_by_default' => false,
+                'threads_user_id' => '',
+                'threads_token_secret' => 'KATAKATA_TEST_UNSET_THREADS_TOKEN',
+            ]],
+        ));
+        $manager = $app->make(DiscussionManager::class);
+
+        self::assertSame('none', $manager->resolve('threads')->key());
+    }
+
     public function testFilesystemMailDoesNotResolveResendCredentials(): void
     {
         $this->environment([

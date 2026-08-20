@@ -39,6 +39,8 @@ $app->singleton(
                     ? 'threads'
                     : 'none',
                 'enabled_by_default' => false,
+                'threads_user_id' => '',
+                'threads_token_secret' => 'THREADS_ACCESS_TOKEN',
             ],
             'analytics' => ['dashboard_period' => '30d'],
             'appearance' => ['theme' => 'default', 'button_style' => 'regular'],

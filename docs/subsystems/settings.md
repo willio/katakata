@@ -14,7 +14,7 @@ These values belong to `/dashboard/settings` and may be stored in `storage/setti
 
 - Publication name, description, default author, and presentation defaults.
 - Newsletter defaults such as the default sender label and per-post newsletter default.
-- Discussion provider selection and whether discussion is enabled by default.
+- Discussion provider selection, whether discussion is enabled by default, and the Tier 0 Threads discussion keys (`threads_user_id`, `threads_token_secret`) described under Optional integrations below.
 - Analytics display preferences.
 - Appearance defaults.
 - Links to account, security, diagnostics, and operational status.
@@ -95,6 +95,33 @@ as the selected provider; credential values remain opaque deployment state and
 are never copied into application settings. Dashboard discussion summaries read
 the selected provider through this boundary rather than consulting deployment
 configuration directly.
+
+### Tier 0 discussion keys
+
+The discussion section accepts two additional keys alongside `provider` and
+`enabled_by_default`:
+
+- `threads_user_id` (default `''`): the Threads account identifier. This is a
+  plain non-secret string and may be stored in
+  `storage/settings/application.json`.
+- `threads_token_secret` (default `'THREADS_ACCESS_TOKEN'`): the **name** of
+  the environment variable holding the Threads access token, following the
+  secret-by-reference pattern of the
+  [multi-account mailbox specification](../specs/multi-account-mailbox.md). The
+  token value itself is never accepted, stored, rendered, or logged; it remains
+  in `.env` or the host's secret manager.
+
+Effective Threads credentials resolve at boot/use time with settings taking
+precedence over deployment configuration: a `threads_user_id` or
+`threads_token_secret` set in dashboard settings overrides the corresponding
+`THREADS_USER_ID` / `THREADS_ACCESS_TOKEN` deployment value, and empty settings
+fall back to deployment configuration. Readiness surfaces stay presence-only.
+
+[ADR 0011](../adr/0011-application-managed-secrets.md) proposes — but does not
+yet ship — an application-managed encrypted secret store as the path for
+deployments that cannot maintain `.env`. Until it is accepted, the
+deployment-only rules above stand: token values are never written by the
+dashboard.
 
 ## Editor boundary
 

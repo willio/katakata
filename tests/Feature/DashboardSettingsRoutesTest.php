@@ -176,6 +176,75 @@ final class DashboardSettingsRoutesTest extends TestCase
         self::assertStringContainsString('dashboard-settings-page buttons-pill', $html);
     }
 
+    public function testDiscussionSectionPersistsThreadsCredentialReferences(): void
+    {
+        $router = $this->routerFor();
+        $session = $this->accountsSession();
+
+        $response = $router->dispatch(new Request('POST', '/dashboard/settings', body: [
+            'csrf' => $session->csrf(),
+            'section' => 'discussion',
+            'provider' => 'native',
+            'threads_user_id' => '123456789',
+            'threads_token_secret' => 'KATAKATA_THREADS_TOKEN',
+        ]));
+
+        self::assertSame(303, $response->status);
+        self::assertSame('/dashboard/settings?saved=1#discussion', $response->headers['Location']);
+
+        $stored = json_decode((string) file_get_contents($this->root . '/application.json'), true);
+        self::assertSame('123456789', $stored['discussion']['threads_user_id'] ?? null);
+        self::assertSame('KATAKATA_THREADS_TOKEN', $stored['discussion']['threads_token_secret'] ?? null);
+    }
+
+    public function testDiscussionSectionRejectsInvalidThreadsTokenSecretName(): void
+    {
+        $router = $this->routerFor();
+        $session = $this->accountsSession();
+
+        $response = $router->dispatch(new Request('POST', '/dashboard/settings', body: [
+            'csrf' => $session->csrf(),
+            'section' => 'discussion',
+            'provider' => 'native',
+            'threads_user_id' => '123456789',
+            'threads_token_secret' => 'not-a-valid-secret',
+        ]));
+
+        self::assertSame(422, $response->status);
+        self::assertStringContainsString('Threads token secret name is invalid.', $response->body);
+        self::assertFileDoesNotExist($this->root . '/application.json');
+    }
+
+    public function testSettingsPageRendersThreadsFieldsWithoutRenderingTokenValue(): void
+    {
+        putenv('KATAKATA_TEST_THREADS_TOKEN=super-secret-token-value');
+        try {
+            $router = $this->routerFor();
+            $session = $this->accountsSession();
+
+            $saved = $router->dispatch(new Request('POST', '/dashboard/settings', body: [
+                'csrf' => $session->csrf(),
+                'section' => 'discussion',
+                'provider' => 'threads',
+                'threads_user_id' => '123456789',
+                'threads_token_secret' => 'KATAKATA_TEST_THREADS_TOKEN',
+            ]));
+            self::assertSame(303, $saved->status);
+
+            $response = $router->dispatch(new Request('GET', '/dashboard/settings'));
+
+            self::assertSame(200, $response->status);
+            self::assertStringContainsString('>Threads user ID</label>', $response->body);
+            self::assertStringContainsString('name="threads_user_id" value="123456789"', $response->body);
+            self::assertStringContainsString('>Threads token environment variable</label>', $response->body);
+            self::assertStringContainsString('name="threads_token_secret" value="KATAKATA_TEST_THREADS_TOKEN"', $response->body);
+            self::assertStringContainsString('>Ready</strong>', $response->body);
+            self::assertStringNotContainsString('super-secret-token-value', $response->body);
+        } finally {
+            putenv('KATAKATA_TEST_THREADS_TOKEN');
+        }
+    }
+
     private function routerFor(): Router
     {
         $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';

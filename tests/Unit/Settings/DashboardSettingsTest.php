@@ -75,6 +75,8 @@ final class DashboardSettingsTest extends TestCase
         self::assertSame([
             'provider' => 'native',
             'enabled_by_default' => true,
+            'threads_user_id' => '',
+            'threads_token_secret' => 'THREADS_ACCESS_TOKEN',
         ], $settings->update('discussion', [
             'provider' => 'native',
             'enabled_by_default' => '1',
@@ -158,10 +160,114 @@ final class DashboardSettingsTest extends TestCase
         self::assertSame([
             'provider' => 'threads',
             'enabled_by_default' => true,
+            'threads_user_id' => '',
+            'threads_token_secret' => 'THREADS_ACCESS_TOKEN',
         ], $settings->update('discussion', [
             'provider' => 'threads',
             'enabled_by_default' => '1',
         ]));
+    }
+
+    public function testDiscussionPersistsTheThreadsIdentitySettings(): void
+    {
+        $settings = $this->settings();
+
+        self::assertSame([
+            'provider' => 'native',
+            'enabled_by_default' => false,
+            'threads_user_id' => '12345',
+            'threads_token_secret' => 'KATAKATA_TEST_THREADS_TOKEN',
+        ], $settings->update('discussion', [
+            'provider' => 'native',
+            'threads_user_id' => ' 12345 ',
+            'threads_token_secret' => 'KATAKATA_TEST_THREADS_TOKEN',
+        ]));
+        self::assertSame('12345', $settings->section('discussion')['threads_user_id']);
+        self::assertSame(
+            'KATAKATA_TEST_THREADS_TOKEN',
+            $settings->section('discussion')['threads_token_secret'],
+        );
+    }
+
+    public function testDiscussionRejectsInvalidThreadsTokenSecretNames(): void
+    {
+        $settings = $this->settings();
+
+        foreach (['threads_token', 'THREADS-TOKEN'] as $name) {
+            try {
+                $settings->update('discussion', [
+                    'provider' => 'none',
+                    'threads_token_secret' => $name,
+                ]);
+                self::fail("Expected token secret name [{$name}] to fail.");
+            } catch (RuntimeException $error) {
+                self::assertSame('Threads token secret name is invalid.', $error->getMessage());
+            }
+        }
+
+        try {
+            $settings->update('discussion', [
+                'provider' => 'threads',
+                'threads_token_secret' => '',
+            ]);
+            self::fail('Expected an empty token secret name to fail.');
+        } catch (RuntimeException $error) {
+            self::assertSame('Threads token secret name is invalid.', $error->getMessage());
+        }
+    }
+
+    public function testThreadsCanBeSelectedWhenSettingsSupplyCredentials(): void
+    {
+        putenv('KATAKATA_TEST_THREADS_TOKEN=fake-unit-test-token');
+        try {
+            $settings = $this->settings();
+
+            self::assertSame([
+                'provider' => 'threads',
+                'enabled_by_default' => false,
+                'threads_user_id' => '12345',
+                'threads_token_secret' => 'KATAKATA_TEST_THREADS_TOKEN',
+            ], $settings->update('discussion', [
+                'provider' => 'threads',
+                'threads_user_id' => '12345',
+                'threads_token_secret' => 'KATAKATA_TEST_THREADS_TOKEN',
+            ]));
+        } finally {
+            putenv('KATAKATA_TEST_THREADS_TOKEN');
+        }
+    }
+
+    public function testThreadsCanBeEnabledLaterUsingStoredCredentials(): void
+    {
+        putenv('KATAKATA_TEST_THREADS_TOKEN=fake-unit-test-token');
+        try {
+            $settings = $this->settings();
+            $settings->update('discussion', [
+                'provider' => 'native',
+                'threads_user_id' => '12345',
+                'threads_token_secret' => 'KATAKATA_TEST_THREADS_TOKEN',
+            ]);
+
+            self::assertSame('threads', $settings->update('discussion', [
+                'provider' => 'threads',
+            ])['provider']);
+        } finally {
+            putenv('KATAKATA_TEST_THREADS_TOKEN');
+        }
+    }
+
+    public function testThreadsIsRejectedWhenOnlyTheUserIdIsSupplied(): void
+    {
+        putenv('KATAKATA_TEST_MISSING_THREADS_TOKEN');
+        $settings = $this->settings();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Threads requires THREADS_USER_ID and THREADS_ACCESS_TOKEN.');
+        $settings->update('discussion', [
+            'provider' => 'threads',
+            'threads_user_id' => '12345',
+            'threads_token_secret' => 'KATAKATA_TEST_MISSING_THREADS_TOKEN',
+        ]);
     }
 
     private function settings(bool $threadsConfigured = false): DashboardSettings
@@ -181,6 +287,8 @@ final class DashboardSettingsTest extends TestCase
                 'discussion' => [
                     'provider' => 'none',
                     'enabled_by_default' => false,
+                    'threads_user_id' => '',
+                    'threads_token_secret' => 'THREADS_ACCESS_TOKEN',
                 ],
                 'analytics' => ['dashboard_period' => '30d'],
                 'appearance' => ['theme' => 'default', 'button_style' => 'regular'],
