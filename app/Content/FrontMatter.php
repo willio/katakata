@@ -128,9 +128,24 @@ final class FrontMatter
         }
 
         if (
-            (str_starts_with($value, '"') && str_ends_with($value, '"'))
-            || (str_starts_with($value, "'") && str_ends_with($value, "'"))
+            str_starts_with($value, '"') && str_ends_with($value, '"')
         ) {
+            $value = substr($value, 1, -1);
+            return preg_replace_callback(
+                '/\\\\(.)/s',
+                static fn (array $match): string => match ($match[1]) {
+                    'n' => "\n",
+                    'r' => "\r",
+                    't' => "\t",
+                    '"' => '"',
+                    '\\' => '\\',
+                    default => $match[1],
+                },
+                $value,
+            ) ?? $value;
+        }
+
+        if (str_starts_with($value, "'") && str_ends_with($value, "'")) {
             return substr($value, 1, -1);
         }
 

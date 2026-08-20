@@ -284,21 +284,24 @@ h2 { margin-top: 2.5rem; font-size: clamp(1.45rem, 4vw, 2rem); }
 .editor-panel input:focus, .editor-panel select:focus { border-bottom-color: var(--accent); }
 .editor-panel input[readonly] { color: var(--ink-muted); }
 .editor-panel ul { padding-left: 1.2rem; }
-.editor-panel-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.editor-panel-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-block: 1.25rem; }
 .editor-notice { color: var(--ink-muted); font-size: .82rem; }
 
-.button, .dashboard-shell button {
+.button, .dashboard-shell button, .editor-panel-actions button, .editor-page .form-actions button, .mail-page button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: .5em 1.5em;
+    padding: .55em 1.5em;
     border: 0;
-    border-radius: 999px;
+    border-radius: 6px;
     background: var(--btn-bg);
     color: var(--btn-ink);
     font-family: var(--font-sans);
     text-decoration: none;
 }
+.button:hover, .dashboard-shell button:hover, .editor-panel-actions button:hover, .editor-page .form-actions button:hover, .mail-page button:hover { background: color-mix(in srgb, var(--btn-bg) 90%, #000); }
+.button:active, .dashboard-shell button:active, .editor-panel-actions button:active, .editor-page .form-actions button:active, .mail-page button:active { background: color-mix(in srgb, var(--btn-bg) 85%, #000); }
+.button:disabled, .dashboard-shell button:disabled, .editor-panel-actions button:disabled, .editor-page .form-actions button:disabled, .mail-page button:disabled { opacity: .4; }
 .dashboard-header {
     display: flex;
     align-items: center;
