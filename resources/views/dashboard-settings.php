@@ -13,6 +13,7 @@ $discussion = $settings['discussion'] ?? [];
 $analytics = $settings['analytics'] ?? [];
 $appearance = $settings['appearance'] ?? [];
 $mailbox = $readiness['mailbox'] ?? [];
+$threadsTokenManaged = (bool) ($readiness['discussion']['token_managed'] ?? false);
 $feedbackRole = $error === null ? 'status' : 'alert';
 $feedback = $error ?? ($saved ? 'Settings saved.' : null);
 $mailboxStatus = strtolower(trim((string) ($mailbox['status'] ?? 'needs_setup')));
@@ -101,6 +102,15 @@ $mailboxProductDetail = match ($mailboxProductStatus) {
                     <p class="quiet">Falls back to THREADS_USER_ID from deployment configuration when left empty.</p>
                     <label for="discussion-threads-token-secret">Threads token environment variable</label><input id="discussion-threads-token-secret" name="threads_token_secret" value="<?= e((string) ($discussion['threads_token_secret'] ?? 'THREADS_ACCESS_TOKEN')) ?>">
                     <p class="quiet">This field only names the deployment variable holding the Threads access token. The token itself stays in .env or the host secret manager and is never entered or shown here.</p>
+                    <label for="discussion-threads-token-value">Threads access token</label><input id="discussion-threads-token-value" type="password" name="threads_token_value" autocomplete="new-password"<?= $threadsTokenManaged ? ' placeholder="•••••••• — stored; leave empty to keep"' : '' ?>>
+                    <?php if ($threadsTokenManaged): ?>
+                    <p class="quiet">A token is stored in settings and is never shown. Leave the field empty to keep it.</p>
+                    <label class="checkbox-row"><input type="checkbox" name="threads_token_remove" value="1"> Remove the stored token</label>
+                    <?php else: ?>
+                    <p class="quiet">Optional. When no token is stored here, the deployment variable named above remains the fallback.</p>
+                    <?php endif; ?>
+                    <label for="discussion-confirm-password">Confirm password</label><input id="discussion-confirm-password" type="password" name="confirm_password" autocomplete="current-password">
+                    <p class="quiet">Required only when storing or removing a Threads token.</p>
                     <label class="checkbox-row"><input type="checkbox" name="enabled_by_default" value="1"<?= !empty($discussion['enabled_by_default']) ? ' checked' : '' ?>> Enable discussion on new posts</label>
                     <button type="submit">Save discussion</button>
                 </form>

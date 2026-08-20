@@ -37,6 +37,11 @@ Reading and interface typography use deliberately different voices:
 | Site chrome | Sans-serif | Fast scanning at small sizes |
 | Editor | Monospace | A stable, deliberate writing tool |
 
+Decided exception: mail message body text in the owner Mail workspace renders
+in the sans UI voice — a deliberate owner-UI exception to serif-for-reading,
+keeping correspondence visually part of the interface rather than the
+editorial reading surface.
+
 ```css
 --font-serif: "Source Serif 4", "Charter", Georgia, serif;
 --font-sans: "Inter", -apple-system, "Segoe UI", sans-serif;

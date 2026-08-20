@@ -120,6 +120,6 @@ The following remain outside the current implementation:
 - remote mailbox mutations;
 - attachment caching or download;
 - correspondence export;
-- credential editing in Settings;
+- credential editing in Settings for mail credentials (mail credentials remain deployment-only by reference; [ADR 0011](../adr/0011-application-managed-secrets.md), now accepted, currently covers only `threads.access_token`);
 - additional IMAP authentication mechanisms;
 - multiple mailbox accounts.

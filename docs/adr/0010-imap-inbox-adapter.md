@@ -5,6 +5,12 @@
 Accepted for Katakata 1.0RC design; implementation follows only after the
 mail workspace and correspondence privacy contracts are planned.
 
+Amended 2026-08-20 by [ADR 0011](0011-application-managed-secrets.md): the
+"never persisted" stance on credential values is relaxed for the encrypted
+application-managed secret store. Mail (IMAP) credentials remain
+deployment-only by reference; ADR 0011 currently covers `threads.access_token`
+only.
+
 ## Context
 
 Katakata needs a useful editorial inbox for correspondence with readers. It

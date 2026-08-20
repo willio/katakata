@@ -10,6 +10,7 @@ use Katakata\Dashboard\DashboardSettings;
 use Katakata\Editorial\AtomicFile;
 use Katakata\Http\Request;
 use Katakata\Http\Router;
+use Katakata\Settings\SecretsStore;
 use Katakata\Settings\SettingsStore;
 use Katakata\View;
 use PHPUnit\Framework\TestCase;
@@ -37,6 +38,7 @@ final class DashboardSettingsRoutesTest extends TestCase
         }
         @unlink($this->root . '/accounts.json');
         @unlink($this->root . '/application.json');
+        @unlink($this->root . '/secrets.json');
         @rmdir($this->root);
     }
 
@@ -245,6 +247,165 @@ final class DashboardSettingsRoutesTest extends TestCase
         }
     }
 
+    public function testDiscussionSectionStoresThreadsTokenValueEncrypted(): void
+    {
+        $router = $this->routerWithSecrets('test-app-key');
+        $session = $this->accountsSession();
+
+        $response = $router->dispatch(new Request('POST', '/dashboard/settings', body: $this->discussionBody($session, [
+            'threads_token_value' => 'plain-threads-token-value',
+            'confirm_password' => 'owner-password-123',
+        ])));
+
+        self::assertSame(303, $response->status);
+
+        $raw = (string) file_get_contents($this->root . '/secrets.json');
+        self::assertStringNotContainsString('plain-threads-token-value', $raw);
+
+        $secrets = new SecretsStore($this->root . '/secrets.json', new AtomicFile(), 'test-app-key');
+        self::assertSame('plain-threads-token-value', $secrets->get('threads.access_token'));
+
+        $settings = (string) file_get_contents($this->root . '/application.json');
+        self::assertStringNotContainsString('plain-threads-token-value', $settings);
+
+        $page = $router->dispatch(new Request('GET', '/dashboard/settings'));
+        self::assertSame(200, $page->status);
+        self::assertStringContainsString('type="password" name="threads_token_value"', $page->body);
+        self::assertStringContainsString('•••••••• — stored; leave empty to keep', $page->body);
+        self::assertStringContainsString('name="threads_token_remove"', $page->body);
+        self::assertStringContainsString('name="confirm_password"', $page->body);
+        self::assertStringNotContainsString('plain-threads-token-value', $page->body);
+    }
+
+    public function testDiscussionTokenFieldRendersEmptyWithDeploymentFallbackHintWhenNothingStored(): void
+    {
+        $router = $this->routerWithSecrets('test-app-key');
+        $this->accountsSession();
+
+        $page = $router->dispatch(new Request('GET', '/dashboard/settings'));
+
+        self::assertSame(200, $page->status);
+        self::assertStringContainsString('type="password" name="threads_token_value"', $page->body);
+        self::assertStringContainsString('name="confirm_password"', $page->body);
+        self::assertStringContainsString('the deployment variable named above remains the fallback', $page->body);
+        self::assertStringNotContainsString('stored; leave empty to keep', $page->body);
+        self::assertStringNotContainsString('name="threads_token_remove"', $page->body);
+    }
+
+    public function testDiscussionEmptyTokenValuePreservesStoredSecret(): void
+    {
+        $router = $this->routerWithSecrets('test-app-key');
+        $session = $this->accountsSession();
+
+        $stored = $router->dispatch(new Request('POST', '/dashboard/settings', body: $this->discussionBody($session, [
+            'threads_token_value' => 'plain-threads-token-value',
+            'confirm_password' => 'owner-password-123',
+        ])));
+        self::assertSame(303, $stored->status);
+
+        $response = $router->dispatch(new Request('POST', '/dashboard/settings', body: $this->discussionBody($session, [
+            'provider' => 'none',
+            'threads_token_value' => '',
+        ])));
+
+        self::assertSame(303, $response->status);
+        $secrets = new SecretsStore($this->root . '/secrets.json', new AtomicFile(), 'test-app-key');
+        self::assertSame('plain-threads-token-value', $secrets->get('threads.access_token'));
+    }
+
+    public function testDiscussionTokenChangeWithWrongPasswordPersistsNothing(): void
+    {
+        $router = $this->routerWithSecrets('test-app-key');
+        $session = $this->accountsSession();
+
+        $response = $router->dispatch(new Request('POST', '/dashboard/settings', body: $this->discussionBody($session, [
+            'threads_token_value' => 'plain-threads-token-value',
+            'confirm_password' => 'wrong-password-456',
+        ])));
+
+        self::assertSame(422, $response->status);
+        self::assertStringContainsString('Confirm your current password', $response->body);
+        self::assertFileDoesNotExist($this->root . '/secrets.json');
+        self::assertFileDoesNotExist($this->root . '/application.json');
+    }
+
+    public function testDiscussionTokenRemovalRequiresPasswordConfirmation(): void
+    {
+        $router = $this->routerWithSecrets('test-app-key');
+        $session = $this->accountsSession();
+
+        $stored = $router->dispatch(new Request('POST', '/dashboard/settings', body: $this->discussionBody($session, [
+            'threads_token_value' => 'plain-threads-token-value',
+            'confirm_password' => 'owner-password-123',
+        ])));
+        self::assertSame(303, $stored->status);
+
+        $secrets = new SecretsStore($this->root . '/secrets.json', new AtomicFile(), 'test-app-key');
+
+        $wrong = $router->dispatch(new Request('POST', '/dashboard/settings', body: $this->discussionBody($session, [
+            'threads_token_remove' => '1',
+            'confirm_password' => 'wrong-password-456',
+        ])));
+        self::assertSame(422, $wrong->status);
+        self::assertStringContainsString('Confirm your current password', $wrong->body);
+        self::assertTrue($secrets->has('threads.access_token'));
+
+        $removed = $router->dispatch(new Request('POST', '/dashboard/settings', body: $this->discussionBody($session, [
+            'threads_token_remove' => '1',
+            'confirm_password' => 'owner-password-123',
+        ])));
+        self::assertSame(303, $removed->status);
+        self::assertFalse($secrets->has('threads.access_token'));
+    }
+
+    public function testDiscussionTokenValueSurfacesAppKeyErrorWhenStoreUnavailable(): void
+    {
+        $router = $this->routerWithSecrets(null);
+        $session = $this->accountsSession();
+
+        $response = $router->dispatch(new Request('POST', '/dashboard/settings', body: $this->discussionBody($session, [
+            'threads_token_value' => 'plain-threads-token-value',
+            'confirm_password' => 'owner-password-123',
+        ])));
+
+        self::assertSame(422, $response->status);
+        self::assertStringContainsString('APP_KEY', $response->body);
+        self::assertFileDoesNotExist($this->root . '/secrets.json');
+    }
+
+    public function testThreadsReadinessReportsTokenSourceWithoutRenderingValues(): void
+    {
+        putenv('KATAKATA_TEST_THREADS_TOKEN=env-threads-token-value');
+        try {
+            $router = $this->routerWithSecrets('test-app-key');
+            $session = $this->accountsSession();
+
+            $saved = $router->dispatch(new Request('POST', '/dashboard/settings', body: $this->discussionBody($session, [
+                'provider' => 'threads',
+            ])));
+            self::assertSame(303, $saved->status);
+
+            $page = $router->dispatch(new Request('GET', '/dashboard/settings'));
+            self::assertSame(200, $page->status);
+            self::assertStringContainsString('Token source: From deployment configuration.', $page->body);
+
+            $stored = $router->dispatch(new Request('POST', '/dashboard/settings', body: $this->discussionBody($session, [
+                'provider' => 'threads',
+                'threads_token_value' => 'managed-threads-token-value',
+                'confirm_password' => 'owner-password-123',
+            ])));
+            self::assertSame(303, $stored->status);
+
+            $page = $router->dispatch(new Request('GET', '/dashboard/settings'));
+            self::assertSame(200, $page->status);
+            self::assertStringContainsString('Token source: Managed in settings.', $page->body);
+            self::assertStringNotContainsString('managed-threads-token-value', $page->body);
+            self::assertStringNotContainsString('env-threads-token-value', $page->body);
+        } finally {
+            putenv('KATAKATA_TEST_THREADS_TOKEN');
+        }
+    }
+
     private function routerFor(): Router
     {
         $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
@@ -255,6 +416,36 @@ final class DashboardSettingsRoutesTest extends TestCase
         ));
 
         return require dirname(__DIR__, 2) . '/bootstrap/routes.php';
+    }
+
+    private function routerWithSecrets(?string $appKey): Router
+    {
+        $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
+        $app->instance(Session::class, $this->accountsSession());
+        $app->instance(AccountStore::class, $this->accounts);
+        $app->instance(DashboardSettings::class, new DashboardSettings(
+            new SettingsStore($this->root . '/application.json', new AtomicFile()),
+            ['appearance' => ['theme' => 'default', 'button_style' => 'regular']],
+        ));
+        $app->instance(SecretsStore::class, new SecretsStore(
+            $this->root . '/secrets.json',
+            new AtomicFile(),
+            $appKey,
+        ));
+
+        return require dirname(__DIR__, 2) . '/bootstrap/routes.php';
+    }
+
+    /** @param array<string, mixed> $overrides */
+    private function discussionBody(Session $session, array $overrides = []): array
+    {
+        return $overrides + [
+            'csrf' => $session->csrf(),
+            'section' => 'discussion',
+            'provider' => 'native',
+            'threads_user_id' => '123456789',
+            'threads_token_secret' => 'KATAKATA_TEST_THREADS_TOKEN',
+        ];
     }
 
     private function accountsSession(): Session

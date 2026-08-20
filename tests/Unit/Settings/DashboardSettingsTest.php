@@ -6,6 +6,7 @@ namespace Katakata\Tests\Unit\Settings;
 
 use Katakata\Dashboard\DashboardSettings;
 use Katakata\Editorial\AtomicFile;
+use Katakata\Settings\SecretsStore;
 use Katakata\Settings\SettingsStore;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -270,7 +271,20 @@ final class DashboardSettingsTest extends TestCase
         ]);
     }
 
-    private function settings(bool $threadsConfigured = false): DashboardSettings
+    public function testThreadsCanBeSelectedWhenTheSecretsStoreHoldsTheToken(): void
+    {
+        putenv('KATAKATA_TEST_MISSING_THREADS_TOKEN');
+        $secrets = new SecretsStore($this->root . '/secrets.json', new AtomicFile(), 'unit-test-app-key');
+        $secrets->set('threads.access_token', 'encrypted-unit-test-token');
+        $settings = $this->settings(secrets: $secrets);
+
+        self::assertSame('threads', $settings->update('discussion', [
+            'provider' => 'threads',
+            'threads_user_id' => '12345',
+        ])['provider']);
+    }
+
+    private function settings(bool $threadsConfigured = false, ?SecretsStore $secrets = null): DashboardSettings
     {
         return new DashboardSettings(
             new SettingsStore($this->root . '/application.json', new AtomicFile()),
@@ -294,6 +308,7 @@ final class DashboardSettingsTest extends TestCase
                 'appearance' => ['theme' => 'default', 'button_style' => 'regular'],
             ],
             $threadsConfigured,
+            $secrets,
         );
     }
 }

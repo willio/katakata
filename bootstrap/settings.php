@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Katakata\Application;
 use Katakata\Dashboard\DashboardSettings;
 use Katakata\Editorial\AtomicFile;
+use Katakata\Settings\SecretsStore;
 use Katakata\Settings\SettingsStore;
 
 /** @var Application $app */
@@ -18,6 +19,19 @@ $app->singleton(
         $container->storagePath('settings/application.json'),
         $container->make(AtomicFile::class),
     ),
+);
+
+$app->singleton(
+    SecretsStore::class,
+    static function (Application $container): SecretsStore {
+        $appKey = trim((string) $container->config()->get('app.key', ''));
+
+        return new SecretsStore(
+            $container->storagePath('settings/secrets.json'),
+            $container->make(AtomicFile::class),
+            $appKey !== '' ? $appKey : null,
+        );
+    },
 );
 
 $app->singleton(
@@ -46,5 +60,6 @@ $app->singleton(
             'appearance' => ['theme' => 'default', 'button_style' => 'regular'],
         ],
         $threadsConfigured,
+        $container->make(SecretsStore::class),
     ),
 );
