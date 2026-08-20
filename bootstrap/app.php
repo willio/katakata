@@ -300,6 +300,32 @@ $app->singleton(
         $container->make(AtomicFile::class),
     ),
 );
+// Settings bindings must exist before Threads wiring resolves them; routes.php
+// re-requires this file harmlessly when composing the HTTP routes.
+require __DIR__ . '/settings.php';
+
+// Effective Threads credentials: dashboard settings win over deployment config,
+// and the access token is resolved indirectly through the named environment
+// variable so token values never touch settings storage.
+$threadsCredentials = static function (Application $container): array {
+    $discussion = $container->make(DashboardSettings::class)->section('discussion');
+    $userId = trim((string) ($discussion['threads_user_id'] ?? ''));
+    if ($userId === '') {
+        $userId = trim((string) $container->config()->get('threads.user_id', ''));
+    }
+    $secretName = trim((string) ($discussion['threads_token_secret'] ?? ''));
+    if ($secretName === '' || preg_match('/^[A-Z][A-Z0-9_]*$/', $secretName) !== 1) {
+        $secretName = 'THREADS_ACCESS_TOKEN';
+    }
+    $token = getenv($secretName);
+    $token = is_string($token) ? trim($token) : '';
+    if ($token === '') {
+        $token = trim((string) $container->config()->get('threads.access_token', ''));
+    }
+
+    return [$userId, $token];
+};
+
 $app->singleton(
     ThreadsStore::class,
     static fn (Application $container): ThreadsStore => new ThreadsStore(
@@ -309,10 +335,11 @@ $app->singleton(
 );
 $app->singleton(
     ThreadsApi::class,
-    static fn (Application $container): ThreadsApi => new MetaThreadsApi(
-        (string) $container->config()->get('threads.user_id', ''),
-        (string) $container->config()->get('threads.access_token', ''),
-    ),
+    static function (Application $container) use ($threadsCredentials): ThreadsApi {
+        [$userId, $token] = $threadsCredentials($container);
+
+        return new MetaThreadsApi($userId, $token);
+    },
 );
 $app->singleton(
     ThreadsInsightsApi::class,
@@ -348,11 +375,12 @@ $app->singleton(
 );
 $app->singleton(
     DiscussionManager::class,
-    static function (Application $container): DiscussionManager {
+    static function (Application $container) use ($threadsCredentials): DiscussionManager {
         $providers = [$container->make(NativeDiscussionProvider::class)];
+        [$threadsUserId, $threadsToken] = $threadsCredentials($container);
         $threadsAvailable = (bool) $container->config()->get('threads.enabled', false)
-            && trim((string) $container->config()->get('threads.user_id', '')) !== ''
-            && trim((string) $container->config()->get('threads.access_token', '')) !== '';
+            && $threadsUserId !== ''
+            && $threadsToken !== '';
         if ($threadsAvailable) {
             $providers[] = $container->make(ThreadsDiscussionProvider::class);
         }

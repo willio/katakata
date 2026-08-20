@@ -13,7 +13,7 @@ final class SettingsStore
     private const KEYS = [
         'publication' => ['name', 'description', 'default_author'],
         'newsletter' => ['sender_label', 'publish_by_default'],
-        'discussion' => ['provider', 'enabled_by_default'],
+        'discussion' => ['provider', 'enabled_by_default', 'threads_user_id', 'threads_token_secret'],
         'analytics' => ['dashboard_period'],
         'appearance' => ['theme', 'button_style'],
     ];

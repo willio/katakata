@@ -97,13 +97,31 @@ final class DashboardSettings
         if (!in_array($provider, ['none', 'native', 'threads'], true)) {
             throw new RuntimeException('Discussion provider is invalid.');
         }
-        if ($provider === 'threads' && !$this->threadsConfigured) {
-            throw new RuntimeException('Threads requires THREADS_USER_ID and THREADS_ACCESS_TOKEN.');
+
+        $stored = $this->all()['discussion'] ?? [];
+        $userId = trim((string) ($input['threads_user_id'] ?? $stored['threads_user_id'] ?? ''));
+        $tokenSecret = trim((string) (
+            $input['threads_token_secret'] ?? $stored['threads_token_secret'] ?? 'THREADS_ACCESS_TOKEN'
+        ));
+        if (preg_match('/^[A-Z][A-Z0-9_]*$/', $tokenSecret) !== 1) {
+            throw new RuntimeException('Threads token secret name is invalid.');
+        }
+
+        if ($provider === 'threads') {
+            $tokenValue = getenv($tokenSecret);
+            $hasToken = $this->threadsConfigured
+                || (is_string($tokenValue) && trim($tokenValue) !== '');
+            $hasUserId = $this->threadsConfigured || $userId !== '';
+            if (!$hasUserId || !$hasToken) {
+                throw new RuntimeException('Threads requires THREADS_USER_ID and THREADS_ACCESS_TOKEN.');
+            }
         }
 
         return [
             'provider' => $provider,
             'enabled_by_default' => $this->boolean($input['enabled_by_default'] ?? false),
+            'threads_user_id' => $userId,
+            'threads_token_secret' => $tokenSecret,
         ];
     }
 

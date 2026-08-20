@@ -97,6 +97,10 @@ $mailboxProductDetail = match ($mailboxProductStatus) {
                     <input type="hidden" name="csrf" value="<?= e($csrf) ?>"><input type="hidden" name="section" value="discussion">
                     <label for="discussion-provider">Provider</label>
                     <select id="discussion-provider" name="provider"><?php foreach (['none' => 'Disabled', 'native' => 'Native', 'threads' => 'Threads'] as $value => $label): ?><option value="<?= e($value) ?>"<?= ($discussion['provider'] ?? 'none') === $value ? ' selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select>
+                    <label for="discussion-threads-user-id">Threads user ID</label><input id="discussion-threads-user-id" name="threads_user_id" value="<?= e((string) ($discussion['threads_user_id'] ?? '')) ?>">
+                    <p class="quiet">Falls back to THREADS_USER_ID from deployment configuration when left empty.</p>
+                    <label for="discussion-threads-token-secret">Threads token environment variable</label><input id="discussion-threads-token-secret" name="threads_token_secret" value="<?= e((string) ($discussion['threads_token_secret'] ?? 'THREADS_ACCESS_TOKEN')) ?>">
+                    <p class="quiet">This field only names the deployment variable holding the Threads access token. The token itself stays in .env or the host secret manager and is never entered or shown here.</p>
                     <label class="checkbox-row"><input type="checkbox" name="enabled_by_default" value="1"<?= !empty($discussion['enabled_by_default']) ? ' checked' : '' ?>> Enable discussion on new posts</label>
                     <button type="submit">Save discussion</button>
                 </form>

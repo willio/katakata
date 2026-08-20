@@ -91,6 +91,24 @@ final class SettingsStoreTest extends TestCase
         ], $store->section('appearance'));
     }
 
+    public function testDiscussionAcceptsTheThreadsSettingsKeys(): void
+    {
+        $store = $this->store();
+        $store->updateSection('discussion', [
+            'provider' => 'threads',
+            'enabled_by_default' => true,
+            'threads_user_id' => '12345',
+            'threads_token_secret' => 'THREADS_ACCESS_TOKEN',
+        ]);
+
+        self::assertSame([
+            'provider' => 'threads',
+            'enabled_by_default' => true,
+            'threads_user_id' => '12345',
+            'threads_token_secret' => 'THREADS_ACCESS_TOKEN',
+        ], $store->section('discussion'));
+    }
+
     public function testItRejectsInvalidPersistedDocuments(): void
     {
         mkdir($this->root, 0775, true);

@@ -34,8 +34,28 @@ $readiness = static function () use ($app): array {
     $settings = $app->make(DashboardSettings::class)->all();
     $discussion = $settings['discussion'] ?? [];
     $provider = (string) ($discussion['provider'] ?? 'none');
-    $threadsReady = trim((string) $app->config()->get('threads.user_id', '')) !== ''
-        && trim((string) $app->config()->get('threads.access_token', '')) !== '';
+    $threadsUserId = trim((string) ($discussion['threads_user_id'] ?? ''));
+    if ($threadsUserId === '') {
+        $threadsUserId = trim((string) $app->config()->get('threads.user_id', ''));
+    }
+    $threadsTokenSecret = trim((string) ($discussion['threads_token_secret'] ?? ''));
+    $threadsMissing = [];
+    if ($threadsUserId === '') {
+        $threadsMissing[] = 'THREADS_USER_ID';
+    }
+    if ($threadsTokenSecret !== '') {
+        $threadsToken = getenv($threadsTokenSecret);
+        $threadsTokenPresent = is_string($threadsToken) && trim($threadsToken) !== '';
+        if (!$threadsTokenPresent) {
+            $threadsMissing[] = $threadsTokenSecret;
+        }
+    } else {
+        $threadsTokenPresent = trim((string) $app->config()->get('threads.access_token', '')) !== '';
+        if (!$threadsTokenPresent) {
+            $threadsMissing[] = 'THREADS_ACCESS_TOKEN';
+        }
+    }
+    $threadsReady = $threadsUserId !== '' && $threadsTokenPresent;
     $analyticsSecret = trim((string) $app->config()->get('analytics.secret', ''));
     $newsletterReady = !($app->make(SubscriberStore::class) instanceof UnavailableSubscriberStore);
     $mailbox = $app->make(Mailbox::class)->readiness();
@@ -78,8 +98,8 @@ $readiness = static function () use ($app): array {
         'none' => ['status' => 'Disabled', 'detail' => 'Discussion is disabled.'],
         'native' => ['status' => 'Ready', 'detail' => 'Native discussion uses local operational storage.'],
         'threads' => $threadsReady
-            ? ['status' => 'Ready', 'detail' => 'Threads credentials are present in deployment configuration.']
-            : ['status' => 'Needs setup', 'detail' => 'Threads credentials are missing from deployment configuration.'],
+            ? ['status' => 'Ready', 'detail' => 'Threads credentials are present in settings or deployment configuration.', 'missing' => []]
+            : ['status' => 'Needs setup', 'detail' => 'Threads credentials are missing from settings and deployment configuration.', 'missing' => $threadsMissing],
         default => ['status' => 'Needs setup', 'detail' => 'The selected discussion provider is unavailable.'],
     };
 
