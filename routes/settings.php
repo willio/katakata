@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Katakata\Auth\AccountStore;
 use Katakata\Auth\Session;
 use Katakata\Dashboard\DashboardSettings;
 use Katakata\Distribution\SubscriberStore;
@@ -11,6 +12,7 @@ use Katakata\Email\MailboxAccountStore;
 use Katakata\Email\MailboxCredentialResolver;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
+use Katakata\Settings\SecretsStore;
 use Katakata\View;
 
 /**
@@ -39,11 +41,15 @@ $readiness = static function () use ($app): array {
         $threadsUserId = trim((string) $app->config()->get('threads.user_id', ''));
     }
     $threadsTokenSecret = trim((string) ($discussion['threads_token_secret'] ?? ''));
+    $threadsSecrets = $app->make(SecretsStore::class);
+    $threadsTokenManaged = $threadsSecrets->available() && $threadsSecrets->has('threads.access_token');
     $threadsMissing = [];
     if ($threadsUserId === '') {
         $threadsMissing[] = 'THREADS_USER_ID';
     }
-    if ($threadsTokenSecret !== '') {
+    if ($threadsTokenManaged) {
+        $threadsTokenPresent = true;
+    } elseif ($threadsTokenSecret !== '') {
         $threadsToken = getenv($threadsTokenSecret);
         $threadsTokenPresent = is_string($threadsToken) && trim($threadsToken) !== '';
         if (!$threadsTokenPresent) {
@@ -55,6 +61,9 @@ $readiness = static function () use ($app): array {
             $threadsMissing[] = 'THREADS_ACCESS_TOKEN';
         }
     }
+    $threadsTokenSource = $threadsTokenManaged
+        ? 'Managed in settings'
+        : ($threadsTokenPresent ? 'From deployment configuration' : 'Missing');
     $threadsReady = $threadsUserId !== '' && $threadsTokenPresent;
     $analyticsSecret = trim((string) $app->config()->get('analytics.secret', ''));
     $newsletterReady = !($app->make(SubscriberStore::class) instanceof UnavailableSubscriberStore);
@@ -98,10 +107,10 @@ $readiness = static function () use ($app): array {
         'none' => ['status' => 'Disabled', 'detail' => 'Discussion is disabled.'],
         'native' => ['status' => 'Ready', 'detail' => 'Native discussion uses local operational storage.'],
         'threads' => $threadsReady
-            ? ['status' => 'Ready', 'detail' => 'Threads credentials are present in settings or deployment configuration.', 'missing' => []]
-            : ['status' => 'Needs setup', 'detail' => 'Threads credentials are missing from settings and deployment configuration.', 'missing' => $threadsMissing],
+            ? ['status' => 'Ready', 'detail' => 'Threads credentials are present in settings or deployment configuration. Token source: ' . $threadsTokenSource . '.', 'missing' => []]
+            : ['status' => 'Needs setup', 'detail' => 'Threads credentials are missing from settings and deployment configuration. Token source: ' . $threadsTokenSource . '.', 'missing' => $threadsMissing],
         default => ['status' => 'Needs setup', 'detail' => 'The selected discussion provider is unavailable.'],
-    };
+    } + ['token_managed' => $threadsTokenManaged];
 
     $mailboxState = match ((string) ($mailbox['status'] ?? 'disabled')) {
         'ready' => ['status' => 'Ready', 'detail' => 'All enabled mailbox caches are available.'],
@@ -155,7 +164,31 @@ $router->post('/dashboard/settings', function (Request $request) use ($app, $aut
         return Response::html('Invalid CSRF token.', 419);
     }
     $section = trim((string) ($request->body['section'] ?? ''));
+    $threadsTokenValue = trim((string) ($request->body['threads_token_value'] ?? ''));
+    $threadsTokenRemove = filter_var($request->body['threads_token_remove'] ?? false, FILTER_VALIDATE_BOOL);
+    if ($section === 'discussion' && ($threadsTokenValue !== '' || $threadsTokenRemove)) {
+        $email = (string) ($authorization['email'] ?? '');
+        $confirmed = $email !== '' && $app->make(AccountStore::class)->authenticate(
+            $email,
+            (string) ($request->body['confirm_password'] ?? ''),
+        ) !== null;
+        if (!$confirmed) {
+            return $renderSettings($authorization, false, 'Confirm your current password to change the stored Threads token.');
+        }
+    }
     try {
+        if ($section === 'discussion' && ($threadsTokenValue !== '' || $threadsTokenRemove)) {
+            $secrets = $app->make(SecretsStore::class);
+            try {
+                if ($threadsTokenRemove) {
+                    $secrets->remove('threads.access_token');
+                } else {
+                    $secrets->set('threads.access_token', $threadsTokenValue);
+                }
+            } catch (\RuntimeException) {
+                return $renderSettings($authorization, false, 'The Threads token could not be stored because the application secret store is unavailable; configure APP_KEY in the deployment environment.');
+            }
+        }
         $app->make(DashboardSettings::class)->update($section, $request->body);
     } catch (\Throwable $error) {
         return $renderSettings($authorization, false, $error->getMessage());

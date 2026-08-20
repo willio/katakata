@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Katakata\Dashboard;
 
+use Katakata\Settings\SecretsStore;
 use Katakata\Settings\SettingsStore;
 use RuntimeException;
 
@@ -17,6 +18,7 @@ final class DashboardSettings
         private readonly SettingsStore $store,
         array $defaults = [],
         private readonly bool $threadsConfigured = false,
+        private readonly ?SecretsStore $secrets = null,
     ) {
         $this->defaults = $defaults;
     }
@@ -110,7 +112,8 @@ final class DashboardSettings
         if ($provider === 'threads') {
             $tokenValue = getenv($tokenSecret);
             $hasToken = $this->threadsConfigured
-                || (is_string($tokenValue) && trim($tokenValue) !== '');
+                || (is_string($tokenValue) && trim($tokenValue) !== '')
+                || ($this->secrets !== null && $this->secrets->available() && $this->secrets->has('threads.access_token'));
             $hasUserId = $this->threadsConfigured || $userId !== '';
             if (!$hasUserId || !$hasToken) {
                 throw new RuntimeException('Threads requires THREADS_USER_ID and THREADS_ACCESS_TOKEN.');

@@ -39,12 +39,12 @@ Post metadata must never be promoted automatically into global defaults.
 These remain in `.env` or machine configuration and are never written by the dashboard:
 
 - `APP_URL` and deployment origin.
-- API keys, access tokens, webhook secrets, and provider credentials.
+- API keys, access tokens, webhook secrets, and provider credentials, except values explicitly managed through the encrypted application-managed secret store accepted by [ADR 0011](../adr/0011-application-managed-secrets.md) (currently `threads.access_token` only).
 - Mail transport credentials and infrastructure endpoints.
 - Filesystem paths, TLS material, and server configuration.
 - Authentication secrets and encryption material.
 
-The dashboard may report whether required deployment values are present, but it must not render their values.
+The dashboard may report whether required deployment values are present, but it must not render their values; secrets held in the ADR 0011 store render as a presence indicator only.
 
 Deployment readiness is shown as a calm non-secret setup state in the settings
 UI. It is distinct from editable global preferences and must never turn the
@@ -76,7 +76,7 @@ Runtime settings are stored atomically in `storage/settings/application.json`.
 - A section update validates the complete section before any write.
 - A failed update leaves all persisted sections unchanged.
 - Empty secret fields must preserve an existing secret. Explicit removal requires a distinct action.
-- The settings file must not contain API keys, passwords, passkey material, TLS keys, or other deployment secrets.
+- The settings file (`application.json`) must not contain API keys, passwords, passkey material, TLS keys, or other deployment secrets. Secret values accepted through the dashboard live only in the separate encrypted ADR 0011 store (`storage/settings/secrets.json`).
 
 ## Optional integrations
 
@@ -88,11 +88,12 @@ Optional services must remain inert when disabled.
 - Opening `/dashboard/settings` or the editor must not instantiate external provider clients.
 
 The discussion manager registers the Threads provider only when Threads is
-enabled and both `THREADS_USER_ID` and `THREADS_ACCESS_TOKEN` are present.
-Otherwise a request for Threads resolves the null provider. The settings
-boundary performs the same credential-presence check before accepting Threads
-as the selected provider; credential values remain opaque deployment state and
-are never copied into application settings. Dashboard discussion summaries read
+enabled and effective credentials (user ID and access token) resolve.
+Selecting `provider=threads` in Settings activates Threads on its own;
+`THREADS_ENABLED` only seeds the default enablement when no dashboard
+selection exists. Otherwise a request for Threads resolves the null provider.
+The settings boundary performs the same credential-presence check before
+accepting Threads as the selected provider. Dashboard discussion summaries read
 the selected provider through this boundary rather than consulting deployment
 configuration directly.
 
@@ -107,21 +108,45 @@ The discussion section accepts two additional keys alongside `provider` and
 - `threads_token_secret` (default `'THREADS_ACCESS_TOKEN'`): the **name** of
   the environment variable holding the Threads access token, following the
   secret-by-reference pattern of the
-  [multi-account mailbox specification](../specs/multi-account-mailbox.md). The
-  token value itself is never accepted, stored, rendered, or logged; it remains
-  in `.env` or the host's secret manager.
+  [multi-account mailbox specification](../specs/multi-account-mailbox.md).
+  Unless the ADR 0011 store holds a value, the token itself remains in `.env`
+  or the host's secret manager.
 
-Effective Threads credentials resolve at boot/use time with settings taking
-precedence over deployment configuration: a `threads_user_id` or
-`threads_token_secret` set in dashboard settings overrides the corresponding
-`THREADS_USER_ID` / `THREADS_ACCESS_TOKEN` deployment value, and empty settings
-fall back to deployment configuration. Readiness surfaces stay presence-only.
+Selecting `provider=threads` activates Threads without requiring
+`THREADS_ENABLED` in the environment; `THREADS_ENABLED` only seeds the default
+enablement before any dashboard selection is saved.
 
-[ADR 0011](../adr/0011-application-managed-secrets.md) proposes — but does not
-yet ship — an application-managed encrypted secret store as the path for
-deployments that cannot maintain `.env`. Until it is accepted, the
-deployment-only rules above stand: token values are never written by the
-dashboard.
+The effective Threads access token resolves with this precedence:
+
+1. The encrypted application-managed store (`threads.access_token`), when set.
+2. The environment variable named by `threads_token_secret`.
+3. The `threads.access_token` configuration default.
+
+Effective Threads credentials otherwise follow the Tier 0 rule that settings
+take precedence over deployment configuration: a `threads_user_id` set in
+dashboard settings overrides the `THREADS_USER_ID` deployment value, and empty
+settings fall back to deployment configuration. Readiness surfaces stay
+presence-only.
+
+### Application-managed token value (ADR 0011)
+
+[ADR 0011](../adr/0011-application-managed-secrets.md) is accepted: the
+Threads access token **value** may optionally be managed from Settings →
+Discussion through the encrypted application-managed secret store.
+
+- The store lives at `storage/settings/secrets.json`, separate from
+  `application.json`. Values are encrypted at rest with libsodium, keyed from
+  the deployment-only `APP_KEY`. The `storage/settings/` directory is mode
+  `0700` and `secrets.json` is mode `0600`, outside public roots and Git.
+- The UI never renders a stored token value; the field shows a presence
+  indicator (configured / not configured).
+- Submitting an empty token field preserves the existing secret. Explicit
+  removal is a distinct action.
+- Setting or removing the stored token requires fresh owner/admin
+  re-authentication, not merely an active session.
+- Stored secrets are decrypted lazily at the point of use, never at boot or
+  during settings page rendering, and are never logged, rendered, or
+  committed.
 
 ## Editor boundary
 

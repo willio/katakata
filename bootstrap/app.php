@@ -53,6 +53,7 @@ use Katakata\Import\LegacyDocConverter;
 use Katakata\Import\LegacyDocumentImporter;
 use Katakata\Rendering\Markdown;
 use Katakata\Seo\SeoChecker;
+use Katakata\Settings\SecretsStore;
 use Katakata\Support\DotEnv;
 use Katakata\View;
 
@@ -304,27 +305,42 @@ $app->singleton(
 // re-requires this file harmlessly when composing the HTTP routes.
 require __DIR__ . '/settings.php';
 
-// Effective Threads credentials: dashboard settings win over deployment config,
-// and the access token is resolved indirectly through the named environment
-// variable so token values never touch settings storage.
+// Effective Threads credentials: dashboard settings win over deployment config.
+// The access token prefers the encrypted application secret store, then the
+// environment variable named by settings, then deployment config, so token
+// values never touch settings storage.
 $threadsCredentials = static function (Application $container): array {
     $discussion = $container->make(DashboardSettings::class)->section('discussion');
     $userId = trim((string) ($discussion['threads_user_id'] ?? ''));
     if ($userId === '') {
         $userId = trim((string) $container->config()->get('threads.user_id', ''));
     }
-    $secretName = trim((string) ($discussion['threads_token_secret'] ?? ''));
-    if ($secretName === '' || preg_match('/^[A-Z][A-Z0-9_]*$/', $secretName) !== 1) {
-        $secretName = 'THREADS_ACCESS_TOKEN';
+    $token = '';
+    $secrets = $container->make(SecretsStore::class);
+    if ($secrets->available() && $secrets->has('threads.access_token')) {
+        $token = trim((string) $secrets->get('threads.access_token'));
     }
-    $token = getenv($secretName);
-    $token = is_string($token) ? trim($token) : '';
+    if ($token === '') {
+        $secretName = trim((string) ($discussion['threads_token_secret'] ?? ''));
+        if ($secretName === '' || preg_match('/^[A-Z][A-Z0-9_]*$/', $secretName) !== 1) {
+            $secretName = 'THREADS_ACCESS_TOKEN';
+        }
+        $envToken = getenv($secretName);
+        $token = is_string($envToken) ? trim($envToken) : '';
+    }
     if ($token === '') {
         $token = trim((string) $container->config()->get('threads.access_token', ''));
     }
 
     return [$userId, $token];
 };
+
+// Effective discussion provider selection: the stored dashboard setting wins,
+// and its default already reflects THREADS_ENABLED, so selecting Threads in
+// Settings activates the provider without any environment flag.
+$threadsSelected = static fn (Application $container): bool => trim((string) (
+    $container->make(DashboardSettings::class)->section('discussion')['provider'] ?? 'none'
+)) === 'threads';
 
 $app->singleton(
     ThreadsStore::class,
@@ -350,7 +366,7 @@ $app->singleton(
     static fn (Application $container): ThreadsDiscussionProvider => new ThreadsDiscussionProvider(
         $container->make(ThreadsApi::class),
         $container->make(ThreadsStore::class),
-        (bool) $container->config()->get('threads.enabled', false),
+        $threadsSelected($container),
     ),
 );
 $app->singleton(
@@ -375,10 +391,10 @@ $app->singleton(
 );
 $app->singleton(
     DiscussionManager::class,
-    static function (Application $container) use ($threadsCredentials): DiscussionManager {
+    static function (Application $container) use ($threadsCredentials, $threadsSelected): DiscussionManager {
         $providers = [$container->make(NativeDiscussionProvider::class)];
         [$threadsUserId, $threadsToken] = $threadsCredentials($container);
-        $threadsAvailable = (bool) $container->config()->get('threads.enabled', false)
+        $threadsAvailable = $threadsSelected($container)
             && $threadsUserId !== ''
             && $threadsToken !== '';
         if ($threadsAvailable) {
