@@ -50,6 +50,9 @@ content management is at `/posts`; analytics is at `/analytics`; global
 settings are at `/dashboard/settings`; Mail is at `/mail`; feeds are available
 at `/feed.xml` and `/feed.json`; and author archives are at `/authors/{slug}`.
 
+For a complete installation walkthrough, see
+[`docs/operations/self-hosting.md`](docs/operations/self-hosting.md).
+
 ### Local nginx HTTPS
 
 `config/nginx/katakata.conf` serves `katakata.local` over HTTPS and redirects

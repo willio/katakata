@@ -2,9 +2,9 @@
     "name": "katakata/katakata",
     "description": "A calm, typography-first publishing platform built around plain Markdown files.",
     "type": "project",
-    "license": "proprietary",
+    "license": "GPL-3.0-only",
     "require": {
-        "php": "^8.2",
+        "php": "^8.5",
         "ext-openssl": "*"
     },
     "require-dev": {

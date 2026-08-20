@@ -107,7 +107,7 @@ See [`docs/subsystems/settings.md`](./subsystems/settings.md).
 - [ ] Stabilize unified web and email publishing contracts
 - [ ] Define theme and plugin extension APIs
 - [ ] Add import/export portability and backup/restore guidance
-- [ ] Publish self-hosting and security documentation
+- [ ] Publish self-hosting and security documentation (self-hosting guide: [`docs/operations/self-hosting.md`](./operations/self-hosting.md))
 - [ ] Stabilize public APIs and 1.0 compatibility guarantees
 
 ## Katakata 1.x — Publishing platform
