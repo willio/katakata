@@ -74,7 +74,7 @@ usort($rows, static function (array $left, array $right): int {
     <link rel="stylesheet" href="/assets/css/boundary.css">
     <link rel="stylesheet" href="/assets/css/posts.css">
 </head>
-<body class="dashboard-page posts-page">
+<body class="dashboard-page posts-page<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
 <header class="dashboard-header owner-header">
     <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
     <nav aria-label="Posts actions">

@@ -15,7 +15,7 @@ final class SettingsStore
         'newsletter' => ['sender_label', 'publish_by_default'],
         'discussion' => ['provider', 'enabled_by_default'],
         'analytics' => ['dashboard_period'],
-        'appearance' => ['theme'],
+        'appearance' => ['theme', 'button_style'],
     ];
 
     public function __construct(

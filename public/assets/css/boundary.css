@@ -25,6 +25,26 @@
     border-radius: var(--radius-control);
 }
 
+/* Pill variant: when the owner opts into pill buttons, action controls become full pills.
+   boundary.css loads after site.css and the body.buttons-pill prefix raises specificity,
+   so these rules win over the literal 6px defaults. */
+body.buttons-pill .button,
+body.buttons-pill .dashboard-header .button,
+body.buttons-pill .dashboard-shell .button,
+body.buttons-pill .dashboard-shell button:not(.field-clear):not(.editor-panel-close),
+body.buttons-pill .settings-section button,
+body.buttons-pill .auth-shell .button,
+body.buttons-pill .mail-page button,
+body.buttons-pill .editor-page button:not(.editor-settings-toggle):not(.editor-panel-close) {
+    border-radius: 999px;
+}
+
+body.buttons-pill .field-clear {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
 .dashboard-header a:focus-visible,
 .dashboard-shell a:focus-visible,
 .dashboard-shell button:focus-visible,

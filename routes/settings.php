@@ -99,7 +99,7 @@ $readiness = static function () use ($app): array {
         'analytics' => $analyticsSecret !== ''
             ? ['status' => 'Ready', 'detail' => 'Privacy-bounded analytics hashing is configured.']
             : ['status' => 'Needs setup', 'detail' => 'Configure ANALYTICS_SECRET or APP_KEY.'],
-        'appearance' => ['status' => 'Unavailable', 'detail' => 'Theme preferences are not applied by the current renderer.'],
+        'appearance' => ['status' => 'Partially available', 'detail' => 'Button shape is applied; theme preferences are not applied by the current renderer.'],
         'account' => ['status' => 'Unavailable', 'detail' => 'Account and security management has no dashboard route yet.'],
         'system' => ['status' => 'Needs setup', 'detail' => 'Deployment diagnostics remain machine-managed.'],
     ];
@@ -135,9 +135,6 @@ $router->post('/dashboard/settings', function (Request $request) use ($app, $aut
         return Response::html('Invalid CSRF token.', 419);
     }
     $section = trim((string) ($request->body['section'] ?? ''));
-    if ($section === 'appearance') {
-        return $renderSettings($authorization, false, 'Appearance settings are unavailable until the renderer applies themes.');
-    }
     try {
         $app->make(DashboardSettings::class)->update($section, $request->body);
     } catch (\Throwable $error) {

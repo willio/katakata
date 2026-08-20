@@ -41,7 +41,7 @@ $app->singleton(
                 'enabled_by_default' => false,
             ],
             'analytics' => ['dashboard_period' => '30d'],
-            'appearance' => ['theme' => 'default'],
+            'appearance' => ['theme' => 'default', 'button_style' => 'regular'],
         ],
         $threadsConfigured,
     ),

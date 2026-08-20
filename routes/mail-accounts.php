@@ -55,6 +55,7 @@ $router->get('/mail/messages/{accountId}/{messageId}', function (
         'message' => $message,
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'csrf' => $app->make(Session::class)->csrf(),
+        'buttonStyle' => (string) ($app->make(\Katakata\Dashboard\DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular'),
     ];
     if (($request->query['fragment'] ?? '') === '1') {
         return Response::html($view->render('mail-message-panel', $data));

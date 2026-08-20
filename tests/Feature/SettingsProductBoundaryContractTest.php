@@ -12,8 +12,7 @@ final class SettingsProductBoundaryContractTest extends TestCase
     {
         $view = file_get_contents(dirname(__DIR__, 2) . '/resources/views/dashboard-settings.php');
         self::assertIsString($view);
-        foreach (['Publication', 'Newsletter', 'Reader inbox', 'Discussion', 'Analytics'] as $label) self::assertStringContainsString($label, $view);
-        self::assertStringNotContainsString('Appearance</a>', $view);
+        foreach (['Publication', 'Newsletter', 'Reader inbox', 'Discussion', 'Analytics', 'Appearance'] as $label) self::assertStringContainsString($label, $view);
         self::assertStringNotContainsString('Account &amp; Security</a>', $view);
         self::assertStringNotContainsString('System</a>', $view);
         self::assertStringNotContainsString('<dt>Host</dt>', $view);

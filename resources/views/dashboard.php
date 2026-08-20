@@ -28,7 +28,7 @@ $isFirstLogin = ($counts['posts'] ?? 0) === 0
     <link rel="stylesheet" href="/assets/css/boundary.css">
     <link rel="stylesheet" href="/assets/css/dashboard-redesign.css">
 </head>
-<body class="dashboard-page<?= $isFirstLogin ? ' dashboard-page--first-login' : ' dashboard-page--mature' ?>">
+<body class="dashboard-page<?= $isFirstLogin ? ' dashboard-page--first-login' : ' dashboard-page--mature' ?><?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
 <header class="dashboard-header">
     <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
     <nav aria-label="Dashboard actions"><a class="button" href="/editor/new">New post</a><a href="/dashboard/settings">Settings</a></nav>

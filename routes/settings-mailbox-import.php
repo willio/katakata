@@ -31,6 +31,7 @@ $renderMailboxImport = static function (array $user, array $candidates = [], ?st
         'token' => $token,
         'error' => $error,
         'csrf' => $app->make(Session::class)->csrf(),
+        'buttonStyle' => (string) ($app->make(\Katakata\Dashboard\DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular'),
     ]), $error === null ? 200 : 422);
 };
 

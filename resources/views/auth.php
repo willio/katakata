@@ -8,7 +8,7 @@ $title = $mode === 'login' ? 'Sign in' : 'Accept invitation';
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><?= e($title) ?> — Katakata</title><link rel="stylesheet" href="/assets/css/site.css"><link rel="stylesheet" href="/assets/css/boundary.css"></head>
-<body>
+<body<?= ($buttonStyle ?? 'regular') === 'pill' ? ' class="buttons-pill"' : '' ?>>
 <main class="site-shell auth-shell">
 <article>
 <p class="eyebrow">Katakata editorial</p>

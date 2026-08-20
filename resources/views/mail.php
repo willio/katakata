@@ -34,7 +34,7 @@ foreach ($accountStates as $accountState) if ((string) $accountState['account_id
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mail — <?= e($siteName) ?></title><link rel="stylesheet" href="/assets/css/site.css"><link rel="stylesheet" href="/assets/css/boundary.css"><link rel="stylesheet" href="/assets/css/mail.css"></head>
-<body class="dashboard-page mail-page">
+<body class="dashboard-page mail-page<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
 <header class="dashboard-header"><a class="site-name" href="/dashboard"><?= e($siteName) ?></a><nav aria-label="Mail actions"><a class="button" href="/mail/compose">Compose</a><a href="/dashboard/settings">Settings</a></nav></header>
 <main class="mail-workspace-shell">
 <aside class="mail-sidebar" aria-label="Mail destinations">

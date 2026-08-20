@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Katakata\Auth\Session;
 use Katakata\Content\Repository;
+use Katakata\Dashboard\DashboardSettings;
 use Katakata\Editorial\DraftEditor;
 use Katakata\Editorial\DraftVersion;
 use Katakata\Editorial\Publisher;
@@ -34,6 +35,7 @@ $renderEditor = static function (?\Katakata\Content\Draft $draft = null, ?string
         'csrf' => $app->make(Session::class)->csrf(),
         'notice' => $notice,
         'draftVersion' => $draft === null ? '' : DraftVersion::of($draft),
+        'buttonStyle' => (string) ($app->make(DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular'),
     ]));
 };
 
@@ -53,6 +55,7 @@ $renderPosts = static function (Request $request) use ($app, $requireEditorUser)
         'drafts' => $app->make(Repository::class)->drafts()->all(),
         'posts' => $app->make(Repository::class)->posts()->all(),
         'csrf' => $app->make(Session::class)->csrf(),
+        'buttonStyle' => (string) ($app->make(DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular'),
     ]));
 };
 

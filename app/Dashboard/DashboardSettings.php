@@ -121,12 +121,21 @@ final class DashboardSettings
     /** @param array<string, mixed> $input @return array<string, scalar|null> */
     private function appearance(array $input): array
     {
-        $theme = trim((string) ($input['theme'] ?? 'default'));
+        $current = $this->all()['appearance'] ?? [];
+        $theme = trim((string) ($input['theme'] ?? $current['theme'] ?? 'default'));
         if (!in_array($theme, ['default', 'warm', 'slate'], true)) {
             throw new RuntimeException('Appearance theme is invalid.');
         }
 
-        return ['theme' => $theme];
+        $style = trim((string) ($input['button_style'] ?? 'regular'));
+        if (!in_array($style, ['regular', 'pill'], true)) {
+            throw new RuntimeException('Appearance button style is invalid.');
+        }
+
+        return [
+            'theme' => $theme,
+            'button_style' => $style,
+        ];
     }
 
     private function boolean(mixed $value): bool

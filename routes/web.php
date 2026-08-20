@@ -10,6 +10,7 @@ use Katakata\Content\Repository;
 use Katakata\Dashboard\DashboardAnalytics;
 use Katakata\Dashboard\DashboardAttention;
 use Katakata\Dashboard\DashboardBuzz;
+use Katakata\Dashboard\DashboardSettings;
 use Katakata\Distribution\ConfirmationMailer;
 use Katakata\Distribution\ResendWebhook;
 use Katakata\Distribution\SubscriberStore;
@@ -198,6 +199,7 @@ $renderAuth = static function (string $mode, ?string $error = null, ?string $tok
         'error' => $error,
         'token' => $token,
         'csrf' => $session->csrf(),
+        'buttonStyle' => (string) ($app->make(DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular'),
     ]), $error === null ? 200 : 422);
 };
 
@@ -282,6 +284,7 @@ $router->get('/dashboard', function (Request $request) use ($app, $requireUser):
         'recentVisits' => $dashboardAnalytics->recent($analytics),
         'buzz' => $app->make(DashboardBuzz::class)->recent(),
         'csrf' => $app->make(Session::class)->csrf(),
+        'buttonStyle' => (string) ($app->make(DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular'),
     ]));
 });
 
@@ -297,6 +300,7 @@ $router->get('/analytics', function (Request $request) use ($app, $requireUser):
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'analytics' => $analytics,
         'recentVisits' => $dashboardAnalytics->recent($analytics),
+        'buttonStyle' => (string) ($app->make(DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular'),
     ]));
 });
 

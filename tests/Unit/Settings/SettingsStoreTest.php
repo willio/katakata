@@ -77,6 +77,20 @@ final class SettingsStoreTest extends TestCase
         $store->section('unknown');
     }
 
+    public function testAppearanceAcceptsTheButtonStyleKey(): void
+    {
+        $store = $this->store();
+        $store->updateSection('appearance', [
+            'theme' => 'default',
+            'button_style' => 'pill',
+        ]);
+
+        self::assertSame([
+            'theme' => 'default',
+            'button_style' => 'pill',
+        ], $store->section('appearance'));
+    }
+
     public function testItRejectsInvalidPersistedDocuments(): void
     {
         mkdir($this->root, 0775, true);
