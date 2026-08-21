@@ -1,6 +1,4 @@
 :root {
-    --radius-control: 6px;
-    --radius-status: 999px;
     --owner-surface-raised: color-mix(in srgb, var(--surface) 72%, var(--bg));
 }
 

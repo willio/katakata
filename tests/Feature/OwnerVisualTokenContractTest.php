@@ -11,15 +11,17 @@ final class OwnerVisualTokenContractTest extends TestCase
     public function testOwnerSurfacesUseOneRestrainedControlRadius(): void
     {
         $boundary = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/boundary.css');
+        $site = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/site.css');
         $dashboard = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/dashboard-redesign.css');
         $posts = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/posts.css');
         $mail = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/mail.css');
 
         self::assertIsString($boundary);
+        self::assertIsString($site);
         self::assertIsString($dashboard);
         self::assertIsString($posts);
         self::assertIsString($mail);
-        self::assertStringContainsString('--radius-control: 6px', $boundary);
+        self::assertStringContainsString('--radius-control: 16px', $site);
         self::assertStringContainsString('border-radius: var(--radius-control)', $boundary);
         self::assertStringContainsString('.mail-refresh-button', $mail);
         self::assertStringContainsString('.mail-page button', $boundary);
@@ -60,8 +62,8 @@ final class OwnerVisualTokenContractTest extends TestCase
         self::assertStringContainsString('width: 32px', $boundary);
         self::assertStringContainsString('height: 32px', $boundary);
         self::assertStringContainsString('border-radius: 50%', $boundary);
-        // Default 6px control radius stays intact outside pill mode.
-        self::assertStringContainsString('--radius-control: 6px', $boundary);
+        // Default 16px control radius stays intact outside pill mode.
+        self::assertStringNotContainsString('--radius-control:', $boundary);
         self::assertStringContainsString('border-radius: var(--radius-control)', $boundary);
         self::assertStringNotContainsString('border-radius: 999px', substr($boundary, 0, (int) strpos($boundary, 'body.buttons-pill')));
     }

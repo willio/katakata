@@ -81,7 +81,7 @@ clickable element or the action hierarchy disappears.
 
 ### Shape and proportions
 
-- Normal owner controls use a 6px radius. Full pills are reserved for compact filters and state badges.
+- Normal owner controls use a 16px radius. Full pills are reserved for compact filters and state badges.
 - Vertical padding is always substantially smaller than horizontal padding.
 - The default proportion is approximately 1:3 so buttons render slim and wide,
   never fat.
@@ -92,13 +92,13 @@ clickable element or the action hierarchy disappears.
 button,
 .button {
   padding: 0.55em 1.5em;
-  border-radius: 6px;
+  border-radius: 16px;
 }
 ```
 
 ### Pill variant
 
-- Normal owner controls use `border-radius: 999px` (full pill) instead of 6px.
+- Normal owner controls use `border-radius: 999px` (full pill) instead of the 16px default.
   All other proportions, color, and state rules stay the same.
 - The field clear control's icon-only circle is `32px` by `32px`. The icon
   inside stays at its normal size (14px); only the circle shrinks.

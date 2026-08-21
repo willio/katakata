@@ -17,7 +17,7 @@ final class DesignDocumentationContractTest extends TestCase
         self::assertIsString($components);
         self::assertStringContainsString('Source Serif 4 remains Katakata’s editorial serif', $design);
         self::assertStringContainsString('Public display expression comes from scale, measure, weight, rhythm, and restrained italics', $design);
-        self::assertStringContainsString('Normal owner controls use a 6px radius', $components);
+        self::assertStringContainsString('Normal owner controls use a 16px radius', $components);
         self::assertStringContainsString('Full pills are reserved for compact filters and state badges', $components);
     }
 

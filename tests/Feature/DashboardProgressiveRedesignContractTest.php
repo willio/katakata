@@ -39,13 +39,15 @@ final class DashboardProgressiveRedesignContractTest extends TestCase
     {
         $view = file_get_contents(dirname(__DIR__, 2) . '/resources/views/dashboard.php');
         $boundary = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/boundary.css');
+        $site = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/site.css');
         $css = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/dashboard-redesign.css');
 
         self::assertIsString($view);
         self::assertIsString($boundary);
+        self::assertIsString($site);
         self::assertIsString($css);
         self::assertStringContainsString('/assets/css/dashboard-redesign.css', $view);
-        self::assertStringContainsString('--radius-control: 6px', $boundary);
+        self::assertStringContainsString('--radius-control: 16px', $site);
         self::assertStringContainsString('.dashboard-stat-card', $boundary);
         self::assertStringContainsString('.dashboard-stat-card', $css);
         self::assertStringNotContainsString('--workspace-radius', $css);
