@@ -47,7 +47,7 @@ final class FocusedMailEditorRedesignContractTest extends TestCase
         $css = file_get_contents(dirname(__DIR__, 2) . '/public/assets/css/focused-editor.css');
 
         self::assertIsString($css);
-        self::assertStringContainsString('border-radius: 6px', $css);
+        self::assertStringContainsString('border-radius: var(--radius-control)', $css);
         self::assertStringContainsString('@media (max-width: 42rem)', $css);
         self::assertStringContainsString('position: sticky', $css);
         self::assertStringContainsString('bottom: 0', $css);
