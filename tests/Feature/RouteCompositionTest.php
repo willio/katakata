@@ -24,6 +24,7 @@ final class RouteCompositionTest extends TestCase
 
         foreach ([
             ['method' => 'GET', 'path' => '/'],
+            ['method' => 'GET', 'path' => '/healthz'],
             ['method' => 'GET', 'path' => '/login'],
             ['method' => 'GET', 'path' => '/dashboard'],
             ['method' => 'GET', 'path' => '/editor/new'],

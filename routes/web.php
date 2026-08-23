@@ -29,6 +29,8 @@ use Katakata\View;
  * @var \Katakata\Application $app
  */
 
+$router->get('/healthz', static fn (Request $request): Response => Response::json(['status' => 'ok']));
+
 $recordVisit = static function (Request $request) use ($app): void {
     $app->make(VisitRecorder::class)->record($request);
 };
