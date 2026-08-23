@@ -83,7 +83,7 @@ final class DocxDocumentParser
     private function detectOriginalCategory(array $paragraphs): ?string
     {
         foreach (array_slice($paragraphs, 0, 8) as $paragraph) {
-            if (preg_match('/^(?:.{0,2})?(\p{L}[\p{L}\p{M}-]*)\s+by\s+.+$/iu', $paragraph['text'], $matches) === 1) {
+            if (preg_match('/^(?:[^\p{L}]{0,2})?(\p{L}[\p{L}\p{M}-]*)\s+by\s+.+$/iu', $paragraph['text'], $matches) === 1) {
                 return $matches[1];
             }
         }
