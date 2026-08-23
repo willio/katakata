@@ -7,7 +7,7 @@ live in the linked documents.
 
 ## Requirements
 
-- PHP 8.2 or later (the development target is 8.5) with OpenSSL.
+- PHP 8.5 or later (the development target is 8.5) with OpenSSL.
 - sodium, which encrypts the application-managed secrets store, and
   PDO SQLite, which powers analytics; both are bundled with standard PHP builds.
 - Composer, only to run the test suite. The application itself never requires

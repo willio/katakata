@@ -1,7 +1,6 @@
 # Katakata
 
-A calm, typography-first publication powered by Katakata, a Markdown-first
-publishing platform for the web and inbox.
+A calm, typography-first publishing platform for the web and inbox.
 
 Markdown is canonical. Everything else — HTML, RSS, JSON Feed, search
 indexes, newsletters, and provider adapters — is generated or operational
@@ -31,7 +30,7 @@ available.
 
 ## Requirements
 
-- PHP 8.2 or later with OpenSSL and PDO SQLite
+- PHP 8.5 or later with OpenSSL and PDO SQLite
 - Composer (optional — only needed to run the test suite via PHPUnit)
 
 ## Quickstart
