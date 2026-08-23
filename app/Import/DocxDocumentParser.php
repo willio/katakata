@@ -240,7 +240,7 @@ final class DocxDocumentParser
     private function detectAuthor(array $metadata, array $paragraphs, ?string $fallback): array
     {
         foreach (array_slice($paragraphs, 0, 8, true) as $index => $paragraph) {
-            if (preg_match('/^(?:(?:.{0,2})?(?:kama\p{L}*\s+)?by|oleh|written by|author)\s*[:\-]?\s*(.+)$/iu', $paragraph['text'], $matches) === 1) {
+            if (preg_match('/^(?:(?:.{0,2})?(?:\p{L}[\p{L}\p{M}-]*\s+)?by|oleh|written by|author)\s*[:\-]?\s*(.+)$/iu', $paragraph['text'], $matches) === 1) {
                 // The document's explicit byline identifies the contributor;
                 // Word's creator field commonly identifies the editor/publisher.
                 return [trim($matches[1]), 'high', (int) $index];
