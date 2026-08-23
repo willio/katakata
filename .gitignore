@@ -131,3 +131,11 @@ build/
 # --------------------------------------------------
 
 *.log
+
+# Private and rebuildable runtime state — never commit operational data.
+/storage/auth/
+/storage/backups/
+/storage/discussion/
+/storage/distribution/
+/storage/framework/
+/storage/mail/
