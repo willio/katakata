@@ -1,4 +1,4 @@
-# Katakata
+# Kata-kata
 
 A calm, typography-first publishing platform for the web and inbox.
 
