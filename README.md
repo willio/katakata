@@ -6,6 +6,11 @@ Markdown is canonical. Everything else — HTML, RSS, JSON Feed, search
 indexes, newsletters, and provider adapters — is generated or operational
 state.
 
+Katakata is dogfooded in production by [Kamantara](https://kamantara.com), a
+private editorial publication. Kamantara's editorial content, mailbox data,
+and deployment state are intentionally kept outside this public repository.
+
+
 > **Write once. Own forever. Publish anywhere.**
 
 See [`docs/MASTER_SPECIFICATION.md`](docs/MASTER_SPECIFICATION.md) for
