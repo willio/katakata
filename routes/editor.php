@@ -50,10 +50,12 @@ $renderPosts = static function (Request $request) use ($app, $requireEditorUser)
     if (!in_array($status, ['all', 'drafts', 'scheduled', 'published', 'trash'], true)) {
         $status = 'all';
     }
+    $search = is_string($request->query['q'] ?? null) ? trim($request->query['q']) : '';
 
     return Response::html($app->make(View::class)->render('posts', [
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'status' => $status,
+        'search' => $search,
         'drafts' => $app->make(Repository::class)->drafts()->all(),
         'posts' => $app->make(Repository::class)->posts()->all(),
         'trashItems' => $app->make(ContentTrash::class)->all(),

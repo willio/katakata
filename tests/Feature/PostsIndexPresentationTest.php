@@ -28,7 +28,7 @@ final class PostsIndexPresentationTest extends TestCase
         self::assertStringContainsString('<ul class="posts-index">', $html);
         self::assertStringNotContainsString('<ol class="posts-index">', $html);
         self::assertStringContainsString('<a class="posts-index-title" href="/editor/drafts/first-draft">First Draft</a>', $html);
-        self::assertStringNotContainsString('>Edit</a>', $html);
+        self::assertStringContainsString('>Edit</a>', $html);
     }
 
     public function testPostsIndexSuppressesListMarkers(): void

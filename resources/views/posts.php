@@ -1,8 +1,14 @@
 <?php
 /** @var string $siteName */
 /** @var string $status */
+/** @var string $search */
 /** @var array<int, \Katakata\Content\Draft> $drafts */
 /** @var array<int, \Katakata\Content\Post> $posts */
+
+$search ??= '';
+$trashItems ??= [];
+$canManagePublished ??= false;
+$csrf ??= '';
 
 $filters = [
     'all' => 'All',
@@ -85,6 +91,22 @@ usort($rows, static function (array $left, array $right): int {
 
     return $rightTime <=> $leftTime;
 });
+
+if ($search !== '') {
+    $needle = function_exists('mb_strtolower') ? mb_strtolower($search) : strtolower($search);
+    $rows = array_values(array_filter($rows, static function (array $row) use ($needle): bool {
+        $haystack = implode(' ', [$row['title'], $row['author'], $row['status']]);
+        $haystack = function_exists('mb_strtolower') ? mb_strtolower($haystack) : strtolower($haystack);
+        return str_contains($haystack, $needle);
+    }));
+}
+
+$groupedRows = [];
+foreach ($rows as $row) {
+    $year = $row['date'] instanceof DateTimeInterface ? $row['date']->format('Y') : 'Undated';
+    $month = $row['date'] instanceof DateTimeInterface ? $row['date']->format('m') : '00';
+    $groupedRows[$year][$month][] = $row;
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -117,11 +139,27 @@ usort($rows, static function (array $left, array $right): int {
         <?php endforeach; ?>
     </nav>
 
+    <form class="posts-search" method="get" action="/posts" role="search">
+        <input type="hidden" name="status" value="<?= e($status) ?>">
+        <label for="posts-search-query">Search posts</label>
+        <input id="posts-search-query" type="search" name="q" value="<?= e($search) ?>" placeholder="Title, author, or status">
+        <button type="submit">Search</button>
+        <?php if ($search !== ''): ?><a href="/posts?status=<?= e($status) ?>">Clear</a><?php endif; ?>
+    </form>
+
     <?php if ($rows === []): ?>
-        <p class="quiet posts-empty">No posts match this filter.</p>
+        <p class="quiet posts-empty">No posts match<?= $search !== '' ? ' “' . e($search) . '”' : ' this filter' ?>.</p>
     <?php else: ?>
-        <ul class="posts-index">
-            <?php foreach ($rows as $row): ?>
+        <div class="posts-archive">
+        <?php foreach ($groupedRows as $year => $months): ?>
+            <section class="posts-year" aria-labelledby="posts-year-<?= e($year) ?>">
+                <h2 id="posts-year-<?= e($year) ?>"><?= e($year) ?></h2>
+                <?php foreach ($months as $month => $monthRows): ?>
+                    <?php $monthName = $month === '00' ? 'Undated' : DateTimeImmutable::createFromFormat('!m', $month)->format('F'); ?>
+                    <section class="posts-month" aria-labelledby="posts-month-<?= e($year . '-' . $month) ?>">
+                        <h3 id="posts-month-<?= e($year . '-' . $month) ?>"><?= e($monthName) ?></h3>
+                        <ul class="posts-index">
+            <?php foreach ($monthRows as $row): ?>
                 <li>
                     <div class="posts-index-main">
                         <?php if ($row['href'] !== null): ?>
@@ -130,6 +168,28 @@ usort($rows, static function (array $left, array $right): int {
                             <span class="posts-index-title"><?= e($row['title']) ?></span>
                         <?php endif; ?>
                         <span class="posts-index-meta"><?= e($row['status']) ?> · <?= e($row['author']) ?></span>
+                        <?php if (!isset($row['trashId'])): ?>
+                            <div class="posts-index-actions" aria-label="Actions for <?= e($row['title']) ?>">
+                                <?php if (($row['type'] ?? null) === 'draft'): ?>
+                                    <a class="posts-row-action" href="<?= e($row['href']) ?>">Edit</a>
+                                    <span aria-hidden="true">·</span>
+                                    <form method="post" action="/editor/drafts/<?= e($row['slug']) ?>/trash" onsubmit="return confirm('Delete this draft? You can restore it from Trash.')">
+                                        <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                                        <button type="submit" class="posts-row-action">Delete</button>
+                                    </form>
+                                <?php elseif (($row['type'] ?? null) === 'post' && $canManagePublished): ?>
+                                    <form method="post" action="/editor/posts/<?= e($row['slug']) ?>/trash" onsubmit="return confirm('Delete this published article? Its public URL and listings will disappear until restored from Trash.')">
+                                        <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                                        <button type="submit" class="posts-row-action">Delete</button>
+                                    </form>
+                                    <span aria-hidden="true">·</span>
+                                    <form method="post" action="/editor/posts/<?= e($row['slug']) ?>/campaign-drafts">
+                                        <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                                        <button type="submit" class="posts-row-action">Send as newsletter</button>
+                                    </form>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <time datetime="<?= e($row['date']->format(DATE_ATOM)) ?>"><?= e($row['date']->format('M j, Y')) ?></time>
                     <?php if (isset($row['trashId'])): ?>
@@ -137,15 +197,15 @@ usort($rows, static function (array $left, array $right): int {
                             <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
                             <button type="submit">Restore</button>
                         </form>
-                    <?php elseif (($row['type'] ?? null) === 'post' && $canManagePublished): ?>
-                        <form method="post" action="/editor/posts/<?= e($row['slug']) ?>/trash" onsubmit="return confirm('Move this published article to recoverable Trash? Its public URL and listings will disappear until restored.')">
-                            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                            <button type="submit" class="danger-quiet">Move to Trash</button>
-                        </form>
                     <?php endif; ?>
                 </li>
             <?php endforeach; ?>
-        </ul>
+                        </ul>
+                    </section>
+                <?php endforeach; ?>
+            </section>
+        <?php endforeach; ?>
+        </div>
     <?php endif; ?>
 </main>
 </body>
