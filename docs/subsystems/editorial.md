@@ -8,6 +8,9 @@ Phase 3 provides a filesystem-native editorial workflow.
 
 The Repository remains the read boundary. Editorial services are the only write boundary.
 
+Editor Close persistence and the recoverable canonical-content Trash lifecycle
+are specified in [`docs/specs/editor-close-content-trash.md`](../specs/editor-close-content-trash.md).
+
 ## CLI workflow
 
 ```bash
