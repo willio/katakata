@@ -41,12 +41,12 @@
                 timer = setTimeout(sync, 7000);
             };
             const sync = async () => {
-                if (!endpoint || saving) return;
+                if (!endpoint || saving) return false;
                 const pending = read();
-                if (!pending) return;
+                if (!pending) return true;
                 if (!navigator.onLine) {
                     setStatus('Not saved — offline');
-                    return;
+                    return false;
                 }
 
                 saving = true;
@@ -60,7 +60,7 @@
                     if (response.status === 409) {
                         onConflict?.(result);
                         setStatus('Changed elsewhere');
-                        return;
+                        return false;
                     }
                     if (!response.ok) throw new Error(result.error || 'Save failed');
 
@@ -76,8 +76,10 @@
                         schedule();
                     }
                     onSaved?.(result);
+                    return true;
                 } catch {
                     setStatus(navigator.onLine ? 'Save failed' : 'Not saved — offline');
+                    return false;
                 } finally {
                     saving = false;
                 }

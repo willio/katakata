@@ -10,6 +10,7 @@ use Katakata\Auth\AccountStore;
 use DateTimeImmutable;
 use Katakata\Content\Repository;
 use Katakata\Editorial\DraftEditor;
+use Katakata\Editorial\ContentTrash;
 use Katakata\Editorial\Editor;
 use Katakata\Editorial\Publisher;
 use Katakata\Editorial\RevisionStore;
@@ -53,6 +54,7 @@ final class Application
         $this->commands['draft:publish'] = fn (array $args): int => $this->draftPublish($args);
         $this->commands['publish:due'] = fn (): int => $this->publishDue();
         $this->commands['revisions:list'] = fn (array $args): int => $this->revisionsList($args);
+        $this->commands['trash:purge'] = fn (array $args): int => $this->trashPurge($args);
         $this->commands['distribution:publish'] = fn (array $args): int => $this->distributionPublish($args);
         $this->commands['mail:work'] = fn (array $args): int => $this->mailWork($args);
         $this->commands['resend:webhooks:check'] = fn (): int => $this->resendWebhooksCheck();
@@ -284,6 +286,29 @@ final class Application
 
         fwrite(STDOUT, count($due) . " scheduled draft(s) published.\n");
         return 0;
+    }
+
+    /** @param array<int, string> $args */
+    private function trashPurge(array $args): int
+    {
+        [$type, $id] = [$args[0] ?? '', $args[1] ?? ''];
+        $confirmation = '';
+        foreach ($args as $argument) {
+            if (str_starts_with($argument, '--confirm=')) {
+                $confirmation = substr($argument, strlen('--confirm='));
+            }
+        }
+        if ($type === '' || $id === '' || $confirmation === '') {
+            return $this->usage('trash:purge <draft|post> <trash-id> --confirm=<trash-id>');
+        }
+        try {
+            $this->app->make(ContentTrash::class)->purge($type, $id, $confirmation);
+            fwrite(STDOUT, "Purged {$type} Trash item {$id}.\n");
+            return 0;
+        } catch (\Throwable $error) {
+            fwrite(STDERR, $error->getMessage() . "\n");
+            return 1;
+        }
     }
 
     /** @param array<int, string> $args */

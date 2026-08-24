@@ -37,6 +37,35 @@ body.buttons-pill .editor-page button:not(.editor-settings-toggle):not(.editor-p
     border-radius: 999px;
 }
 
+.editor-close-zone {
+    position: fixed;
+    inset-block-start: 1rem;
+    inset-inline-start: max(1rem, calc(50% - 42ch));
+    padding: .75rem;
+    z-index: 5;
+}
+
+.editor-close-work {
+    opacity: 0;
+    transition: opacity 140ms ease;
+}
+
+.editor-close-zone:hover .editor-close-work,
+.editor-close-zone:focus .editor-close-work,
+.editor-close-zone:focus-within .editor-close-work {
+    opacity: .72;
+}
+
+.editor-danger-zone {
+    border-top: 1px solid var(--border, #d8d4cc);
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .editor-close-work { transition: none; }
+}
+
 body.buttons-pill .field-clear {
     width: 32px;
     height: 32px;

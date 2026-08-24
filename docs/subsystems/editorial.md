@@ -8,6 +8,9 @@ Phase 3 provides a filesystem-native editorial workflow.
 
 The Repository remains the read boundary. Editorial services are the only write boundary.
 
+Editor Close persistence and the recoverable canonical-content Trash lifecycle
+are specified in [`docs/specs/editor-close-content-trash.md`](../specs/editor-close-content-trash.md).
+
 ## CLI workflow
 
 ```bash
@@ -64,3 +67,25 @@ compose/autosave contract is in
 [`docs/superpowers/specs/2026-08-01-mail-workspace-compose-design.md`](../superpowers/specs/2026-08-01-mail-workspace-compose-design.md).
 
 For existing drafts, `public/assets/js/editor.js` writes a debounced draft-specific local recovery buffer, synchronizes after seven seconds and on focus/visibility changes, and reports honest textual save state. `POST /editor/drafts/{slug}/autosave` reuses `DraftEditor`, returns the canonical content version, and confirms the client version. The buffer is cleared only when that exact version is acknowledged. A newer local buffer prompts before restoration. Multi-tab and multi-device editing remains documented last-write-wins behavior.
+
+## Close and recoverable Trash
+
+The editor's explicit **Close** action synchronously saves before returning to
+`/posts`. A new document without a derivable first-line title becomes
+`Unsaved draft`, using `unsaved-draft` and the normal collision suffixes. A
+failed acknowledgement leaves the editor open and retains its recovery buffer.
+
+Canonical drafts and posts move through `ContentTrash`; routes never unlink
+Markdown directly. Trash stores exact bytes and a checksum-verified manifest
+under `content/trash`, outside Repository discovery. Retention is indefinite,
+restore refuses to replace an occupied canonical path, and permanent purge is
+available only to a trusted host operator using the exact repeated identifier:
+
+```bash
+php bin/katakata trash:purge draft <trash-id> --confirm=<trash-id>
+```
+
+Editors may trash and restore drafts. Only owners and admins may trash or
+restore published posts. Every browser mutation requires authentication, CSRF,
+and POST. See `docs/specs/editor-close-content-trash.md` for the complete
+transaction and interaction contract.

@@ -13,6 +13,7 @@ use Katakata\Auth\WebAuthn;
 use Katakata\Content\Repository;
 use Katakata\Editorial\AtomicFile;
 use Katakata\Editorial\DraftEditor;
+use Katakata\Editorial\ContentTrash;
 use Katakata\Editorial\Editor;
 use Katakata\Editorial\Publisher;
 use Katakata\Editorial\RevisionStore;
@@ -169,6 +170,14 @@ $app->singleton(
     DraftEditor::class,
     static fn (Application $container): DraftEditor => new DraftEditor(
         $container->basePath((string) $container->config()->get('content.drafts_path', 'content/drafts')),
+        $container->make(AtomicFile::class),
+        $container->make(RevisionStore::class),
+    ),
+);
+$app->singleton(
+    ContentTrash::class,
+    static fn (Application $container): ContentTrash => new ContentTrash(
+        $container->contentPath(),
         $container->make(AtomicFile::class),
         $container->make(RevisionStore::class),
     ),
