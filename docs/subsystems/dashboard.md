@@ -50,12 +50,17 @@ Mailbox unavailability must not block the rest of the dashboard.
 `/posts` is the canonical read-first editorial index. It accepts:
 
 ```text
-/posts?status=all|drafts|scheduled|published
+/posts?status=all|drafts|scheduled|published|trash&q=<search>
 ```
 
-Unknown status values fall back to `all`. The surface shows stable filters, a
-separate New post action, status/author/date metadata, and Edit or View actions.
-Inline editing is deliberately excluded.
+Unknown or malformed status/search values fall back safely. Results are grouped
+by descending year and month after filtering by title, author, or state. The
+surface shows stable filters, a separate New post action, and quiet row actions
+on hover or keyboard focus. Drafts offer **Edit · Delete**; published posts
+offer **Delete · Send as newsletter**. Delete always means recoverable Trash,
+and newsletter handoff only creates a campaign draft for review. Touch layouts
+keep the contextual actions visible. Inline published editing is deliberately
+excluded.
 
 Legacy `/editor` redirects to `/posts`, while `/editor/new` and direct draft
 editor URLs remain stable.

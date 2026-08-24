@@ -83,7 +83,7 @@ The following should be checked after pulling the branch.
 |---|---:|---:|---|
 | `/login` | Yes | Yes | Primary password form; compact passkey alternative |
 | `/dashboard` | Yes | Yes | Four cards; five visits maximum; no empty Buzz |
-| `/posts` | Yes | Yes | Marker-free rows; title-only links; whole filters |
+| `/posts` | Yes | Yes | Year/month groups; search; contextual row actions; whole filters |
 | `/mail?area=inbox` | Yes | Yes | Three panels; empty reader; no overflow |
 | selected cached message | Yes | Yes | Server-rendered reader; active filter preserved |
 | `/mail?area=campaigns` | Yes | Yes | List/detail hierarchy; no unnecessary empty scaffold |
