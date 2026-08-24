@@ -53,8 +53,9 @@
         }
     });
 
+    let autosave = null;
     if (storageKey && window.KatakataAutosave) {
-        window.KatakataAutosave.bind({
+        autosave = window.KatakataAutosave.bind({
             form: editor,
             fields: ['body', 'title', 'publish_as_newsletter', 'discussion_enabled'],
             storageKey,
@@ -63,6 +64,31 @@
             onConflict: () => setStatus('Changed elsewhere — reload to compare'),
         });
     }
+
+    document.querySelector('[data-editor-close]')?.addEventListener('click', async () => {
+        deriveMetadata();
+        if (!title.value) title.value = 'Unsaved draft';
+        if (!slugInput.value) slugInput.value = 'unsaved-draft';
+        setStatus('Saving before close…');
+
+        if (autosave) {
+            autosave.write();
+            if (await autosave.sync()) window.location.assign('/posts');
+            else setStatus('Could not save. This editor remains open.');
+            return;
+        }
+
+        try {
+            const response = await fetch(editor.action, {
+                method: 'POST', body: new FormData(editor), headers: { Accept: 'application/json' },
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Save failed');
+            window.location.assign('/posts');
+        } catch {
+            setStatus('Could not save. This editor remains open.');
+        }
+    });
 
     const setPanelOpen = (opening) => {
         panel.toggleAttribute('hidden', !opening);

@@ -19,6 +19,9 @@ $discussionEnabled = filter_var($draft?->meta['discussion_enabled'] ?? false, FI
 </head>
 <body class="editor-page<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
 <p class="editor-status" data-save-status role="status" aria-live="polite"></p>
+<div class="editor-close-zone" tabindex="0">
+    <button type="button" class="editor-close-work" data-editor-close>Close</button>
+</div>
 <button class="editor-settings-toggle" type="button" data-settings-toggle aria-label="Open settings" aria-controls="editor-panel" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
@@ -63,6 +66,14 @@ $discussionEnabled = filter_var($draft?->meta['discussion_enabled'] ?? false, FI
                 <?php if ($hasDraft): ?><button type="submit" form="publish-form">Publish now</button><?php endif; ?>
             </div>
 
+            <?php if ($hasDraft): ?>
+                <section class="editor-danger-zone" aria-labelledby="trash-draft-heading">
+                    <h2 id="trash-draft-heading">Move draft to Trash</h2>
+                    <p class="editor-notice">Removes “<?= e($draft->title) ?>” from active drafts. It remains recoverable indefinitely.</p>
+                    <button type="submit" form="trash-draft-form">Move to Trash</button>
+                </section>
+            <?php endif; ?>
+
             <h2>Drafts</h2>
             <p><a href="/editor/new">New draft</a></p>
             <ul>
@@ -76,6 +87,9 @@ $discussionEnabled = filter_var($draft?->meta['discussion_enabled'] ?? false, FI
 
     <?php if ($hasDraft): ?>
         <form id="publish-form" method="post" action="/editor/drafts/<?= e($draft->slug) ?>/publish">
+            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+        </form>
+        <form id="trash-draft-form" method="post" action="/editor/drafts/<?= e($draft->slug) ?>/trash" onsubmit="return confirm('Move this draft to recoverable Trash?')">
             <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
         </form>
     <?php endif; ?>

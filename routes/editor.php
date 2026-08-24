@@ -7,6 +7,7 @@ use Katakata\Content\Repository;
 use Katakata\Dashboard\DashboardSettings;
 use Katakata\Editorial\DraftEditor;
 use Katakata\Editorial\DraftVersion;
+use Katakata\Editorial\ContentTrash;
 use Katakata\Editorial\Publisher;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
@@ -40,12 +41,13 @@ $renderEditor = static function (?\Katakata\Content\Draft $draft = null, ?string
 };
 
 $renderPosts = static function (Request $request) use ($app, $requireEditorUser): Response {
-    if ($requireEditorUser() === null) {
+    $user = $requireEditorUser();
+    if ($user === null) {
         return Response::redirect('/login', 302);
     }
 
     $status = trim((string) ($request->query['status'] ?? 'all'));
-    if (!in_array($status, ['all', 'drafts', 'scheduled', 'published'], true)) {
+    if (!in_array($status, ['all', 'drafts', 'scheduled', 'published', 'trash'], true)) {
         $status = 'all';
     }
 
@@ -54,6 +56,8 @@ $renderPosts = static function (Request $request) use ($app, $requireEditorUser)
         'status' => $status,
         'drafts' => $app->make(Repository::class)->drafts()->all(),
         'posts' => $app->make(Repository::class)->posts()->all(),
+        'trashItems' => $app->make(ContentTrash::class)->all(),
+        'canManagePublished' => in_array($user['role'] ?? null, ['owner', 'admin'], true),
         'csrf' => $app->make(Session::class)->csrf(),
         'buttonStyle' => (string) ($app->make(DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular'),
     ]));
@@ -218,6 +222,76 @@ $router->post('/editor/drafts/{slug}/autosave', function (Request $request, stri
         ]);
     } catch (\Throwable $error) {
         return Response::json(['error' => $error->getMessage()], 422);
+    }
+});
+
+$router->post('/editor/drafts/{slug}/trash', function (Request $request, string $slug) use ($app, $requireEditorUser): Response {
+    $user = $requireEditorUser();
+    if ($user === null) {
+        return Response::redirect('/login', 302);
+    }
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::html('Invalid CSRF token.', 419);
+    }
+    $repository = $app->make(Repository::class);
+    $draft = $repository->findDraft($slug);
+    if ($draft === null) {
+        return Response::notFound();
+    }
+    try {
+        $app->make(ContentTrash::class)->trashDraft($draft, (string) ($user['id'] ?? $user['email'] ?? 'editor'));
+        $repository->refresh();
+        return Response::redirect('/posts?status=trash', 303);
+    } catch (\Throwable) {
+        return Response::html('Unable to move this draft to Trash.', 422);
+    }
+});
+
+$router->post('/editor/posts/{slug}/trash', function (Request $request, string $slug) use ($app): Response {
+    $session = $app->make(Session::class);
+    $user = $session->user();
+    if ($user === null) {
+        return Response::redirect('/login', 302);
+    }
+    if (!$session->canManageSettings()) {
+        return Response::html('Forbidden.', 403);
+    }
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::html('Invalid CSRF token.', 419);
+    }
+    $repository = $app->make(Repository::class);
+    $post = $repository->findPost($slug);
+    if ($post === null) {
+        return Response::notFound();
+    }
+    try {
+        $app->make(ContentTrash::class)->trashPost($post, (string) ($user['id'] ?? $user['email'] ?? 'owner'));
+        $repository->refresh();
+        return Response::redirect('/posts?status=trash', 303);
+    } catch (\Throwable) {
+        return Response::html('Unable to move this article to Trash.', 422);
+    }
+});
+
+$router->post('/editor/trash/{type}/{id}/restore', function (Request $request, string $type, string $id) use ($app, $requireEditorUser): Response {
+    $user = $requireEditorUser();
+    if ($user === null) {
+        return Response::redirect('/login', 302);
+    }
+    $session = $app->make(Session::class);
+    if ($type === 'post' && !$session->canManageSettings()) {
+        return Response::html('Forbidden.', 403);
+    }
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::html('Invalid CSRF token.', 419);
+    }
+    try {
+        $app->make(ContentTrash::class)->restore($type, $id);
+        $app->make(Repository::class)->refresh();
+        return Response::redirect('/posts?status=trash', 303);
+    } catch (\Throwable) {
+        return Response::html('Unable to restore this content because its destination is occupied or the Trash copy is invalid.', 422);
     }
 });
 

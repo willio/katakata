@@ -9,6 +9,7 @@ $filters = [
     'drafts' => 'Drafts',
     'scheduled' => 'Scheduled',
     'published' => 'Published',
+    'trash' => 'Trash',
 ];
 
 $rows = [];
@@ -41,6 +42,8 @@ if (in_array($status, ['all', 'drafts', 'scheduled'], true)) {
             'author' => (string) ($draft->meta['author'] ?? '—'),
             'date' => $draft->updatedAt,
             'href' => '/editor/drafts/' . rawurlencode($draft->slug),
+            'type' => 'draft',
+            'slug' => $draft->slug,
         ];
     }
 }
@@ -53,6 +56,25 @@ if (in_array($status, ['all', 'published'], true)) {
             'author' => $post->author ?? '—',
             'date' => $post->date,
             'href' => $post->url(),
+            'type' => 'post',
+            'slug' => $post->slug,
+        ];
+    }
+}
+
+if ($status === 'trash') {
+    foreach ($trashItems as $item) {
+        if ($item->type === 'post' && !$canManagePublished) {
+            continue;
+        }
+        $rows[] = [
+            'title' => $item->title,
+            'status' => ucfirst($item->type) . ' in Trash',
+            'author' => $item->actorId,
+            'date' => new DateTimeImmutable($item->trashedAt),
+            'href' => null,
+            'type' => $item->type,
+            'trashId' => $item->id,
         ];
     }
 }
@@ -102,10 +124,25 @@ usort($rows, static function (array $left, array $right): int {
             <?php foreach ($rows as $row): ?>
                 <li>
                     <div class="posts-index-main">
-                        <a class="posts-index-title" href="<?= e($row['href']) ?>"><?= e($row['title']) ?></a>
+                        <?php if ($row['href'] !== null): ?>
+                            <a class="posts-index-title" href="<?= e($row['href']) ?>"><?= e($row['title']) ?></a>
+                        <?php else: ?>
+                            <span class="posts-index-title"><?= e($row['title']) ?></span>
+                        <?php endif; ?>
                         <span class="posts-index-meta"><?= e($row['status']) ?> · <?= e($row['author']) ?></span>
                     </div>
                     <time datetime="<?= e($row['date']->format(DATE_ATOM)) ?>"><?= e($row['date']->format('M j, Y')) ?></time>
+                    <?php if (isset($row['trashId'])): ?>
+                        <form method="post" action="/editor/trash/<?= e($row['type']) ?>/<?= e($row['trashId']) ?>/restore">
+                            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                            <button type="submit">Restore</button>
+                        </form>
+                    <?php elseif (($row['type'] ?? null) === 'post' && $canManagePublished): ?>
+                        <form method="post" action="/editor/posts/<?= e($row['slug']) ?>/trash" onsubmit="return confirm('Move this published article to recoverable Trash? Its public URL and listings will disappear until restored.')">
+                            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                            <button type="submit" class="danger-quiet">Move to Trash</button>
+                        </form>
+                    <?php endif; ?>
                 </li>
             <?php endforeach; ?>
         </ul>

@@ -87,6 +87,7 @@ contains:
   "id": "20260824T121314123456Z-a1b2c3d4e5f6",
   "type": "post",
   "slug": "example",
+  "title": "Example",
   "original_path": "posts/2026/08/260824_example.md",
   "trashed_at": "2026-08-24T12:13:14+00:00",
   "actor_id": "account-id",
