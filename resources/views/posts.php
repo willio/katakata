@@ -20,6 +20,7 @@ $filters = [
 
 $rows = [];
 $draftCount = 0;
+$scheduledCount = 0;
 
 foreach ($drafts as $draft) {
     $scheduledAt = is_string($draft->meta['scheduled_at'] ?? null)
@@ -28,7 +29,17 @@ foreach ($drafts as $draft) {
 
     if ($scheduledAt === '') {
         $draftCount++;
+    } else {
+        $scheduledCount++;
     }
+}
+
+$trashCount = 0;
+foreach ($trashItems as $item) {
+    if ($item->type === 'post' && !$canManagePublished) {
+        continue;
+    }
+    $trashCount++;
 }
 
 if (in_array($status, ['all', 'drafts', 'scheduled'], true)) {
@@ -76,7 +87,7 @@ if ($status === 'trash') {
         $rows[] = [
             'title' => $item->title,
             'status' => ucfirst($item->type) . ' in Trash',
-            'author' => $item->actorId,
+            'author' => '',
             'date' => new DateTimeImmutable($item->trashedAt),
             'href' => null,
             'type' => $item->type,
@@ -107,59 +118,9 @@ foreach ($rows as $row) {
     $month = $row['date'] instanceof DateTimeInterface ? $row['date']->format('m') : '00';
     $groupedRows[$year][$month][] = $row;
 }
-?>
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Posts — <?= e($siteName) ?></title>
-    <link rel="stylesheet" href="/assets/css/site.css">
-    <link rel="stylesheet" href="/assets/css/boundary.css">
-    <link rel="stylesheet" href="/assets/css/posts.css">
-</head>
-<body class="dashboard-page posts-page<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
-<header class="dashboard-header owner-header">
-    <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
-    <nav aria-label="Posts actions">
-        <a class="button" href="/editor/new">New post</a>
-        <a href="/dashboard/settings">Settings</a>
-    </nav>
-</header>
-<main class="dashboard-shell posts-shell">
-    <header class="dashboard-intro posts-intro">
-        <p class="eyebrow">Editorial</p>
-        <h1>Posts</h1>
-    </header>
 
-    <nav class="posts-filters" aria-label="Post status">
-        <?php foreach ($filters as $key => $label): ?>
-            <?php $filterLabel = $key === 'drafts' ? 'Draft (' . $draftCount . ')' : $label; ?>
-            <a href="/posts?status=<?= e($key) ?>"<?= $status === $key ? ' aria-current="page"' : '' ?>><?= e($filterLabel) ?></a>
-        <?php endforeach; ?>
-    </nav>
-
-    <form class="posts-search" method="get" action="/posts" role="search">
-        <input type="hidden" name="status" value="<?= e($status) ?>">
-        <label for="posts-search-query">Search posts</label>
-        <input id="posts-search-query" type="search" name="q" value="<?= e($search) ?>" placeholder="Title, author, or status">
-        <button type="submit">Search</button>
-        <?php if ($search !== ''): ?><a href="/posts?status=<?= e($status) ?>">Clear</a><?php endif; ?>
-    </form>
-
-    <?php if ($rows === []): ?>
-        <p class="quiet posts-empty">No posts match<?= $search !== '' ? ' “' . e($search) . '”' : ' this filter' ?>.</p>
-    <?php else: ?>
-        <div class="posts-archive">
-        <?php foreach ($groupedRows as $year => $months): ?>
-            <section class="posts-year" aria-labelledby="posts-year-<?= e($year) ?>">
-                <h2 id="posts-year-<?= e($year) ?>"><?= e($year) ?></h2>
-                <?php foreach ($months as $month => $monthRows): ?>
-                    <?php $monthName = $month === '00' ? 'Undated' : DateTimeImmutable::createFromFormat('!m', $month)->format('F'); ?>
-                    <section class="posts-month" aria-labelledby="posts-month-<?= e($year . '-' . $month) ?>">
-                        <h3 id="posts-month-<?= e($year . '-' . $month) ?>"><?= e($monthName) ?></h3>
-                        <ul class="posts-index">
-            <?php foreach ($monthRows as $row): ?>
+$renderRow = static function (array $row) use ($canManagePublished, $csrf): void {
+    ?>
                 <li>
                     <div class="posts-index-main">
                         <?php if ($row['href'] !== null): ?>
@@ -167,7 +128,7 @@ foreach ($rows as $row) {
                         <?php else: ?>
                             <span class="posts-index-title"><?= e($row['title']) ?></span>
                         <?php endif; ?>
-                        <span class="posts-index-meta"><?= e($row['status']) ?> · <?= e($row['author']) ?></span>
+                        <span class="posts-index-meta"><span class="posts-status-pill"><?= e($row['status']) ?></span><?= $row['author'] !== '' ? ' · ' . e($row['author']) : '' ?></span>
                         <?php if (!isset($row['trashId'])): ?>
                             <div class="posts-index-actions" aria-label="Actions for <?= e($row['title']) ?>">
                                 <?php if (($row['type'] ?? null) === 'draft'): ?>
@@ -195,11 +156,84 @@ foreach ($rows as $row) {
                     <?php if (isset($row['trashId'])): ?>
                         <form method="post" action="/editor/trash/<?= e($row['type']) ?>/<?= e($row['trashId']) ?>/restore">
                             <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                            <button type="submit">Restore</button>
+                            <button type="submit" class="posts-row-action">Restore</button>
                         </form>
                     <?php endif; ?>
                 </li>
+    <?php
+};
+?>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Posts — <?= e($siteName) ?></title>
+    <link rel="stylesheet" href="/assets/css/site.css">
+    <link rel="stylesheet" href="/assets/css/boundary.css">
+    <link rel="stylesheet" href="/assets/css/posts.css">
+</head>
+<body class="dashboard-page posts-page<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
+<header class="dashboard-header owner-header">
+    <a class="site-name" href="/dashboard"><?= e($siteName) ?></a>
+    <nav aria-label="Posts actions">
+        <a class="button" href="/editor/new">New post</a>
+        <a href="/dashboard/settings">Settings</a>
+    </nav>
+</header>
+<main class="dashboard-shell posts-shell">
+    <header class="dashboard-intro posts-intro">
+        <p class="eyebrow">Editorial</p>
+        <h1>Posts</h1>
+    </header>
+
+    <nav class="posts-filters" aria-label="Post status">
+        <?php foreach ($filters as $key => $label): ?>
+            <?php
+            $filterCounts = ['drafts' => $draftCount, 'scheduled' => $scheduledCount, 'published' => count($posts), 'trash' => $trashCount];
+            $filterLabel = $label . (isset($filterCounts[$key]) ? ' (' . $filterCounts[$key] . ')' : '');
+            $filterHref = '/posts?status=' . e($key) . ($search !== '' ? '&q=' . e(rawurlencode($search)) : '');
+            ?>
+            <a href="<?= $filterHref ?>"<?= $status === $key ? ' aria-current="page"' : '' ?>><?= e($filterLabel) ?></a>
+        <?php endforeach; ?>
+    </nav>
+
+    <form class="posts-search" method="get" action="/posts" role="search">
+        <input type="hidden" name="status" value="<?= e($status) ?>">
+        <div class="field">
+            <label for="posts-search-query">Search posts</label>
+            <div class="field-control">
+                <input id="posts-search-query" type="search" name="q" value="<?= e($search) ?>" placeholder="Title, author, or status">
+                <button class="field-clear" type="button" data-field-clear="posts-search-query" aria-label="Clear search" hidden><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            </div>
+        </div>
+        <button type="submit">Search</button>
+        <?php if ($search !== ''): ?><a href="/posts?status=<?= e($status) ?>">Clear</a><?php endif; ?>
+    </form>
+    <script src="/assets/js/fields.js" defer></script>
+
+    <?php if ($rows === []): ?>
+        <p class="quiet posts-empty">No posts match<?= $search !== '' ? ' “' . e($search) . '”' : ' this filter' ?>.</p>
+    <?php elseif ($search !== ''): ?>
+        <p class="quiet posts-results"><?= count($rows) === 1 ? '1 result' : count($rows) . ' results' ?> for “<?= e($search) ?>”</p>
+        <ul class="posts-index">
+            <?php foreach ($rows as $row): ?>
+                <?php $renderRow($row); ?>
             <?php endforeach; ?>
+        </ul>
+    <?php else: ?>
+        <div class="posts-archive">
+        <?php foreach ($groupedRows as $year => $months): ?>
+            <section class="posts-year" aria-labelledby="posts-year-<?= e($year) ?>">
+                <h2 id="posts-year-<?= e($year) ?>"><?= e($year) ?></h2>
+                <?php foreach ($months as $month => $monthRows): ?>
+                    <?php $monthName = $month === '00' ? 'Undated' : DateTimeImmutable::createFromFormat('!m', $month)->format('F'); ?>
+                    <section class="posts-month" aria-labelledby="posts-month-<?= e($year . '-' . $month) ?>">
+                        <h3 id="posts-month-<?= e($year . '-' . $month) ?>"><?= e($monthName) ?></h3>
+                        <ul class="posts-index">
+                            <?php foreach ($monthRows as $row): ?>
+                                <?php $renderRow($row); ?>
+                            <?php endforeach; ?>
                         </ul>
                     </section>
                 <?php endforeach; ?>
