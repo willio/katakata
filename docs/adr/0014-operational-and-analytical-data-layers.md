@@ -1,4 +1,4 @@
-# ADR-0006: Operational and Analytical Data Layers
+# ADR-0014: Operational and Analytical Data Layers
 
 - Status: Accepted
 - Date: 2026-07-29

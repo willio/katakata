@@ -110,7 +110,7 @@ out this single encrypted store. Both documents were updated at acceptance.
   silently ineffective on hosts that set variables at the process level — a
   failure mode indistinguishable from success in the UI.
 - **SQLite secret storage.** Rejected. SQLite is approved only as a narrow,
-  observational exception for analytics data (ADR 0009; ADR 0006's operational
+  observational exception for analytics data (ADR 0009; ADR 0014's operational
   data layer does not approve a general store). Credential material is neither
   observational nor rebuildable, and no ADR currently sanctions this use.
 - **Plaintext JSON with `0600` permissions.** Rejected. Filesystem permissions
