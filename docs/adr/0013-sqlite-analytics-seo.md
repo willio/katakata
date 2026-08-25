@@ -1,8 +1,9 @@
-# ADR 0007: SQLite for Analytics and Basic SEO Monitoring
+# ADR 0013: SQLite for Analytics and Basic SEO Monitoring
 
 ## Status
 
-Accepted
+Superseded by ADR 0009, which re-records this decision with corrected
+wording. Retained to preserve the decision chronology.
 
 ## Context
 

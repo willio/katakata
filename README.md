@@ -159,6 +159,10 @@ web-accessible.
 - [ADR 0008 — Invite-only Authentication](docs/adr/0008-invite-only-authentication.md)
 - [ADR 0009 — SQLite Analytics and SEO](docs/adr/0009-sqlite-analytics-seo.md)
 - [ADR 0010 — IMAP Inbox Adapter](docs/adr/0010-imap-inbox-adapter.md)
+- [ADR 0011 — Application-managed Secrets](docs/adr/0011-application-managed-secrets.md)
+- [ADR 0012 — Public Platform Extraction and Downstream Publications](docs/adr/0012-public-platform-extraction.md)
+- [ADR 0013 — SQLite Analytics and SEO (superseded by ADR 0009)](docs/adr/0013-sqlite-analytics-seo.md)
+- [ADR 0014 — Operational and Analytical Data Layers](docs/adr/0014-operational-and-analytical-data-layers.md)
 
 ## Non-Negotiable Rules
 
