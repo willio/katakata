@@ -32,7 +32,13 @@ details.
 application bootstrap. Dashboard buzz reads normalized entries through that
 manager, so it no longer depends directly on Threads storage. Native comments
 are rendered and submitted through `NativeDiscussionService`; the article route
-never reaches into the filesystem store.
+never reaches into the filesystem store. Public article reads use
+`PublicDiscussion`, honor the post-level `discussion_enabled` value (falling
+back to the publication default), and resolve the configured provider through
+the manager. Threads article reads use only the synchronized local cache; they
+never call the Threads API during an HTTP request. A mapped Threads discussion
+shows cached replies and a continuation link, while a missing mapping or an
+unavailable provider omits the discussion without affecting the article.
 
 The public route only submits pending comments. Authenticated moderation UI and
 moderator actions remain a separate integration step and must use an

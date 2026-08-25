@@ -6,7 +6,7 @@ namespace Katakata\Discussion;
 
 use RuntimeException;
 
-final class NativeDiscussionProvider implements DiscussionProvider
+final class NativeDiscussionProvider implements DiscussionProvider, DiscussionFinder
 {
     public function __construct(private readonly NativeDiscussionStore $store)
     {
@@ -35,6 +35,13 @@ final class NativeDiscussionProvider implements DiscussionProvider
         }
 
         return $this->store->create($slug, $slug);
+    }
+
+    public function find(array $post): ?DiscussionThread
+    {
+        $reference = $this->create($post);
+
+        return $this->fetch($reference);
     }
 
     public function fetch(DiscussionReference $reference): DiscussionThread

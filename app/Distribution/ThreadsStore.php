@@ -32,6 +32,18 @@ final class ThreadsStore
         return $this->read()['publications'];
     }
 
+    /** @return array{media_id: string, permalink: ?string, published_at: string}|null */
+    public function publication(string $postSlug): ?array
+    {
+        return $this->publications()[$postSlug] ?? null;
+    }
+
+    /** @return list<array{id: string, text: string, username: string, timestamp: string, permalink: string, avatar_url: ?string}> */
+    public function replies(string $postSlug): array
+    {
+        return $this->read()['replies'][$postSlug] ?? [];
+    }
+
     /** @param list<array{id: string, text: string, username: string, timestamp: string, permalink: string, avatar_url: ?string}> $replies */
     public function replaceReplies(string $postSlug, array $replies): void
     {

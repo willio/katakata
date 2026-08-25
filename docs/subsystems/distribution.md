@@ -245,6 +245,10 @@ php bin/katakata threads:engagement:sync
 
 `threads:engagement:sync` reads aggregate `views`, `likes`, `replies`, `reposts`, `quotes`, and `shares` from the official media insights endpoint. It stores one rebuildable metric snapshot per mapped post in the same generated Threads state. Failures are isolated per post and preserve the last successful snapshot; no engagement metric is written into canonical Markdown.
 
+Both synchronization commands use the effective provider selected in
+Discussion settings. `THREADS_ENABLED` seeds the initial default only; it is
+not a separate CLI gate after a dashboard provider selection has been saved.
+
 The access token is never written to generated state. Missing or invalid
 credentials fail only the Threads delivery; canonical publication and other
 channels remain unaffected.

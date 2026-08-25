@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Katakata\Content\Repository;
 use Katakata\Discussion\NativeDiscussionService;
+use Katakata\Discussion\PublicDiscussion;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
 use Katakata\Rendering\Markdown;
@@ -31,6 +32,11 @@ $router->post('/{year}/{month}/{slug}/discussion', function (
     $session = $app->make(\Katakata\Auth\Session::class);
     if (!$session->validCsrf($request->body['csrf'] ?? null)) {
         return Response::redirect($location . '?comment=expired#discussion', 303);
+    }
+
+    $discussion = $app->make(PublicDiscussion::class)->forPost($post);
+    if ($discussion === null || $discussion['reference']->provider !== 'native') {
+        return Response::notFound();
     }
 
     try {
@@ -65,7 +71,7 @@ $router->get('/{year}/{month}/{slug}', function (
     }
 
     $author = $app->make(AuthorResolver::class)->forPost($post, $app->make(Repository::class));
-    $discussion = $app->make(NativeDiscussionService::class)->forPost($post);
+    $discussion = $app->make(PublicDiscussion::class)->forPost($post);
     $app->make(\Katakata\Analytics\VisitRecorder::class)->record($request);
 
     return Response::html($app->make(View::class)->render('article', [

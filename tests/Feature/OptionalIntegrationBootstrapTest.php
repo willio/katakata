@@ -56,6 +56,18 @@ final class OptionalIntegrationBootstrapTest extends TestCase
         ]);
 
         $app = require dirname(__DIR__, 2) . '/bootstrap/app.php';
+        $app->instance(DashboardSettings::class, new DashboardSettings(
+            new SettingsStore(
+                sys_get_temp_dir() . '/katakata-missing-settings-' . bin2hex(random_bytes(6)) . '/application.json',
+                new AtomicFile(),
+            ),
+            ['discussion' => [
+                'provider' => 'none',
+                'enabled_by_default' => false,
+                'threads_user_id' => '',
+                'threads_token_secret' => 'THREADS_ACCESS_TOKEN',
+            ]],
+        ));
         $manager = $app->make(DiscussionManager::class);
 
         self::assertSame('none', $manager->resolve('threads')->key());
