@@ -402,15 +402,30 @@ $app->singleton(
     DiscussionManager::class,
     static function (Application $container) use ($threadsCredentials, $threadsSelected): DiscussionManager {
         $providers = [$container->make(NativeDiscussionProvider::class)];
+        if (!$threadsSelected($container)) {
+            return new DiscussionManager(new NullDiscussionProvider(), ...$providers);
+        }
+
         [$threadsUserId, $threadsToken] = $threadsCredentials($container);
-        $threadsAvailable = $threadsSelected($container)
-            && $threadsUserId !== ''
+        $threadsAvailable = $threadsUserId !== ''
             && $threadsToken !== '';
         if ($threadsAvailable) {
             $providers[] = $container->make(ThreadsDiscussionProvider::class);
         }
 
         return new DiscussionManager(new NullDiscussionProvider(), ...$providers);
+    },
+);
+$app->singleton(
+    \Katakata\Discussion\PublicDiscussion::class,
+    static function (Application $container): \Katakata\Discussion\PublicDiscussion {
+        $settings = $container->make(DashboardSettings::class)->section('discussion');
+
+        return new \Katakata\Discussion\PublicDiscussion(
+            $container->make(DiscussionManager::class),
+            (string) ($settings['provider'] ?? 'none'),
+            (bool) ($settings['enabled_by_default'] ?? false),
+        );
     },
 );
 $app->singleton(

@@ -24,6 +24,7 @@ final class NativeDiscussionWiringTest extends TestCase
         self::assertStringContainsString("'discussion' =>", $route);
         self::assertStringContainsString("'commentState' =>", $route);
         self::assertStringContainsString("'csrf' =>", $route);
+        self::assertStringContainsString("\$discussion['reference']->provider !== 'native'", $route);
     }
 
     public function testPublicSubmissionPassesTheHoneypotToTheNativeStoreBoundary(): void

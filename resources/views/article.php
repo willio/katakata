@@ -45,21 +45,28 @@
                 </nav>
             </footer>
         </article>
+        <?php if ($discussion !== null): ?>
         <section id="discussion" class="article-discussion" aria-labelledby="discussion-heading">
             <header>
                 <p class="eyebrow">Discussion</p>
-                <h2 id="discussion-heading">Comments</h2>
-                <p>Comments are reviewed before they appear publicly.</p>
+                <h2 id="discussion-heading"><?= $discussion['reference']->provider === 'threads' ? 'On Threads' : 'Comments' ?></h2>
+                <?php if ($discussion['reference']->provider === 'threads'): ?>
+                    <p>The conversation lives on Threads.</p>
+                <?php else: ?>
+                    <p>Comments are reviewed before they appear publicly.</p>
+                <?php endif; ?>
             </header>
-            <?php if ($commentState === 'pending'): ?>
-                <p role="status">Your comment was submitted for review.</p>
-            <?php elseif ($commentState === 'expired'): ?>
-                <p role="alert">The comment form expired. Please try again.</p>
-            <?php elseif ($commentState === 'invalid'): ?>
-                <p role="alert">The comment could not be submitted. Check the required fields and try again.</p>
+            <?php if ($discussion['reference']->provider === 'native'): ?>
+                <?php if ($commentState === 'pending'): ?>
+                    <p role="status">Your comment was submitted for review.</p>
+                <?php elseif ($commentState === 'expired'): ?>
+                    <p role="alert">The comment form expired. Please try again.</p>
+                <?php elseif ($commentState === 'invalid'): ?>
+                    <p role="alert">The comment could not be submitted. Check the required fields and try again.</p>
+                <?php endif; ?>
             <?php endif; ?>
             <?php if ($discussion['thread']->entries === []): ?>
-                <p class="quiet">No approved comments yet.</p>
+                <p class="quiet"><?= $discussion['reference']->provider === 'threads' ? 'No synchronized replies yet.' : 'No approved comments yet.' ?></p>
             <?php else: ?>
                 <ol class="discussion-list">
                     <?php foreach ($discussion['thread']->entries as $entry): ?>
@@ -70,12 +77,13 @@
                                     <time datetime="<?= e($entry->publishedAt->format(DATE_ATOM)) ?>"><?= e($entry->publishedAt->format('M j, Y H:i')) ?></time>
                                 </header>
                                 <p><?= nl2br(e($entry->body)) ?></p>
-                                <a href="#comment-form" data-reply-to="<?= e($entry->id) ?>">Reply</a>
+                                <?php if ($discussion['reference']->provider === 'native'): ?><a href="#comment-form" data-reply-to="<?= e($entry->id) ?>">Reply</a><?php endif; ?>
                             </article>
                         </li>
                     <?php endforeach; ?>
                 </ol>
             <?php endif; ?>
+            <?php if ($discussion['reference']->provider === 'native'): ?>
             <form id="comment-form" method="post" action="<?= e($post->url()) ?>/discussion">
                 <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
                 <input type="hidden" name="parent_id" value="">
@@ -86,15 +94,19 @@
                 <label>Comment <textarea name="body" rows="6" maxlength="5000" required></textarea></label>
                 <button type="submit">Submit for review</button>
             </form>
+            <?php elseif ($discussion['reference']->url !== null): ?>
+                <p><a href="<?= e($discussion['reference']->url) ?>" rel="noopener noreferrer">Continue the discussion on Threads</a></p>
+            <?php endif; ?>
         </section>
+        <?php endif; ?>
     </main>
-    <script>
+    <?php if ($discussion !== null && $discussion['reference']->provider === 'native'): ?><script>
         document.querySelectorAll('[data-reply-to]').forEach((link) => {
             link.addEventListener('click', () => {
                 const input = document.querySelector('#comment-form [name="parent_id"]');
                 if (input) input.value = link.dataset.replyTo || '';
             });
         });
-    </script>
+    </script><?php endif; ?>
 </body>
 </html>

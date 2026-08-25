@@ -20,6 +20,7 @@ use Katakata\Distribution\MailQueue;
 use Katakata\Distribution\NewsletterDispatcher;
 use Katakata\Distribution\ThreadsEngagementSync;
 use Katakata\Distribution\ThreadsReplySync;
+use Katakata\Discussion\DiscussionManager;
 use Katakata\Seo\SeoChecker;
 
 /**
@@ -413,8 +414,8 @@ final class Application
 
     private function threadsSync(): int
     {
-        if (!(bool) $this->app->config()->get('threads.enabled', false)) {
-            fwrite(STDERR, "Threads is disabled. Set THREADS_ENABLED=true before syncing.\n");
+        if ($this->app->make(DiscussionManager::class)->resolve('threads')->key() !== 'threads') {
+            fwrite(STDERR, "Threads is disabled or unavailable in Discussion settings.\n");
             return 1;
         }
 
@@ -436,8 +437,8 @@ final class Application
 
     private function threadsEngagementSync(): int
     {
-        if (!(bool) $this->app->config()->get('threads.enabled', false)) {
-            fwrite(STDERR, "Threads is disabled. Set THREADS_ENABLED=true before syncing.\n");
+        if ($this->app->make(DiscussionManager::class)->resolve('threads')->key() !== 'threads') {
+            fwrite(STDERR, "Threads is disabled or unavailable in Discussion settings.\n");
             return 1;
         }
 

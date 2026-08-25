@@ -7,13 +7,14 @@ namespace Katakata\Discussion\Providers;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Katakata\Discussion\DiscussionEntry;
+use Katakata\Discussion\DiscussionFinder;
 use Katakata\Discussion\DiscussionProvider;
 use Katakata\Discussion\DiscussionReference;
 use Katakata\Discussion\DiscussionThread;
 use Katakata\Distribution\ThreadsApi;
 use Katakata\Distribution\ThreadsStore;
 
-final class ThreadsDiscussionProvider implements DiscussionProvider
+final class ThreadsDiscussionProvider implements DiscussionProvider, DiscussionFinder
 {
     public function __construct(
         private readonly ThreadsApi $api,
@@ -53,6 +54,31 @@ final class ThreadsDiscussionProvider implements DiscussionProvider
             id: $publication['id'],
             url: $publication['permalink'],
             metadata: ['post_slug' => $slug],
+        );
+    }
+
+    public function find(array $post): ?DiscussionThread
+    {
+        $slug = trim((string) ($post['slug'] ?? ''));
+        if ($slug === '') {
+            throw new InvalidArgumentException('Threads discussion lookup requires a post slug.');
+        }
+
+        $publication = $this->store->publication($slug);
+        if ($publication === null) {
+            return null;
+        }
+
+        $reference = new DiscussionReference(
+            provider: $this->key(),
+            id: $publication['media_id'],
+            url: $publication['permalink'],
+            metadata: ['post_slug' => $slug],
+        );
+
+        return new DiscussionThread(
+            $reference,
+            array_map(fn (array $row): DiscussionEntry => $this->normalize($row, $slug), $this->store->replies($slug)),
         );
     }
 
