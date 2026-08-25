@@ -46,7 +46,7 @@ $renderPosts = static function (Request $request) use ($app, $requireEditorUser)
         return Response::redirect('/login', 302);
     }
 
-    $status = trim((string) ($request->query['status'] ?? 'all'));
+    $status = is_string($request->query['status'] ?? null) ? trim($request->query['status']) : 'all';
     if (!in_array($status, ['all', 'drafts', 'scheduled', 'published', 'trash'], true)) {
         $status = 'all';
     }
