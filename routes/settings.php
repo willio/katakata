@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Katakata\Auth\AccountStore;
+use Katakata\Auth\PasskeyStore;
 use Katakata\Auth\Session;
 use Katakata\Dashboard\DashboardSettings;
 use Katakata\Distribution\SubscriberStore;
@@ -140,6 +141,7 @@ $renderSettings = static function (array $user, bool $saved, ?string $error) use
         'siteName' => (string) $app->config()->get('app.name', 'Katakata'),
         'settings' => $app->make(DashboardSettings::class)->all(),
         'readiness' => $readiness(),
+        'passkeys' => $app->make(PasskeyStore::class)->forAccount((string) $user['id']),
         'saved' => $saved,
         'error' => $error,
         'csrf' => $app->make(Session::class)->csrf(),

@@ -6,12 +6,14 @@
 /** @var bool $saved */
 /** @var ?string $error */
 /** @var string $csrf */
+/** @var list<array<string, mixed>>|null $passkeys */
 
 $publication = $settings['publication'] ?? [];
 $newsletter = $settings['newsletter'] ?? [];
 $discussion = $settings['discussion'] ?? [];
 $analytics = $settings['analytics'] ?? [];
 $appearance = $settings['appearance'] ?? [];
+$passkeys ??= [];
 $mailbox = $readiness['mailbox'] ?? [];
 $threadsTokenManaged = (bool) ($readiness['discussion']['token_managed'] ?? false);
 $feedbackRole = $error === null ? 'status' : 'alert';
@@ -59,6 +61,7 @@ $mailboxProductDetail = match ($mailboxProductStatus) {
             <a href="#discussion">Discussion</a>
             <a href="#analytics">Analytics</a>
             <a href="#appearance">Appearance</a>
+            <a href="#passkeys">Passkeys</a>
         </nav>
 
         <div class="settings-sections">
@@ -138,8 +141,27 @@ $mailboxProductDetail = match ($mailboxProductStatus) {
                     <button type="submit">Save appearance</button>
                 </form>
             </section>
+
+            <section id="passkeys" class="settings-section">
+                <header><h2>Passkeys</h2><p class="quiet">Sign in with a fingerprint, face, or security key instead of a password.</p></header>
+                <?php if ($passkeys === []): ?>
+                <p class="quiet">No passkeys are registered for your account yet.</p>
+                <?php else: ?>
+                <ul class="passkey-list">
+                    <?php foreach ($passkeys as $passkey): ?>
+                    <li>Passkey added <?= e((string) ($passkey['created_at'] ?? '')) ?><?php if (is_string($passkey['last_used_at'] ?? null)): ?> — last used <?= e($passkey['last_used_at']) ?><?php endif; ?></li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php endif; ?>
+                <form method="post" action="/passkeys/register" data-passkey-register>
+                    <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                    <button type="submit">Add a passkey</button>
+                    <p class="quiet" data-passkey-status aria-live="polite"></p>
+                </form>
+            </section>
         </div>
     </div>
 </main>
+<script src="/assets/js/passkeys.js" defer></script>
 </body>
 </html>
