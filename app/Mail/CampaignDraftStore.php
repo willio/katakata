@@ -33,6 +33,10 @@ final class CampaignDraftStore
 
     public function find(string $id): ?CampaignDraft
     {
+        if (!preg_match('/^[a-f0-9]{32}$/', $id)) {
+            return null;
+        }
+
         $target = $this->target($id);
         if (!is_file($target)) {
             return null;

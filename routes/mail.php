@@ -10,6 +10,8 @@ use Katakata\Email\DraftConflict;
 use Katakata\Email\DraftSender;
 use Katakata\Email\DraftStore;
 use Katakata\Email\Mailbox;
+use Katakata\Email\OutboundMailProvider;
+use Katakata\Email\Providers\UnavailableOutboundMailProvider;
 use Katakata\Email\SentMessageStore;
 use Katakata\Http\Request;
 use Katakata\Http\Response;
@@ -54,6 +56,7 @@ $renderDraftEditor = static function (array $user, Draft $draft, ?string $error 
         'buttonStyle' => $mailButtonStyle(),
         'csrf' => $app->make(Session::class)->csrf(),
         'error' => $error,
+        'sendAvailable' => !($app->make(OutboundMailProvider::class) instanceof UnavailableOutboundMailProvider),
     ]), $error === null ? 200 : 422);
 };
 

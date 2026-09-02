@@ -88,6 +88,15 @@ final class CampaignDraftStoreTest extends TestCase
         }
     }
 
+    public function testItReturnsNullForMalformedDraftIds(): void
+    {
+        $store = new CampaignDraftStore($this->path, new AtomicFile());
+
+        self::assertNull($store->find('nonexistent'));
+        self::assertNull($store->find('../escape'));
+        self::assertNull($store->find(str_repeat('A', 32)));
+    }
+
     private function draft(): CampaignDraft
     {
         $createdAt = new DateTimeImmutable('2026-08-01T12:00:00+00:00');

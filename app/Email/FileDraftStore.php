@@ -51,6 +51,9 @@ final class FileDraftStore implements DraftStore
 
     public function find(string $id): ?Draft
     {
+        if (!preg_match('/^[a-f0-9]{32}$/', $id)) {
+            return null;
+        }
         $target = $this->target($id);
         return is_file($target) ? $this->decode($target, $id) : null;
     }
