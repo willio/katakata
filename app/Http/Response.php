@@ -41,9 +41,29 @@ final class Response
         return new self('', $status, ['Location' => $location]);
     }
 
-    public static function notFound(string $body = 'Not Found'): self
+    public static function notFound(?string $body = null): self
     {
-        return self::html($body, 404);
+        return self::html($body ?? self::renderNotFoundView(), 404);
+    }
+
+    public function withoutBody(): self
+    {
+        return new self('', $this->status, $this->headers);
+    }
+
+    private static function renderNotFoundView(): string
+    {
+        $path = dirname(__DIR__, 2) . '/resources/views/not-found.php';
+
+        if (!is_file($path)) {
+            return 'Not Found';
+        }
+
+        ob_start();
+
+        require $path;
+
+        return (string) ob_get_clean();
     }
 
     public function send(): void
