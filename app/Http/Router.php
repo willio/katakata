@@ -60,17 +60,22 @@ final class Router
 
     public function dispatch(Request $request): Response
     {
-        foreach ($this->routes[$request->method] ?? [] as $route) {
+        $method = $request->method === 'HEAD' ? 'GET' : $request->method;
+
+        foreach ($this->routes[$method] ?? [] as $route) {
             if (!preg_match($route['pattern'], $request->path, $matches)) {
                 continue;
             }
 
             array_shift($matches);
             $parameters = array_map('rawurldecode', $matches);
+            $response = ($route['handler'])($request, ...$parameters);
 
-            return ($route['handler'])($request, ...$parameters);
+            return $request->method === 'HEAD' ? $response->withoutBody() : $response;
         }
 
-        return Response::notFound();
+        $response = Response::notFound();
+
+        return $request->method === 'HEAD' ? $response->withoutBody() : $response;
     }
 }
