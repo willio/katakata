@@ -38,6 +38,35 @@ final class Application
     /** @var array<string, callable(array<int, string>): int> */
     private array $commands = [];
 
+    /** @var array<string, array{usage: string, description: string}> */
+    private const HELP = [
+        'about' => ['usage' => 'about', 'description' => 'Show the application name and tagline.'],
+        'auth:owner' => ['usage' => 'auth:owner <email> [password] [--password-stdin]', 'description' => 'Create the owner account. Prompts for the password when it is omitted; --password-stdin reads it from standard input. Prefer the prompt or --password-stdin over a positional password, which lands in shell history.'],
+        'auth:invite' => ['usage' => 'auth:invite <email> [admin|editor]', 'description' => 'Invite a user and print their registration URL.'],
+        'routes:list' => ['usage' => 'routes:list', 'description' => 'List every registered HTTP route.'],
+        'serve' => ['usage' => 'serve [host:port]', 'description' => 'Serve the site with the PHP built-in server (default 127.0.0.1:8000).'],
+        'content:list' => ['usage' => 'content:list', 'description' => 'List posts, drafts, authors, and assets.'],
+        'content:validate' => ['usage' => 'content:validate', 'description' => 'Validate all canonical content files.'],
+        'import:document' => ['usage' => 'import:document <path> [--author=name] [--dry-run]', 'description' => 'Import a .docx/.doc document as a draft.'],
+        'import:directory' => ['usage' => 'import:directory <path> [--recursive] [--author=name] [--dry-run]', 'description' => 'Import every document in a directory as drafts.'],
+        'draft:create' => ['usage' => 'draft:create <slug> <title>', 'description' => 'Create a new draft.'],
+        'draft:edit' => ['usage' => 'draft:edit <slug>', 'description' => 'Open a draft in $EDITOR and save the result.'],
+        'draft:schedule' => ['usage' => 'draft:schedule <slug> <ISO-8601>', 'description' => 'Schedule a draft for future publication.'],
+        'draft:publish' => ['usage' => 'draft:publish <slug> [ISO-8601 date]', 'description' => 'Publish a draft now or at a given date.'],
+        'publish:due' => ['usage' => 'publish:due', 'description' => 'Publish every scheduled draft that is due.'],
+        'revisions:list' => ['usage' => 'revisions:list <slug>', 'description' => 'List the revision files captured for a draft or post.'],
+        'trash:purge' => ['usage' => 'trash:purge <draft|post> <trash-id> --confirm=<trash-id>', 'description' => 'Permanently purge a trashed item.'],
+        'distribution:publish' => ['usage' => 'distribution:publish <post-slug> [newsletter]', 'description' => 'Distribute a published post to its channels.'],
+        'mail:work' => ['usage' => 'mail:work [limit]', 'description' => 'Work the outbound mail queue.'],
+        'resend:webhooks:check' => ['usage' => 'resend:webhooks:check', 'description' => 'Verify Resend webhook configuration and storage.'],
+        'newsletter:dispatch' => ['usage' => 'newsletter:dispatch <post-slug>', 'description' => 'Queue a published post for newsletter delivery.'],
+        'threads:sync' => ['usage' => 'threads:sync', 'description' => 'Sync Threads replies into the local discussion cache.'],
+        'threads:engagement:sync' => ['usage' => 'threads:engagement:sync', 'description' => 'Sync Threads engagement metrics.'],
+        'analytics:check' => ['usage' => 'analytics:check', 'description' => 'Verify analytics storage and configuration.'],
+        'analytics:prune' => ['usage' => 'analytics:prune', 'description' => 'Delete analytics visits older than the retention window.'],
+        'seo:check' => ['usage' => 'seo:check', 'description' => 'Run the SEO checks against published content.'],
+    ];
+
     public function __construct(private readonly Kernel $app)
     {
         $this->commands['about'] = fn (): int => $this->about();
@@ -72,24 +101,73 @@ final class Application
      */
     public function run(array $argv): int
     {
-        $name = $argv[0] ?? 'about';
-        $arguments = array_slice($argv, 1);
+        $name = $argv[0] ?? '';
+
+        if ($name === '') {
+            $this->about();
+            return $this->commandList();
+        }
+
+        if (in_array($name, ['help', '--help', '-h'], true)) {
+            $topic = $argv[1] ?? '';
+            if ($name === 'help' && isset(self::HELP[$topic])) {
+                return $this->commandHelp($topic);
+            }
+            return $this->commandList();
+        }
 
         if (!isset($this->commands[$name])) {
             fwrite(STDERR, "Unknown command [{$name}].\n");
-            fwrite(STDOUT, 'Available commands: ' . implode(', ', array_keys($this->commands)) . "\n");
+            $this->commandList();
             return 1;
+        }
+
+        $arguments = array_slice($argv, 1);
+        if (in_array('--help', $arguments, true) || in_array('-h', $arguments, true)) {
+            return $this->commandHelp($name);
         }
 
         return ($this->commands[$name])($arguments);
     }
 
+    private function commandList(): int
+    {
+        fwrite(STDOUT, "Usage: php bin/katakata <command> [--help]\n\nAvailable commands:\n");
+        foreach (self::HELP as $command => $help) {
+            fwrite(STDOUT, sprintf("  %-24s %s\n", $command, $help['description']));
+        }
+
+        return 0;
+    }
+
+    private function commandHelp(string $name): int
+    {
+        $help = self::HELP[$name];
+        fwrite(STDOUT, "Usage: php bin/katakata {$help['usage']}\n\n{$help['description']}\n");
+
+        return 0;
+    }
+
     /** @param array<int, string> $args */
     private function authOwner(array $args): int
     {
-        [$email, $password] = [$args[0] ?? '', $args[1] ?? ''];
-        if ($email === '' || $password === '') {
-            return $this->usage('auth:owner <email> <password>');
+        $stdin = in_array('--password-stdin', $args, true);
+        $positional = array_values(array_filter($args, static fn (string $arg): bool => $arg !== '--password-stdin'));
+        [$email, $password] = [$positional[0] ?? '', $positional[1] ?? ''];
+        if ($email === '') {
+            return $this->usage('auth:owner <email> [password] [--password-stdin]');
+        }
+
+        if ($stdin) {
+            $line = fgets(STDIN);
+            $password = $line === false ? '' : trim($line);
+        } elseif ($password === '') {
+            $password = $this->promptForPassword('Owner password: ') ?? '';
+        }
+
+        if ($password === '') {
+            fwrite(STDERR, "A password is required; pipe it with --password-stdin or run interactively to be prompted.\n");
+            return 1;
         }
 
         try {
@@ -100,6 +178,21 @@ final class Application
             fwrite(STDERR, $error->getMessage() . "\n");
             return 1;
         }
+    }
+
+    private function promptForPassword(string $prompt): ?string
+    {
+        if (!stream_isatty(STDIN)) {
+            return null;
+        }
+
+        fwrite(STDERR, $prompt);
+        system('stty -echo');
+        $line = fgets(STDIN);
+        system('stty echo');
+        fwrite(STDERR, "\n");
+
+        return $line === false ? null : trim($line);
     }
 
     /** @param array<int, string> $args */
@@ -211,7 +304,13 @@ final class Application
             return $this->usage('draft:create <slug> <title>');
         }
 
-        $path = $this->app->make(DraftEditor::class)->save($slug, $title, '');
+        try {
+            $path = $this->app->make(DraftEditor::class)->save($slug, $title, '');
+        } catch (\Throwable $error) {
+            fwrite(STDERR, $error->getMessage() . "\n");
+            return 1;
+        }
+
         fwrite(STDOUT, "Created {$path}\n");
         return 0;
     }
@@ -230,7 +329,13 @@ final class Application
             return 1;
         }
 
-        $this->app->make(Editor::class)->edit($draft->slug, $draft->path, $editor);
+        try {
+            $this->app->make(Editor::class)->edit($draft->slug, $draft->path, $editor);
+        } catch (\Throwable $error) {
+            fwrite(STDERR, $error->getMessage() . "\n");
+            return 1;
+        }
+
         fwrite(STDOUT, "Saved {$draft->path}\n");
         return 0;
     }
@@ -263,11 +368,20 @@ final class Application
             return 1;
         }
 
+        $at = null;
+        if (isset($args[1])) {
+            try {
+                $at = new DateTimeImmutable($args[1]);
+            } catch (\Exception) {
+                fwrite(STDERR, "Invalid date [{$args[1]}].\n");
+                return 1;
+            }
+        }
+
         try {
-            $at = isset($args[1]) ? new DateTimeImmutable($args[1]) : null;
             $path = $this->app->make(Publisher::class)->publish($draft, $at);
-        } catch (\Exception $e) {
-            fwrite(STDERR, $e->getMessage() . "\n");
+        } catch (\Throwable $error) {
+            fwrite(STDERR, $error->getMessage() . "\n");
             return 1;
         }
 
@@ -279,14 +393,22 @@ final class Application
     {
         $repository = $this->app->make(Repository::class);
         $due = $this->app->make(Scheduler::class)->due($repository->drafts());
+        $published = 0;
+        $failed = 0;
         foreach ($due as $draft) {
-            $at = new DateTimeImmutable((string) $draft->meta['publish_at']);
-            $path = $this->app->make(Publisher::class)->publish($draft, $at);
-            fwrite(STDOUT, "Published {$path}\n");
+            try {
+                $at = new DateTimeImmutable((string) $draft->meta['publish_at']);
+                $path = $this->app->make(Publisher::class)->publish($draft, $at);
+                $published++;
+                fwrite(STDOUT, "Published {$path}\n");
+            } catch (\Throwable $error) {
+                $failed++;
+                fwrite(STDERR, "Failed to publish [{$draft->slug}]: {$error->getMessage()}\n");
+            }
         }
 
-        fwrite(STDOUT, count($due) . " scheduled draft(s) published.\n");
-        return 0;
+        fwrite(STDOUT, "{$published} scheduled draft(s) published.\n");
+        return $failed > 0 ? 1 : 0;
     }
 
     /** @param array<int, string> $args */
@@ -311,8 +433,6 @@ final class Application
             return 1;
         }
     }
-
-    /** @param array<int, string> $args */
 
     /** @param array<int, string> $args */
     private function distributionPublish(array $args): int
@@ -544,11 +664,31 @@ final class Application
     private function serve(array $args): int
     {
         $host = $args[0] ?? '127.0.0.1:8000';
+
+        if (!preg_match('/^([a-zA-Z0-9.-]+|\[[0-9a-fA-F:]+\]):(\d+)$/', $host, $matches)
+            || (int) $matches[2] < 1
+            || (int) $matches[2] > 65535
+        ) {
+            fwrite(STDERR, "Invalid address [{$host}]. Use host:port, e.g. 127.0.0.1:8000.\n");
+            return 1;
+        }
+
+        $probe = @stream_socket_server("tcp://{$host}", $errno, $error);
+        if ($probe === false) {
+            fwrite(STDERR, "Cannot serve on [{$host}]: {$error}\n");
+            return 1;
+        }
+        fclose($probe);
+
         $public = $this->app->basePath('public');
 
         fwrite(STDOUT, "Serving Katakata at http://{$host}\n");
-        passthru(sprintf('php -S %s -t %s', escapeshellarg($host), escapeshellarg($public)));
+        passthru(sprintf('php -S %s -t %s', escapeshellarg($host), escapeshellarg($public)), $exit);
 
-        return 0;
+        if ($exit !== 0) {
+            fwrite(STDERR, "Server exited with status [{$exit}].\n");
+        }
+
+        return $exit;
     }
 }
