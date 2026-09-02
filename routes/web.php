@@ -255,8 +255,10 @@ $router->post('/register', function (Request $request) use ($app, $renderAuth): 
         );
         $session->login($account);
         return Response::redirect('/dashboard');
-    } catch (\Throwable $error) {
+    } catch (\InvalidArgumentException $error) {
         return $renderAuth('register', $error->getMessage(), $token);
+    } catch (\Throwable) {
+        return $renderAuth('register', 'The invitation could not be accepted. Check the invitation link and email, then try again.', $token);
     }
 });
 
@@ -311,15 +313,106 @@ $router->post('/dashboard/editor/save', fn (Request $request): Response => Respo
 $router->post('/dashboard/editor/publish', fn (Request $request): Response => Response::json(['error' => 'Legacy editor endpoint retired.'], 410));
 $router->get('/dashboard/editor/version', fn (Request $request): Response => Response::json(['error' => 'Legacy editor endpoint retired.'], 410));
 
-$router->post('/dashboard/passkeys/options', function (Request $request) use ($app, $requireUser): Response {
+$router->post('/passkeys/register/options', function (Request $request) use ($app, $requireUser): Response {
     $user = $requireUser();
     if ($user === null) {
         return Response::json(['error' => 'Unauthorised.'], 401);
     }
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::json(['error' => 'The form expired. Please try again.'], 419);
+    }
 
     try {
-        return Response::json($app->make(WebAuthn::class)->registrationOptions($user));
-    } catch (\Throwable $error) {
-        return Response::json(['error' => $error->getMessage()], 422);
+        $challenge = $session->beginPasskey('register', ['account_id' => (string) $user['id']]);
+        return Response::json($app->make(WebAuthn::class)->registrationOptions($user, $challenge));
+    } catch (\Throwable) {
+        return Response::json(['error' => 'Passkey registration is not available. Please try again.'], 422);
     }
+});
+$router->post('/passkeys/register', function (Request $request) use ($app, $requireUser): Response {
+    $user = $requireUser();
+    if ($user === null) {
+        return Response::json(['error' => 'Unauthorised.'], 401);
+    }
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::json(['error' => 'The form expired. Please try again.'], 419);
+    }
+
+    $pending = $session->consumePasskey('register');
+    if ($pending === null || !hash_equals((string) ($pending['account_id'] ?? ''), (string) $user['id'])) {
+        return Response::json(['error' => 'The passkey ceremony expired. Please try again.'], 422);
+    }
+    $credential = json_decode((string) ($request->body['credential'] ?? ''), true);
+    if (!is_array($credential)) {
+        return Response::json(['error' => 'The passkey response is invalid.'], 422);
+    }
+
+    try {
+        $app->make(WebAuthn::class)->register(
+            (string) $user['id'],
+            (string) $pending['challenge'],
+            array_map('strval', $credential),
+        );
+        return Response::json(['ok' => true]);
+    } catch (\RuntimeException $error) {
+        return Response::json(['error' => $error->getMessage()], 422);
+    } catch (\Throwable) {
+        return Response::json(['error' => 'Passkey registration failed. Please try again.'], 422);
+    }
+});
+$router->post('/passkeys/login/options', function (Request $request) use ($app): Response {
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::json(['error' => 'The form expired. Please try again.'], 419);
+    }
+
+    $account = $app->make(AccountStore::class)->findByEmail($request->body['email'] ?? '');
+    if ($account === null) {
+        return Response::json(['error' => 'Passkey sign-in is not available for this account.'], 422);
+    }
+
+    try {
+        $challenge = $session->beginPasskey('login', ['account_id' => (string) $account['id']]);
+        return Response::json($app->make(WebAuthn::class)->authenticationOptions($account, $challenge));
+    } catch (\RuntimeException) {
+        return Response::json(['error' => 'Passkey sign-in is not available for this account.'], 422);
+    } catch (\Throwable) {
+        return Response::json(['error' => 'Passkey sign-in is not available. Please try again.'], 422);
+    }
+});
+$router->post('/passkeys/login', function (Request $request) use ($app): Response {
+    $session = $app->make(Session::class);
+    if (!$session->validCsrf($request->body['csrf'] ?? null)) {
+        return Response::json(['error' => 'The form expired. Please try again.'], 419);
+    }
+
+    $pending = $session->consumePasskey('login');
+    if ($pending === null) {
+        return Response::json(['error' => 'The passkey ceremony expired. Please try again.'], 422);
+    }
+    $credential = json_decode((string) ($request->body['credential'] ?? ''), true);
+    if (!is_array($credential)) {
+        return Response::json(['error' => 'The passkey response is invalid.'], 422);
+    }
+    $account = $app->make(AccountStore::class)->find((string) ($pending['account_id'] ?? ''));
+    if ($account === null) {
+        return Response::json(['error' => 'Passkey sign-in failed. Please try again.'], 422);
+    }
+
+    try {
+        $app->make(WebAuthn::class)->authenticate(
+            (string) $account['id'],
+            (string) $pending['challenge'],
+            array_map('strval', $credential),
+        );
+    } catch (\RuntimeException $error) {
+        return Response::json(['error' => $error->getMessage()], 422);
+    } catch (\Throwable) {
+        return Response::json(['error' => 'Passkey sign-in failed. Please try again.'], 422);
+    }
+
+    $session->login($account);
+    return Response::json(['ok' => true, 'redirect' => '/dashboard']);
 });
