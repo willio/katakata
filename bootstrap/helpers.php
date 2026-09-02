@@ -5,12 +5,15 @@ declare(strict_types=1);
 if (!function_exists('env')) {
     /**
      * Read an environment variable, with a typed fallback default.
+     *
+     * A present-but-empty value (for example `KEY=` in .env) counts as
+     * unset so documented fallbacks such as APP_KEY still apply.
      */
     function env(string $key, mixed $default = null): mixed
     {
         $value = $_ENV[$key] ?? getenv($key);
 
-        if ($value === false || $value === null) {
+        if ($value === false || $value === null || $value === '') {
             return $default;
         }
 
