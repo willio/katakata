@@ -3,6 +3,7 @@
 /** @var string $siteName */
 /** @var string $csrf */
 /** @var ?string $error */
+$sendAvailable ??= false;
 ?>
 <!doctype html>
 <html lang="en">
@@ -43,8 +44,9 @@
         <div class="form-actions mail-compose-actions">
             <a href="/mail?area=inbox">Cancel</a>
             <button type="submit" name="intent" value="save">Save now</button>
-            <button type="submit" name="intent" value="send">Send</button>
+            <button type="submit" name="intent" value="send"<?= $sendAvailable ? '' : ' disabled aria-describedby="mail-send-unavailable"' ?>>Send</button>
         </div>
+        <?php if (!$sendAvailable): ?><p class="mail-compose-alert" id="mail-send-unavailable" role="note">Correspondence sending is not configured on this server. You can save this draft, but it cannot be sent until an outbound mail provider is configured.</p><?php endif; ?>
     </form>
 </main>
 <script src="/assets/js/editor-autosave.js" defer></script>

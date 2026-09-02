@@ -76,6 +76,15 @@ final class FileDraftStoreTest extends TestCase
         self::assertNull($store->find($draft->id));
     }
 
+    public function testItReturnsNullForMalformedDraftIds(): void
+    {
+        $store = new FileDraftStore($this->path, new AtomicFile());
+
+        self::assertNull($store->find('nonexistent'));
+        self::assertNull($store->find('../escape'));
+        self::assertNull($store->find(str_repeat('A', 32)));
+    }
+
     public function testItDecodesLegacyDraftsAsVersionOne(): void
     {
         mkdir($this->path, 0700, true);
