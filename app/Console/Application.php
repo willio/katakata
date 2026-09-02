@@ -206,12 +206,19 @@ final class Application
     /** @param array<int, string> $args */
     private function draftCreate(array $args): int
     {
-        [$slug, $title] = [$args[0] ?? '', $args[1] ?? ''];
+        $slug = $args[0] ?? '';
+        $title = $args[1] ?? '';
         if ($slug === '' || $title === '') {
             return $this->usage('draft:create <slug> <title>');
         }
 
-        $path = $this->app->make(DraftEditor::class)->save($slug, $title, '');
+        try {
+            $path = $this->app->make(DraftEditor::class)->create($slug, $title);
+        } catch (\InvalidArgumentException $e) {
+            fwrite(STDERR, $e->getMessage() . "\n");
+            return 1;
+        }
+
         fwrite(STDOUT, "Created {$path}\n");
         return 0;
     }
@@ -245,12 +252,12 @@ final class Application
 
         try {
             $at = new DateTimeImmutable($args[1]);
+            $this->app->make(DraftEditor::class)->schedule($draft, $at);
         } catch (\Exception) {
             fwrite(STDERR, "Invalid schedule [{$args[1]}].\n");
             return 1;
         }
 
-        $this->app->make(DraftEditor::class)->schedule($draft, $at);
         fwrite(STDOUT, "Scheduled {$draft->slug} for {$at->format(DateTimeImmutable::ATOM)}\n");
         return 0;
     }

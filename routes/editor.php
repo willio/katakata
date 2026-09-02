@@ -24,7 +24,7 @@ $requireEditorUser = static function () use ($app): ?array {
     return $app->make(Session::class)->user();
 };
 
-$renderEditor = static function (?\Katakata\Content\Draft $draft = null, ?string $notice = null) use ($app, $requireEditorUser): Response {
+$renderEditor = static function (?\Katakata\Content\Draft $draft = null, ?string $notice = null, ?string $error = null) use ($app, $requireEditorUser): Response {
     $user = $requireEditorUser();
     if ($user === null) {
         return Response::redirect('/login', 302);
@@ -35,6 +35,7 @@ $renderEditor = static function (?\Katakata\Content\Draft $draft = null, ?string
         'draft' => $draft,
         'csrf' => $app->make(Session::class)->csrf(),
         'notice' => $notice,
+        'error' => $error,
         'draftVersion' => $draft === null ? '' : DraftVersion::of($draft),
         'buttonStyle' => (string) ($app->make(DashboardSettings::class)->section('appearance')['button_style'] ?? 'regular'),
     ]));
@@ -106,7 +107,14 @@ $router->get('/editor', fn (Request $request): Response => Response::redirect('/
 $router->get('/editor/new', fn (Request $request): Response => $renderEditor());
 $router->get('/editor/drafts/{slug}', function (Request $request, string $slug) use ($app, $renderEditor): Response {
     $draft = $app->make(Repository::class)->findDraft($slug);
-    return $draft === null ? Response::notFound() : $renderEditor($draft);
+    if ($draft === null) {
+        return Response::notFound();
+    }
+    $error = $request->query['error'] ?? null;
+    if ($error === 'expired') {
+        $error = 'The editing session expired. Save again, then retry publishing.';
+    }
+    return $renderEditor($draft, null, is_string($error) && $error !== '' ? $error : null);
 });
 
 $router->post('/editor/posts/{slug}/campaign-drafts', function (Request $request, string $slug) use ($app): Response {
@@ -159,6 +167,7 @@ $router->post('/editor/drafts', function (Request $request) use ($app, $requireE
 
     try {
         $requestedSlug = trim((string) ($request->body['slug'] ?? ''));
+        $original = trim((string) ($request->body['original'] ?? ''));
         $title = trim((string) ($request->body['title'] ?? ''));
         $body = (string) ($request->body['body'] ?? '');
         $repository = $app->make(Repository::class);
@@ -167,6 +176,14 @@ $router->post('/editor/drafts', function (Request $request) use ($app, $requireE
 
         if ($slug === '') {
             $slug = $uniqueDraftSlug($repository, $slugifyDraftTitle($title));
+        } elseif ($existing !== null && $slug !== $original) {
+            // A create colliding with another draft must never overwrite it:
+            // auto-derived slugs unique-ify, explicitly chosen slugs conflict.
+            if ($slug !== $slugifyDraftTitle($title)) {
+                return Response::json(['error' => "A draft named [{$slug}] already exists."], 409);
+            }
+            $slug = $uniqueDraftSlug($repository, $slug);
+            $existing = null;
         }
 
         $app->make(DraftEditor::class)->save($slug, $title, $body, $draftMeta($request->body, $existing));
@@ -206,6 +223,16 @@ $router->post('/editor/drafts/{slug}/autosave', function (Request $request, stri
         $existing = $repository->findDraft($slug);
         if ($existing === null) {
             return Response::json(['error' => 'Draft not found.'], 404);
+        }
+
+        $expected = trim((string) ($request->body['expected_version'] ?? ''));
+        if ($expected !== '' && !hash_equals(DraftVersion::of($existing), $expected)) {
+            return Response::json([
+                'error' => 'Changed elsewhere.',
+                'version' => DraftVersion::of($existing),
+                'updated_at' => $existing->updatedAt?->format(DATE_ATOM),
+                'client_version' => (string) ($request->body['client_version'] ?? ''),
+            ], 409);
         }
 
         $title = trim((string) ($request->body['title'] ?? $existing->title));
@@ -320,6 +347,15 @@ $router->post('/editor/drafts/{slug}/publish', function (Request $request, strin
 
         return Response::redirect($post?->url() ?? '/dashboard', 302);
     } catch (\Throwable $error) {
-        return Response::redirect('/editor/drafts/' . rawurlencode($slug) . '?error=' . rawurlencode($error->getMessage()), 302);
+        // Strip absolute server paths from failure details before they reach the URL.
+        $message = trim((string) preg_replace_callback(
+            '#\[([^\[\]]*)\]#',
+            static fn (array $match): string => '[' . basename($match[1]) . ']',
+            $error->getMessage(),
+        ));
+        if ($message === '') {
+            $message = 'Publishing failed.';
+        }
+        return Response::redirect('/editor/drafts/' . rawurlencode($slug) . '?error=' . rawurlencode($message), 302);
     }
 });

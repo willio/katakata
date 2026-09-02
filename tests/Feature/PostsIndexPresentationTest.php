@@ -19,7 +19,10 @@ final class PostsIndexPresentationTest extends TestCase
             'status' => 'drafts',
             'drafts' => [
                 new Draft('first-draft', 'First Draft', new DateTimeImmutable('2026-08-02'), '', [], ''),
-                new Draft('scheduled-draft', 'Scheduled Draft', new DateTimeImmutable('2026-08-01'), '', ['scheduled_at' => '2026-08-03T09:00:00+00:00'], ''),
+                new Draft('scheduled-draft', 'Scheduled Draft', new DateTimeImmutable('2026-08-01'), '', [
+                    'status' => 'scheduled',
+                    'publish_at' => '2026-08-03T09:00:00+00:00',
+                ], ''),
             ],
             'posts' => [],
         ]);
@@ -29,6 +32,26 @@ final class PostsIndexPresentationTest extends TestCase
         self::assertStringNotContainsString('<ol class="posts-index">', $html);
         self::assertStringContainsString('<a class="posts-index-title" href="/editor/drafts/first-draft">First Draft</a>', $html);
         self::assertStringContainsString('>Edit</a>', $html);
+    }
+
+    public function testScheduledFilterClassifiesDraftsByStatusAndPublishAt(): void
+    {
+        $html = (new View(dirname(__DIR__, 2) . '/resources/views'))->render('posts', [
+            'siteName' => 'Katakata',
+            'status' => 'all',
+            'drafts' => [
+                new Draft('plain-draft', 'Plain Draft', new DateTimeImmutable('2026-08-02'), '', [], ''),
+                new Draft('scheduled-draft', 'Scheduled Draft', new DateTimeImmutable('2026-08-01'), '', [
+                    'status' => 'scheduled',
+                    'publish_at' => '2026-08-03T09:00:00+00:00',
+                ], ''),
+            ],
+            'posts' => [],
+        ]);
+
+        self::assertStringContainsString('>Scheduled (1)</a>', $html);
+        self::assertStringContainsString('>Drafts (1)</a>', $html);
+        self::assertStringContainsString('<span class="posts-status-pill">Scheduled</span>', $html);
     }
 
     public function testPostsIndexSuppressesListMarkers(): void

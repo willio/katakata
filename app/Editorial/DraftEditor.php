@@ -34,8 +34,26 @@ final class DraftEditor
         return $path;
     }
 
+    /** @param array<string, mixed> $meta */
+    public function create(string $slug, string $title, string $body = '', array $meta = []): string
+    {
+        $this->assertSlug($slug);
+        if (is_file($this->path($slug))) {
+            throw new InvalidArgumentException("Draft [{$slug}] already exists.");
+        }
+
+        return $this->save($slug, $title, $body, $meta);
+    }
+
     public function schedule(Draft $draft, DateTimeImmutable $at): string
     {
+        $year = (int) $at->format('Y');
+        if ($year < 2000 || $year > 2099) {
+            throw new InvalidArgumentException(
+                "Schedule date [{$at->format('Y-m-d')}] is outside the supported 2000-2099 range."
+            );
+        }
+
         $meta = $draft->meta;
         unset($meta['title'], $meta['updated_at']);
         $meta['status'] = 'scheduled';

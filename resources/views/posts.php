@@ -23,8 +23,8 @@ $draftCount = 0;
 $scheduledCount = 0;
 
 foreach ($drafts as $draft) {
-    $scheduledAt = is_string($draft->meta['scheduled_at'] ?? null)
-        ? trim((string) $draft->meta['scheduled_at'])
+    $scheduledAt = ($draft->meta['status'] ?? null) === 'scheduled' && is_string($draft->meta['publish_at'] ?? null)
+        ? trim((string) $draft->meta['publish_at'])
         : '';
 
     if ($scheduledAt === '') {
@@ -44,8 +44,8 @@ foreach ($trashItems as $item) {
 
 if (in_array($status, ['all', 'drafts', 'scheduled'], true)) {
     foreach ($drafts as $draft) {
-        $scheduledAt = is_string($draft->meta['scheduled_at'] ?? null)
-            ? trim((string) $draft->meta['scheduled_at'])
+        $scheduledAt = ($draft->meta['status'] ?? null) === 'scheduled' && is_string($draft->meta['publish_at'] ?? null)
+            ? trim((string) $draft->meta['publish_at'])
             : '';
         $rowStatus = $scheduledAt === '' ? 'draft' : 'scheduled';
 

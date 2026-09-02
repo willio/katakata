@@ -3,6 +3,7 @@
 /** @var \Katakata\Content\Draft|null $draft */
 /** @var string $csrf */
 /** @var string|null $notice */
+/** @var string|null $error */
 /** @var string $draftVersion */
 $hasDraft = $draft !== null;
 $publishAsNewsletter = filter_var($draft?->meta['publish_as_newsletter'] ?? false, FILTER_VALIDATE_BOOL);
@@ -19,6 +20,7 @@ $discussionEnabled = filter_var($draft?->meta['discussion_enabled'] ?? false, FI
 </head>
 <body class="editor-page<?= ($buttonStyle ?? 'regular') === 'pill' ? ' buttons-pill' : '' ?>">
 <p class="editor-status" data-save-status role="status" aria-live="polite"></p>
+<?php if (($error ?? null) !== null && $error !== ''): ?><p class="editor-error" role="alert"><?= e($error) ?></p><?php endif; ?>
 <div class="editor-close-zone" tabindex="0">
     <button type="button" class="editor-close-work" data-editor-close>Close</button>
 </div>
@@ -41,6 +43,7 @@ $discussionEnabled = filter_var($draft?->meta['discussion_enabled'] ?? false, FI
         data-server-updated-at="<?= e($draft?->updatedAt?->format(DATE_ATOM) ?? '') ?>"
     >
         <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+        <input type="hidden" name="original" value="<?= e($draft?->slug ?? '') ?>">
         <textarea name="body" aria-label="Markdown draft" placeholder="Begin with your title…" autofocus><?= e($draft?->body ?? '') ?></textarea>
 
         <aside class="editor-panel" id="editor-panel" data-editor-panel hidden>
